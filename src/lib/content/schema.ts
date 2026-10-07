@@ -321,6 +321,8 @@ export const lexicalConceptSchema = z.object({
   ipa: text.optional(),
   /** Contextual meaning in Brazilian Portuguese. */
   meaning: text,
+  /** Accepted written forms when recalling the concept (defaults to the French form). */
+  forms: z.array(text).optional(),
   register: z.enum(["formal", "neutral", "informal"]).default("neutral"),
   examples: z.array(exampleSchema).default([]),
   verb: z

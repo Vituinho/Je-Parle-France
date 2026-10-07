@@ -48,8 +48,13 @@ export function oracleResponse(
       return { kind: "self", rating: correct ? 1 : 0 };
     case "speak":
       return { kind: "speech", selfRating: correct ? 1 : 0 };
-    case "multi_select":
-      return { kind: "choices", choices: correct ? activity.answers : [] };
+    case "multi_select": {
+      if (client.type !== "multi_select") break;
+      const displayed = activity.answers.map((i) =>
+        client.options.indexOf(activity.options[i] as string),
+      );
+      return { kind: "choices", choices: correct ? displayed : [] };
+    }
     case "match":
       return { kind: "pairs", pairs: [] };
     default:

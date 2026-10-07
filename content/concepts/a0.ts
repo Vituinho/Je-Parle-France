@@ -219,6 +219,7 @@ export const a0Concepts: ConceptInput[] = [
     pos: "adjective",
     ipa: "/ɑ̃.ʃɑ̃.te/",
     meaning: "muito prazer",
+    forms: ["enchanté", "enchantée"],
     examples: [{ fr: "Enchanté, je m'appelle Paulo.", pt: "Muito prazer, eu me chamo Paulo." }],
     notes: [
       {
@@ -238,6 +239,7 @@ export const a0Concepts: ConceptInput[] = [
     pos: "expression",
     ipa: "/ʒə sɥi bʁe.zi.ljɛ̃ ~ bʁe.zi.ljɛn/",
     meaning: "eu sou brasileiro / brasileira",
+    forms: ["je suis brésilien", "je suis brésilienne"],
     examples: [
       { fr: "Je suis brésilien.", pt: "Eu sou brasileiro." },
       { fr: "Je suis brésilienne.", pt: "Eu sou brasileira." },
@@ -279,6 +281,7 @@ export const a0Concepts: ConceptInput[] = [
     pos: "expression",
     ipa: "/e vu / e twa/",
     meaning: "e você? / e o senhor, a senhora?",
+    forms: ["et vous ?", "et toi ?"],
     examples: [{ fr: "Je m'appelle Ana. Et vous ?", pt: "Eu me chamo Ana. E o senhor?" }],
     tags: ["apresentação"],
   },
@@ -611,6 +614,7 @@ export const a0Concepts: ConceptInput[] = [
     pos: "expression",
     ipa: "/ty a kɛl ɑʒ/",
     meaning: "quantos anos você tem?",
+    forms: ["tu as quel âge ?", "quel âge as-tu ?", "quel âge avez-vous ?"],
     prerequisites: ["gram:age-avoir"],
     examples: [{ fr: "Quel âge avez-vous ?", pt: "Quantos anos o senhor tem?" }],
     tags: ["idade"],
@@ -749,6 +753,7 @@ export const a0Concepts: ConceptInput[] = [
     pos: "expression",
     ipa: "/sɛ kɔ̃.bjɛ̃ / sa fɛ kɔ̃.bjɛ̃/",
     meaning: "quanto é? / quanto dá?",
+    forms: ["c'est combien ?", "ça fait combien ?", "ça coûte combien ?"],
     examples: [
       { fr: "Le croissant, c'est combien ?", pt: "Quanto é o croissant?" },
       { fr: "Ça fait combien ? — Ça fait quatre euros.", pt: "Quanto dá? — Dá quatro euros." },
@@ -764,6 +769,7 @@ export const a0Concepts: ConceptInput[] = [
     gender: "m",
     ipa: "/œ̃.n‿ø.ʁo/",
     meaning: "euro(s)",
+    forms: ["un euro", "euro", "des euros"],
     examples: [
       { fr: "Deux euros cinquante.", pt: "Dois euros e cinquenta." },
       { fr: "Un dollar, deux dollars.", pt: "Um dólar, dois dólares." },
@@ -837,6 +843,7 @@ export const a0Concepts: ConceptInput[] = [
     pos: "expression",
     ipa: "/syʁ plas u a ɑ̃.pɔʁ.te/",
     meaning: "para comer aqui ou para levar?",
+    forms: ["sur place ou à emporter ?"],
     examples: [
       {
         fr: "Sur place ou à emporter ? — Sur place.",
