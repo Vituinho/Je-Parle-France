@@ -152,7 +152,8 @@ export function applyReview(params: {
   const current = params.trace ?? introduceTrace(conceptId, dimension, now, source);
   const evidence = {
     attempts: current.attempts + 1,
-    successes: current.successes + (outcome.correct ? 1 : 0),
+    // Self-ratings move the schedule but never count toward mastery on their own.
+    successes: current.successes + (outcome.correct && !outcome.selfRated ? 1 : 0),
     lastScore: outcome.score,
   };
   const base = {

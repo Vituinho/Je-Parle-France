@@ -136,3 +136,28 @@ describe("recommended start", () => {
     expect(recommendation.note).toContain("em produção");
   });
 });
+
+describe("placement report noise control", () => {
+  it("does not call one lucky multiple-choice guess a strength", () => {
+    const plan = createPlan({
+      mode: "quick",
+      prior: { mean: 1, sd: 1 },
+      capabilities: { speech: false, ai: false },
+    });
+    const guessed: ReportItem = {
+      ...item("mc", "reading", "A2", "Anúncios"),
+      bank: {
+        ...item("mc", "reading", "A2", "Anúncios").bank,
+        params: { difficulty: 2.5, discrimination: 1.7, guess: 0.25, weight: 1 },
+      },
+    };
+    const report = buildPlacementReport({
+      plan,
+      estimates: estimates(0.4),
+      responses: [{ itemId: "mc", score: 1, scored: true }],
+      items: new Map([["mc", guessed]]),
+      content,
+    });
+    expect(report.strengths.filter((f) => f.kind === "topic")).toEqual([]);
+  });
+});

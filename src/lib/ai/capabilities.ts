@@ -1,0 +1,25 @@
+import "server-only";
+import { serverEnv } from "@/lib/env";
+
+/**
+ * Which external capabilities are really available. Development mocks never
+ * count as a capability for assessment purposes: a mocked speech score must
+ * not become evidence about the learner.
+ */
+export interface Capabilities {
+  speechRecognition: boolean;
+  pronunciationAssessment: boolean;
+  serverTts: boolean;
+  llm: boolean;
+}
+
+export function getCapabilities(): Capabilities {
+  const env = serverEnv();
+  const azure = env.SPEECH_PROVIDER === "azure";
+  return {
+    speechRecognition: azure,
+    pronunciationAssessment: azure,
+    serverTts: azure,
+    llm: env.LLM_PROVIDER === "anthropic",
+  };
+}

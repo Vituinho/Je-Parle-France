@@ -157,7 +157,14 @@ export function buildPlacementReport(params: {
   for (const { response, item } of answeredItems) {
     if (item.bank.selfAssessment) continue;
     const theta = estimates.skills[item.bank.skill].mean;
-    const entry = byTopic.get(item.topic) ?? { observed: 0, expected: 0, difficulty: 0, count: 0 };
+    const entry = byTopic.get(item.topic) ?? {
+      observed: 0,
+      expected: 0,
+      difficulty: 0,
+      count: 0,
+      guessable: false,
+    };
+    entry.guessable ||= item.bank.params.guess > 0;
     entry.observed += response.score;
     entry.expected += probability(theta, item.bank.params);
     entry.difficulty += item.bank.params.difficulty;
@@ -168,9 +175,11 @@ export function buildPlacementReport(params: {
     topic,
     residual: entry.observed - entry.expected,
     difficulty: entry.difficulty / entry.count,
+    // A single right answer on a guessable item is too weak to call a strength.
+    reliable: entry.count >= 2 || !entry.guessable,
   }));
   residuals
-    .filter((r) => r.residual >= 0.55 && r.difficulty >= overallTheta - 0.3)
+    .filter((r) => r.reliable && r.residual >= 0.55 && r.difficulty >= overallTheta - 0.3)
     .sort((a, b) => b.residual - a.residual)
     .slice(0, 4)
     .forEach((r) => strengths.push({ kind: "topic", text: r.topic }));

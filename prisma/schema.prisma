@@ -292,6 +292,9 @@ model PlacementAttempt {
   status        AttemptStatus       @default(in_progress)
   /// Skills covered; a partial retake lists only the retaken skills.
   skills        Skill[]
+  /// Engine plan (prior, capabilities, stopping rules) frozen at start, so the
+  /// attempt stays reproducible even if configuration changes later.
+  plan          Json
   /// Item currently shown (so a refresh shows the same item).
   currentItemId String?
   report        Json?

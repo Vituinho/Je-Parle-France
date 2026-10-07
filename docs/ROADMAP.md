@@ -14,10 +14,10 @@ Status vocabulary: **complete** · **mocked** (real interface + adapter, dev moc
 | Database schema | complete | See DATABASE.md |
 | Authentication | complete | Email + password. E-mail verification and password reset: planned (needs an e-mail provider) |
 | Onboarding | complete | Goals, destination, experience, daily time, target + deadline estimate, start choice |
-| Adaptive placement (quick + complete) | planned | |
-| Placement report | planned | |
-| Memory model (FSRS + mastery) | planned | |
-| Deterministic graders | planned | |
+| Adaptive placement (quick + complete) | complete | Bayesian adaptive engine, 125-item bank, server-side grading. Speaking items need a speech provider (self-assessment otherwise); open writing needs an LLM |
+| Placement report | complete | Per-skill levels with uncertainty, method, strengths/weaknesses, gaps → review, start point, retakes |
+| Memory model (FSRS + mastery) | complete | ts-fsrs, derived mastery states |
+| Deterministic graders | complete | French-aware text comparison, red-pen diffs |
 | A0 curriculum | planned | |
 | Lesson player + activity engine | planned | |
 | Daily session planner | planned | |
