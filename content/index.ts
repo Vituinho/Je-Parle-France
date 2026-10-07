@@ -1,4 +1,5 @@
 import type { CourseInput } from "@/lib/content/schema";
+import { placementItems } from "./placement";
 
 /**
  * Entry point for all course content. Each collection is assembled from the
@@ -7,7 +8,7 @@ import type { CourseInput } from "@/lib/content/schema";
 export const course: CourseInput = {
   concepts: [],
   modules: [],
-  placementItems: [],
+  placementItems,
   scenarios: [],
   authentic: [],
 };
