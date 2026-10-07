@@ -140,7 +140,9 @@ describe("buildContentIndex", () => {
     if (step.type !== "choice") throw new Error("fixture changed");
     step.targets = [];
     const { issues } = buildContentIndex(course);
-    expect(issues.some((i) => i.message === "graded activity needs at least one target")).toBe(true);
+    expect(issues.some((i) => i.message === "graded activity needs at least one target")).toBe(
+      true,
+    );
   });
 
   it("computes transitive prerequisites", () => {

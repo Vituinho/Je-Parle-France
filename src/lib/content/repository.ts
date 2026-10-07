@@ -76,8 +76,10 @@ export function buildContentIndex(input: CourseInput): {
   }
   const course = parsed.data;
   const issues: ContentIssue[] = [];
-  const error = (path: string, message: string) => issues.push({ severity: "error", path, message });
-  const warn = (path: string, message: string) => issues.push({ severity: "warning", path, message });
+  const error = (path: string, message: string) =>
+    issues.push({ severity: "error", path, message });
+  const warn = (path: string, message: string) =>
+    issues.push({ severity: "warning", path, message });
 
   // Concepts
   const concepts = new Map<string, Concept>();
@@ -117,8 +119,10 @@ export function buildContentIndex(input: CourseInput): {
     for (const unit of courseModule.units) {
       const unitPath = `modules.${courseModule.id}.units.${unit.id}`;
       if (units.has(unit.id)) error(unitPath, "duplicate unit id");
-      if (unit.level !== courseModule.level) error(unitPath, "unit level differs from module level");
-      if (unit.track !== courseModule.track) error(unitPath, "unit track differs from module track");
+      if (unit.level !== courseModule.level)
+        error(unitPath, "unit level differs from module level");
+      if (unit.track !== courseModule.track)
+        error(unitPath, "unit track differs from module track");
       if (unit.missionScenario && !scenarios.has(unit.missionScenario)) {
         error(unitPath, `unknown mission scenario ${unit.missionScenario}`);
       }
@@ -181,7 +185,8 @@ export function buildContentIndex(input: CourseInput): {
 
   for (const scenario of course.scenarios) {
     for (const conceptId of scenario.keyConcepts) {
-      if (!concepts.has(conceptId)) warn(`scenarios.${scenario.id}`, `unknown concept ${conceptId}`);
+      if (!concepts.has(conceptId))
+        warn(`scenarios.${scenario.id}`, `unknown concept ${conceptId}`);
     }
   }
 
@@ -193,7 +198,8 @@ export function buildContentIndex(input: CourseInput): {
 
   const authenticIds = new Set<string>();
   for (const entry of course.authentic) {
-    if (authenticIds.has(entry.id)) error(`authentic.${entry.id}`, "duplicate authentic content id");
+    if (authenticIds.has(entry.id))
+      error(`authentic.${entry.id}`, "duplicate authentic content id");
     authenticIds.add(entry.id);
   }
 

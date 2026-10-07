@@ -131,7 +131,10 @@ export const multiSelectActivitySchema = z
 export const matchActivitySchema = z.object({
   ...activityBase,
   type: z.literal("match"),
-  pairs: z.array(z.object({ left: text, right: text })).min(3).max(6),
+  pairs: z
+    .array(z.object({ left: text, right: text }))
+    .min(3)
+    .max(6),
   leftLang: optionLang,
   rightLang: z.enum(["fr", "pt"]).default("pt"),
 });
