@@ -18,7 +18,7 @@ Status vocabulary: **complete** · **mocked** (real interface + adapter, dev moc
 | Placement report | complete | Per-skill levels with uncertainty, method, strengths/weaknesses, gaps → review, start point, retakes |
 | Memory model (FSRS + mastery) | complete | ts-fsrs, derived mastery states |
 | Deterministic graders | complete | French-aware text comparison, red-pen diffs |
-| A0 curriculum | planned | |
+| A0 curriculum | complete | Module A0.1: 4 units, 14 lessons, 115 activities, 44 concepts (greetings, tu/vous, sounds, numbers, café) |
 | Lesson player + activity engine | planned | |
 | Daily session planner | planned | |
 | Dashboard | planned | |

@@ -44,3 +44,65 @@ describe("course content", () => {
     }
   });
 });
+
+describe("curriculum pedagogy", () => {
+  const PRODUCTION = new Set([
+    "type",
+    "fill",
+    "order",
+    "dictation",
+    "speak",
+    "error_correction",
+    "open_writing",
+  ]);
+
+  it("teaches every concept before practising it", () => {
+    const introduced = new Set<string>();
+    for (const ref of index!.paths.core) {
+      for (const step of ref.lesson.steps) {
+        if (step.type === "teach") {
+          step.introduces.forEach((id) => introduced.add(id));
+          continue;
+        }
+        for (const target of step.targets) {
+          expect(
+            introduced.has(target.concept),
+            `${step.id} practises ${target.concept} before teaching it`,
+          ).toBe(true);
+        }
+      }
+    }
+  });
+
+  it("gives every lesson a teaching card and active production", () => {
+    for (const ref of index!.lessons.values()) {
+      const steps = ref.lesson.steps;
+      expect(steps.length, ref.lesson.id).toBeGreaterThanOrEqual(5);
+      expect(steps.length, ref.lesson.id).toBeLessThanOrEqual(14);
+      expect(
+        steps.some((s) => s.type === "teach"),
+        `${ref.lesson.id} teaches`,
+      ).toBe(true);
+      expect(
+        steps.some((s) => PRODUCTION.has(s.type)),
+        `${ref.lesson.id} has production`,
+      ).toBe(true);
+    }
+  });
+
+  it("never repeats an option inside a lesson question", () => {
+    for (const { activity } of index!.activities.values()) {
+      if (activity.type === "choice" || activity.type === "multi_select") {
+        expect(new Set(activity.options).size, activity.id).toBe(activity.options.length);
+      }
+      if (activity.type === "match") {
+        expect(new Set(activity.pairs.map((p) => p.left)).size, activity.id).toBe(
+          activity.pairs.length,
+        );
+        expect(new Set(activity.pairs.map((p) => p.right)).size, activity.id).toBe(
+          activity.pairs.length,
+        );
+      }
+    }
+  });
+});
