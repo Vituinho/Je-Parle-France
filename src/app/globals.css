@@ -1,1 +1,253 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Je Parle Français — design tokens
+ *
+ * The palette comes from a French school notebook: fountain-pen ink (encre),
+ * Seyès ruling (ligne), the teacher's red pen (marge), a highlighter
+ * (surligneur), and Québec fir green (sapin) for what the learner got right.
+ * Portuguese UI is set in Bricolage Grotesque; French text is always set in
+ * Spectral — the typeface tells the learner which language they are reading.
+ */
+
+@theme inline {
+  --font-sans: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+  --font-fr: var(--font-spectral), ui-serif, Georgia, serif;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-soft: var(--destructive-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-highlight: var(--highlight);
+  --color-highlight-foreground: var(--highlight-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-seyes: var(--seyes);
+  --color-seyes-margin: var(--seyes-margin);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  --radius: 0.75rem;
+
+  --background: #fafbfd; /* papier */
+  --foreground: #161b36; /* nuit */
+  --card: #ffffff;
+  --card-foreground: #161b36;
+  --popover: #ffffff;
+  --popover-foreground: #161b36;
+  --primary: #2a44b8; /* encre */
+  --primary-foreground: #ffffff;
+  --secondary: #e9ecf7;
+  --secondary-foreground: #1d2a6e;
+  --muted: #f0f2f8;
+  --muted-foreground: #565e7c; /* ardoise */
+  --accent: #eef1fb;
+  --accent-foreground: #1d2a6e;
+  --destructive: #c8344b; /* marge — red pen */
+  --destructive-soft: #fcebee;
+  --success: #157a5b; /* sapin */
+  --success-soft: #e3f4ec;
+  --highlight: #ffe76a; /* surligneur */
+  --highlight-foreground: #3d3300;
+  --border: #dce0ec; /* ligne */
+  --input: #cdd2e3;
+  --ring: #2a44b8;
+  --seyes: #c9cff0;
+  --seyes-margin: #f0a3b0;
+
+  --chart-1: #2a44b8;
+  --chart-2: #157a5b;
+  --chart-3: #b7791f;
+  --chart-4: #7a4bb8;
+  --chart-5: #c8344b;
+
+  --sidebar: #f4f6fb;
+  --sidebar-foreground: #161b36;
+  --sidebar-primary: #2a44b8;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e6eaf7;
+  --sidebar-accent-foreground: #161b36;
+  --sidebar-border: #dce0ec;
+  --sidebar-ring: #2a44b8;
+}
+
+.dark {
+  --background: #10142a;
+  --foreground: #e9ecf8;
+  --card: #171c38;
+  --card-foreground: #e9ecf8;
+  --popover: #171c38;
+  --popover-foreground: #e9ecf8;
+  --primary: #9aacff;
+  --primary-foreground: #0d1230;
+  --secondary: #232a52;
+  --secondary-foreground: #dfe4ff;
+  --muted: #1c2244;
+  --muted-foreground: #a6add0;
+  --accent: #232a52;
+  --accent-foreground: #e9ecf8;
+  --destructive: #ff8597;
+  --destructive-soft: #3a1a2a;
+  --success: #5ad1a4;
+  --success-soft: #12322b;
+  --highlight: #e9d04f;
+  --highlight-foreground: #2b2400;
+  --border: #2a315a;
+  --input: #343c6b;
+  --ring: #9aacff;
+  --seyes: #2a3160;
+  --seyes-margin: #6b2e45;
+
+  --chart-1: #9aacff;
+  --chart-2: #5ad1a4;
+  --chart-3: #e9b85a;
+  --chart-4: #c3a0ff;
+  --chart-5: #ff8597;
+
+  --sidebar: #131834;
+  --sidebar-foreground: #e9ecf8;
+  --sidebar-primary: #9aacff;
+  --sidebar-primary-foreground: #0d1230;
+  --sidebar-accent: #232a52;
+  --sidebar-accent-foreground: #e9ecf8;
+  --sidebar-border: #2a315a;
+  --sidebar-ring: #9aacff;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+    font-optical-sizing: auto;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "ss01" on;
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-heading);
+    font-variation-settings: "wdth" 92;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
+  }
+  /* French is always set in the serif — see <Fr>. */
+  [lang="fr"] {
+    font-family: var(--font-fr);
+    font-feature-settings: "kern" on, "liga" on;
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /* The teacher's red pen: wavy underline under what was wrong. */
+  .correction {
+    text-decoration-line: underline;
+    text-decoration-style: wavy;
+    text-decoration-color: var(--destructive);
+    text-decoration-thickness: 1.5px;
+    text-underline-offset: 4px;
+  }
+
+  /* A highlighter stroke for the part of an example that matters. */
+  .highlight {
+    background-image: linear-gradient(
+      100deg,
+      transparent 0.2em,
+      color-mix(in oklab, var(--highlight) 85%, transparent) 0.3em,
+      color-mix(in oklab, var(--highlight) 70%, transparent) calc(100% - 0.3em),
+      transparent calc(100% - 0.2em)
+    );
+    background-size: 100% 0.62em;
+    background-position: 0 88%;
+    background-repeat: no-repeat;
+    padding-inline: 0.08em;
+    color: inherit;
+  }
+
+  /* Seyès ruling (cahier à grands carreaux), used sparingly as a surface. */
+  .seyes {
+    background-color: var(--card);
+    background-image:
+      linear-gradient(to right, var(--seyes-margin) 0 1.5px, transparent 1.5px),
+      linear-gradient(to bottom, color-mix(in oklab, var(--seyes) 90%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in oklab, var(--seyes) 45%, transparent) 1px, transparent 1px),
+      linear-gradient(to right, color-mix(in oklab, var(--seyes) 45%, transparent) 1px, transparent 1px);
+    background-size:
+      100% 100%,
+      32px 32px,
+      8px 8px,
+      32px 32px;
+    background-position:
+      3.25rem 0,
+      0 0,
+      0 0,
+      0 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
