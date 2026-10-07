@@ -273,3 +273,15 @@ export function placementCoverage(index: ContentIndex): Record<string, Record<st
   }
   return coverage;
 }
+
+export interface ConceptLabel {
+  text: string;
+  lang: "fr" | "pt";
+}
+
+/** How a concept is named in the UI: the French form for words, the Portuguese title otherwise. */
+export function conceptLabel(concept: Concept | undefined, fallback = ""): ConceptLabel {
+  if (!concept) return { text: fallback, lang: "pt" };
+  if (concept.kind === "lexical") return { text: concept.french, lang: "fr" };
+  return { text: concept.title.pt, lang: "pt" };
+}

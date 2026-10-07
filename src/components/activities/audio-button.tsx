@@ -1,9 +1,9 @@
 "use client";
 
-import { Pause, Snail, Volume2 } from "lucide-react";
+import { Pause, Snail, Volume2, VolumeX } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { useFrenchSpeech, type SpeakOptions, type VoiceRegion } from "./speech";
+import { useFrenchSpeech, useVoiceStatus, type SpeakOptions, type VoiceRegion } from "./speech";
 
 export interface AudioLine {
   text: string;
@@ -46,17 +46,25 @@ export function AudioButton({
     );
   };
 
-  if (status === "unsupported" || status === "no-french-voice") {
-    return (
-      <p className={cn("text-muted-foreground text-sm", className)} role="status">
-        Seu navegador não tem uma voz em francês instalada, então o áudio não pode tocar aqui.
-        Experimente o Chrome ou o Edge, ou instale uma voz francesa no sistema.
-      </p>
-    );
-  }
-
   const dimensions = { sm: "size-9", md: "size-12", lg: "size-16" }[size];
   const icon = { sm: "size-4", md: "size-5", lg: "size-7" }[size];
+
+  if (status === "unsupported" || status === "no-french-voice") {
+    return (
+      <span
+        title="Áudio indisponível: este navegador não tem voz em francês"
+        aria-label="Áudio indisponível neste navegador"
+        role="img"
+        className={cn(
+          "bg-muted text-muted-foreground grid shrink-0 place-items-center rounded-full",
+          dimensions,
+          className,
+        )}
+      >
+        <VolumeX className={icon} />
+      </span>
+    );
+  }
 
   return (
     <div className={cn("inline-flex items-center gap-2", className)}>
@@ -85,5 +93,24 @@ export function AudioButton({
         </button>
       )}
     </div>
+  );
+}
+
+/**
+ * One explanation per screen when the browser cannot speak French, instead of
+ * repeating it next to every audio button.
+ */
+export function VoiceNotice({ className }: { className?: string }) {
+  const status = useVoiceStatus();
+  if (status !== "unsupported" && status !== "no-french-voice") return null;
+  return (
+    <p
+      role="status"
+      className={cn("bg-muted text-muted-foreground rounded-xl px-4 py-3 text-sm", className)}
+    >
+      Este navegador não tem uma voz em francês, então o áudio não toca aqui. No Chrome ou no Edge
+      funciona; também dá para instalar uma voz francesa nas configurações do sistema. Os textos
+      continuam disponíveis.
+    </p>
   );
 }

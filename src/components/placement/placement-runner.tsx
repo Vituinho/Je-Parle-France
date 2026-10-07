@@ -8,6 +8,7 @@ import { answerPlacementAction } from "@/app/(focus)/diagnostico/actions";
 import { ActivityRenderer } from "@/components/activities/activity-renderer";
 import { emptyDraft, isAnswerable, toResponse, type Draft } from "@/components/activities/draft";
 import { LocalizedText } from "@/components/activities/localized-text";
+import { VoiceNotice } from "@/components/activities/audio-button";
 import { LineProgress } from "@/components/line-progress";
 import { Button } from "@/components/ui/button";
 import type { Phase } from "@/lib/learning/placement/engine";
@@ -93,6 +94,7 @@ export function PlacementRunner({ initialView }: { initialView: InProgress }) {
         />
       </header>
 
+      <VoiceNotice className="mt-4" />
       <div ref={heading} tabIndex={-1} className="mt-8 outline-none">
         <p className="text-muted-foreground text-sm">
           Etapa {view.block.index + 1} de {view.block.total} · {phaseLabel(view.phase)}

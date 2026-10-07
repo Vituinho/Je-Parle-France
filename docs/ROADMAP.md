@@ -19,7 +19,7 @@ Status vocabulary: **complete** · **mocked** (real interface + adapter, dev moc
 | Memory model (FSRS + mastery) | complete | ts-fsrs, derived mastery states |
 | Deterministic graders | complete | French-aware text comparison, red-pen diffs |
 | A0 curriculum | complete | Module A0.1: 4 units, 14 lessons, 115 activities, 44 concepts (greetings, tu/vous, sounds, numbers, café) |
-| Lesson player + activity engine | planned | |
+| Lesson player + activity engine | complete | 15 activity types, server-side grading, missed items re-queued once, honest summary; browser TTS with a single notice when no French voice |
 | Daily session planner | planned | |
 | Dashboard | planned | |
 | Review session | planned | |
