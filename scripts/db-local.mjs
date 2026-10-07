@@ -31,7 +31,10 @@ function bin(name) {
 }
 
 function run(name, args, { allowFailure = false } = {}) {
-  const result = spawnSync(bin(name), args, { stdio: ["ignore", "pipe", "pipe"], encoding: "utf8" });
+  const result = spawnSync(bin(name), args, {
+    stdio: ["ignore", "pipe", "pipe"],
+    encoding: "utf8",
+  });
   if (result.error) {
     console.error(`Could not run ${name}: ${result.error.message}. Set PG_BIN if needed.`);
     process.exit(1);

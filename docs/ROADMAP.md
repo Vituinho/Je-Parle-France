@@ -9,11 +9,11 @@ Status vocabulary: **complete** · **mocked** (real interface + adapter, dev moc
 | --- | --- | --- |
 | Foundation (Next 16, TS strict, Prisma 7, Vitest, CI) | complete | |
 | Product / pedagogy / architecture docs | complete | Living documents |
-| Content schemas + validation | planned | |
-| Design system + app shell | planned | |
-| Database schema | planned | |
-| Authentication | planned | |
-| Onboarding | planned | |
+| Content schemas + validation | complete | Zod schemas, cross-reference checks, `npm run content:check` |
+| Design system + app shell | complete | Notebook palette, Bricolage + Spectral, métro-line progress |
+| Database schema | complete | See DATABASE.md |
+| Authentication | complete | Email + password. E-mail verification and password reset: planned (needs an e-mail provider) |
+| Onboarding | complete | Goals, destination, experience, daily time, target + deadline estimate, start choice |
 | Adaptive placement (quick + complete) | planned | |
 | Placement report | planned | |
 | Memory model (FSRS + mastery) | planned | |

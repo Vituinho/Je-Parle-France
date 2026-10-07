@@ -50,7 +50,9 @@ export function ChoiceTile({
         className={cn(
           "mt-0.5 grid size-5 shrink-0 place-items-center border-[1.5px] transition-colors",
           type === "radio" ? "rounded-full" : "rounded-md",
-          checked ? "border-primary bg-primary text-primary-foreground" : "border-input bg-background",
+          checked
+            ? "border-primary bg-primary text-primary-foreground"
+            : "border-input bg-background",
         )}
       >
         {checked && <Check className="size-3.5" strokeWidth={3} />}

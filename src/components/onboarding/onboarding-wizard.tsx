@@ -101,12 +101,14 @@ const STARTS: { value: StartChoice; label: string; description: string }[] = [
   {
     value: "quick",
     label: "Diagnóstico rápido",
-    description: "8 a 12 minutos. Vocabulário, gramática, leitura e escuta, com perguntas que se adaptam a você.",
+    description:
+      "8 a 12 minutos. Vocabulário, gramática, leitura e escuta, com perguntas que se adaptam a você.",
   },
   {
     value: "complete",
     label: "Diagnóstico completo",
-    description: "25 a 40 minutos. Inclui escrita, fala e pronúncia para um retrato mais detalhado.",
+    description:
+      "25 a 40 minutos. Inclui escrita, fala e pronúncia para um retrato mais detalhado.",
   },
   {
     value: "from_zero",
@@ -184,7 +186,9 @@ export function OnboardingWizard({ firstName }: { firstName: string }) {
       dailyMinutes: answers.dailyMinutes,
       daysPerWeek: 5,
     });
-    const deadlineMonths = answers.targetMonth ? monthsUntil(answers.targetMonth, new Date()) : null;
+    const deadlineMonths = answers.targetMonth
+      ? monthsUntil(answers.targetMonth, new Date())
+      : null;
     const neededMinutes =
       deadlineMonths !== null && !result.alreadyThere
         ? minutesPerDayForDeadline(result.hours[0], deadlineMonths, 5)
@@ -459,7 +463,10 @@ export function OnboardingWizard({ firstName }: { firstName: string }) {
         </fieldset>
 
         {error && (
-          <p role="alert" className="text-destructive bg-destructive-soft mt-6 rounded-lg px-3 py-2 text-sm">
+          <p
+            role="alert"
+            className="text-destructive bg-destructive-soft mt-6 rounded-lg px-3 py-2 text-sm"
+          >
             {error}
           </p>
         )}

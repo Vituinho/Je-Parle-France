@@ -186,7 +186,9 @@
   /* French is always set in the serif — see <Fr>. */
   [lang="fr"] {
     font-family: var(--font-fr);
-    font-feature-settings: "kern" on, "liga" on;
+    font-feature-settings:
+      "kern" on,
+      "liga" on;
   }
   :focus-visible {
     outline: 2px solid var(--ring);
@@ -225,9 +227,21 @@
     background-color: var(--card);
     background-image:
       linear-gradient(to right, var(--seyes-margin) 0 1.5px, transparent 1.5px),
-      linear-gradient(to bottom, color-mix(in oklab, var(--seyes) 90%, transparent) 1px, transparent 1px),
-      linear-gradient(to bottom, color-mix(in oklab, var(--seyes) 45%, transparent) 1px, transparent 1px),
-      linear-gradient(to right, color-mix(in oklab, var(--seyes) 45%, transparent) 1px, transparent 1px);
+      linear-gradient(
+        to bottom,
+        color-mix(in oklab, var(--seyes) 90%, transparent) 1px,
+        transparent 1px
+      ),
+      linear-gradient(
+        to bottom,
+        color-mix(in oklab, var(--seyes) 45%, transparent) 1px,
+        transparent 1px
+      ),
+      linear-gradient(
+        to right,
+        color-mix(in oklab, var(--seyes) 45%, transparent) 1px,
+        transparent 1px
+      );
     background-size:
       100% 100%,
       32px 32px,

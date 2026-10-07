@@ -77,8 +77,12 @@ describe("time to level", () => {
 
   it("recognises a target already reached", () => {
     expect(
-      estimateTimeToLevel({ currentTheta: 3.2, targetLevel: "B1", dailyMinutes: 15, daysPerWeek: 5 })
-        .alreadyThere,
+      estimateTimeToLevel({
+        currentTheta: 3.2,
+        targetLevel: "B1",
+        dailyMinutes: 15,
+        daysPerWeek: 5,
+      }).alreadyThere,
     ).toBe(true);
   });
 
