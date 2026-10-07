@@ -152,7 +152,7 @@ export function buildPlacementReport(params: {
   // Topic-level residuals.
   const byTopic = new Map<
     string,
-    { observed: number; expected: number; difficulty: number; count: number }
+    { observed: number; expected: number; difficulty: number; count: number; guessable: boolean }
   >();
   for (const { response, item } of answeredItems) {
     if (item.bank.selfAssessment) continue;
