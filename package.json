@@ -16,7 +16,7 @@
     "content:check": "tsx scripts/check-content.ts",
     "db:local": "node scripts/db-local.mjs",
     "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate dev",
+    "db:migrate": "prisma migrate dev && prisma generate",
     "db:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
     "postinstall": "prisma generate",

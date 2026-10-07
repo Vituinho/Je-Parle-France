@@ -1,3 +1,9 @@
+// Je Parle Français — learner-state schema.
+//
+// Course content (concepts, lessons, activities, placement items) is versioned
+// data in `content/` and is referenced here by stable string IDs. This database
+// only stores what is specific to each learner. See docs/DATABASE.md.
+
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -5,4 +11,554 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+// ─── Enums ──────────────────────────────────────────────────────────────────
+
+enum Role {
+  learner
+  admin
+}
+
+enum LearningGoal {
+  move_canada
+  move_quebec
+  move_france
+  work
+  study
+  immigration
+  travel
+  exam
+  culture
+  relationship
+  personal
+  other
+}
+
+enum Destination {
+  canada_quebec
+  france
+  both
+  undecided
+}
+
+enum PriorExperience {
+  never
+  few_words
+  a_little
+  simple_conversations
+  intermediate
+  advanced
+  unknown
+}
+
+enum CorrectionMode {
+  immediate
+  important_only
+  no_interruptions
+  report_only
+}
+
+enum SupportPreference {
+  more_portuguese
+  auto
+  more_french
+}
+
+enum PlacementStatus {
+  not_started
+  skipped
+  in_progress
+  completed
+}
+
+enum Skill {
+  reading
+  listening
+  speaking
+  writing
+  vocabulary
+  grammar
+  pronunciation
+}
+
+enum Dimension {
+  recognition
+  recall
+  listening
+  writing
+  speaking
+  pronunciation
+}
+
+enum EstimateSource {
+  placement
+  self_report
+  practice
+}
+
+enum PlacementMode {
+  quick
+  complete
+}
+
+enum AttemptStatus {
+  in_progress
+  completed
+  abandoned
+}
+
+enum TraceSource {
+  lesson
+  review
+  placement_gap
+  tutor
+  practice
+  manual
+}
+
+enum LessonStatus {
+  in_progress
+  completed
+}
+
+enum PracticeContext {
+  lesson
+  review
+  session
+  lab
+}
+
+enum DailySessionStatus {
+  planned
+  in_progress
+  completed
+  abandoned
+}
+
+enum PersonalItemKind {
+  correction
+  saved_expression
+}
+
+enum ConversationMode {
+  text
+  voice
+}
+
+enum ConversationStatus {
+  active
+  ended
+}
+
+enum TurnRole {
+  learner
+  tutor
+}
+
+// ─── Auth (Better Auth core schema) ─────────────────────────────────────────
+
+model User {
+  id            String   @id
+  name          String
+  email         String   @unique
+  emailVerified Boolean  @default(false)
+  image         String?
+  role          Role     @default(learner)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  sessions          Session[]
+  accounts          Account[]
+  profile           LearnerProfile?
+  skillEstimates    SkillEstimate[]
+  placementAttempts PlacementAttempt[]
+  memoryTraces      MemoryTrace[]
+  reviewLogs        ReviewLog[]
+  lessonProgress    LessonProgress[]
+  activityAttempts  ActivityAttempt[]
+  dailySessions     DailySession[]
+  dailyActivity     DailyActivity[]
+  personalItems     PersonalItem[]
+  conversations     Conversation[]
+  speechAttempts    SpeechAttempt[]
+  studyEvents       StudyEvent[]
+  achievements      UserAchievement[]
+  usageCounters     UsageCounter[]
+
+  @@map("users")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verifications")
+}
+
+// ─── Learner profile ────────────────────────────────────────────────────────
+
+model LearnerProfile {
+  userId            String            @id
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  goals             LearningGoal[]
+  goalOther         String?
+  destination       Destination
+  priorExperience   PriorExperience
+  dailyMinutes      Int
+  /// CEFR level the learner aims for; null = "não sei".
+  targetLevel       String?
+  targetDate        DateTime?         @db.Date
+  correctionMode    CorrectionMode    @default(important_only)
+  supportPreference SupportPreference @default(auto)
+  timezone          String            @default("America/Sao_Paulo")
+  /// Days per week the learner aims to study (healthy-streak weekly goal).
+  weeklyGoalDays    Int               @default(5)
+  /// Content lesson where the learner's core path starts (placement result or manual choice).
+  startLessonId     String?
+  placementStatus   PlacementStatus   @default(not_started)
+  /// Opt-in: keep speech recordings (default off — LGPD data minimisation).
+  keepRecordings    Boolean           @default(false)
+  onboardedAt       DateTime?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  @@map("learner_profiles")
+}
+
+/// Per-skill ability on the continuous CEFR scale (A0 = 0…1, A1 = 1…2, …).
+model SkillEstimate {
+  userId    String
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skill     Skill
+  theta     Float
+  /// Posterior standard deviation — lower is more certain.
+  sd        Float
+  source    EstimateSource
+  assessed  Boolean        @default(true)
+  updatedAt DateTime       @updatedAt
+
+  @@id([userId, skill])
+  @@map("skill_estimates")
+}
+
+// ─── Placement ──────────────────────────────────────────────────────────────
+
+model PlacementAttempt {
+  id            String              @id @default(cuid())
+  userId        String
+  user          User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mode          PlacementMode
+  status        AttemptStatus       @default(in_progress)
+  /// Skills covered; a partial retake lists only the retaken skills.
+  skills        Skill[]
+  /// Item currently shown (so a refresh shows the same item).
+  currentItemId String?
+  report        Json?
+  startedAt     DateTime            @default(now())
+  completedAt   DateTime?
+  responses     PlacementResponse[]
+
+  @@index([userId, startedAt])
+  @@map("placement_attempts")
+}
+
+model PlacementResponse {
+  id         String           @id @default(cuid())
+  attemptId  String
+  attempt    PlacementAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  itemId     String
+  skill      Skill
+  /// Score in [0, 1]; partial credit allowed.
+  score      Float
+  /// False when the item could not be scored (e.g. no speech provider).
+  scored     Boolean          @default(true)
+  answer     Json?
+  durationMs Int?
+  createdAt  DateTime         @default(now())
+
+  @@unique([attemptId, itemId])
+  @@index([itemId])
+  @@map("placement_responses")
+}
+
+// ─── Memory & mastery ───────────────────────────────────────────────────────
+
+/// One FSRS card per learner × concept × dimension. Mastery states are derived.
+model MemoryTrace {
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Content concept id (lex:…, gram:…) or personal:<PersonalItem.id>.
+  conceptId     String
+  dimension     Dimension
+  due           DateTime
+  stability     Float
+  difficulty    Float
+  elapsedDays   Int
+  scheduledDays Int
+  learningSteps Int
+  reps          Int
+  lapses        Int
+  /// FSRS state: 0 New, 1 Learning, 2 Review, 3 Relearning.
+  state         Int
+  lastReview    DateTime?
+  attempts      Int         @default(0)
+  successes     Int         @default(0)
+  lastScore     Float?
+  source        TraceSource
+  introducedAt  DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@id([userId, conceptId, dimension])
+  @@index([userId, due])
+  @@map("memory_traces")
+}
+
+/// FSRS review log, kept for future parameter optimisation.
+model ReviewLog {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conceptId     String
+  dimension     Dimension
+  rating        Int
+  state         Int
+  due           DateTime
+  stability     Float
+  difficulty    Float
+  elapsedDays   Int
+  scheduledDays Int
+  learningSteps Int
+  reviewedAt    DateTime
+  activityId    String?
+
+  @@index([userId, reviewedAt])
+  @@map("review_logs")
+}
+
+// ─── Practice ───────────────────────────────────────────────────────────────
+
+model LessonProgress {
+  userId      String
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId    String
+  status      LessonStatus @default(in_progress)
+  stepIndex   Int          @default(0)
+  score       Float?
+  runs        Int          @default(1)
+  startedAt   DateTime     @default(now())
+  completedAt DateTime?
+  updatedAt   DateTime     @updatedAt
+
+  @@id([userId, lessonId])
+  @@map("lesson_progress")
+}
+
+model ActivityAttempt {
+  id         String          @id @default(cuid())
+  userId     String
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Content activity id, or a generated review id (review:<concept>:<dimension>).
+  activityId String
+  lessonId   String?
+  sessionId  String?
+  context    PracticeContext
+  type       String
+  score      Float
+  correct    Boolean
+  durationMs Int?
+  /// Minimal learner response for analytics; never audio.
+  response   Json?
+  createdAt  DateTime        @default(now())
+
+  @@index([userId, createdAt])
+  @@index([activityId])
+  @@map("activity_attempts")
+}
+
+model DailySession {
+  id             String             @id @default(cuid())
+  userId         String
+  user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Learner-local calendar date (YYYY-MM-DD).
+  localDate      String
+  plannedMinutes Int
+  plan           Json
+  cursor         Int                @default(0)
+  status         DailySessionStatus @default(planned)
+  activeSeconds  Int                @default(0)
+  createdAt      DateTime           @default(now())
+  startedAt      DateTime?
+  completedAt    DateTime?
+
+  @@index([userId, localDate])
+  @@map("daily_sessions")
+}
+
+/// Per-day aggregate used for streaks, weekly goals and the dashboard.
+model DailyActivity {
+  userId              String
+  user                User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  localDate           String
+  studySeconds        Int     @default(0)
+  activitiesCompleted Int     @default(0)
+  reviewsDone         Int     @default(0)
+  newConcepts         Int     @default(0)
+  listeningSeconds    Int     @default(0)
+  speakingSeconds     Int     @default(0)
+  sessionCompleted    Boolean @default(false)
+
+  @@id([userId, localDate])
+  @@map("daily_activity")
+}
+
+/// Learner-specific reviewable items, e.g. corrections from tutor conversations.
+model PersonalItem {
+  id             String           @id @default(cuid())
+  userId         String
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind           PersonalItemKind
+  /// The correct French form.
+  french         String
+  /// What the learner produced, for corrections.
+  wrong          String?
+  portuguese     String?
+  explanation    String?
+  conversationId String?
+  createdAt      DateTime         @default(now())
+
+  @@index([userId, createdAt])
+  @@map("personal_items")
+}
+
+// ─── Tutor ──────────────────────────────────────────────────────────────────
+
+model Conversation {
+  id             String             @id @default(cuid())
+  userId         String
+  user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scenarioId     String?
+  mode           ConversationMode   @default(text)
+  correctionMode CorrectionMode
+  status         ConversationStatus @default(active)
+  level          String
+  report         Json?
+  createdAt      DateTime           @default(now())
+  endedAt        DateTime?
+  turns          ConversationTurn[]
+
+  @@index([userId, createdAt])
+  @@map("conversations")
+}
+
+model ConversationTurn {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           TurnRole
+  content        String
+  /// Inline corrections shown for this learner turn (per correction mode).
+  corrections    Json?
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId, createdAt])
+  @@map("conversation_turns")
+}
+
+// ─── Speech ─────────────────────────────────────────────────────────────────
+
+model SpeechAttempt {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  targetText   String
+  activityId   String?
+  provider     String
+  transcript   String?
+  scores       Json
+  /// Object-storage key, only when the learner opted in to keep recordings.
+  recordingKey String?
+  durationMs   Int?
+  createdAt    DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@map("speech_attempts")
+}
+
+// ─── Analytics, motivation, quotas ──────────────────────────────────────────
+
+model StudyEvent {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  payload   Json?
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([type, createdAt])
+  @@map("study_events")
+}
+
+model UserAchievement {
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievementId String
+  earnedAt      DateTime @default(now())
+
+  @@id([userId, achievementId])
+  @@map("user_achievements")
+}
+
+/// Per-user usage counters for AI quotas and rate limits (key = "<feature>:<window>").
+model UsageCounter {
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  key       String
+  count     Int      @default(0)
+  units     Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  @@id([userId, key])
+  @@map("usage_counters")
 }
