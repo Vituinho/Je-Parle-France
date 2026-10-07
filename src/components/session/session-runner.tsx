@@ -1,0 +1,214 @@
+"use client";
+
+import { X } from "lucide-react";
+import Link from "next/link";
+import { useState, useTransition } from "react";
+import { completeBlockAction, extraSessionAction } from "@/app/(focus)/sessao/actions";
+import { Fr } from "@/components/fr";
+import { LessonPlayer } from "@/components/lesson/lesson-player";
+import { ReviewPlayer } from "@/components/lesson/review-player";
+import { LineProgress } from "@/components/line-progress";
+import { Button } from "@/components/ui/button";
+import type { ConceptLabel } from "@/lib/content/repository";
+import type { ClientActivity } from "@/lib/learning/activities/client";
+import type { SupportMode } from "@/lib/learning/language-support";
+import type { PreparedReviewItem } from "@/server/services/review";
+
+export type BlockPayload = { title: string; reason: string; seconds: number } & (
+  | { kind: "review" | "focus"; items: PreparedReviewItem[] }
+  | {
+      kind: "lesson";
+      lessonId: string;
+      lessonTitle: string;
+      steps: ClientActivity[];
+      startAt: number;
+      maxSteps?: number;
+      conceptLabels: Record<string, ConceptLabel>;
+    }
+  | { kind: "conversation"; scenarioId: string }
+);
+
+const minutesLabel = (seconds: number) => `${Math.max(1, Math.round(seconds / 60))} min`;
+
+/**
+ * The daily session: an overview drawn as a métro line, then each block in
+ * order. Progress is saved after every block, so the learner can stop and
+ * come back later the same day.
+ */
+export function SessionRunner({
+  sessionId,
+  date,
+  plannedMinutes,
+  blocks,
+  initialCursor,
+  support,
+  extra,
+}: {
+  sessionId: string;
+  date: string;
+  plannedMinutes: number;
+  blocks: BlockPayload[];
+  initialCursor: number;
+  support: SupportMode;
+  extra: boolean;
+}) {
+  const [cursor, setCursor] = useState(initialCursor);
+  const [playing, setPlaying] = useState(false);
+  const [pending, startTransition] = useTransition();
+  const finished = cursor >= blocks.length;
+  const block = blocks[cursor];
+
+  function blockDone() {
+    startTransition(async () => {
+      const result = await completeBlockAction({ sessionId, blockIndex: cursor });
+      setCursor(result.cursor ?? cursor + 1);
+      setPlaying(false);
+    });
+  }
+
+  if (playing && block && !pending) {
+    if (block.kind === "lesson") {
+      return (
+        <LessonPlayer
+          lessonId={block.lessonId}
+          title={block.lessonTitle}
+          steps={block.steps}
+          startAt={block.startAt}
+          maxSteps={block.maxSteps}
+          support={support}
+          conceptLabels={block.conceptLabels}
+          exitHref="/hoje"
+          sessionId={sessionId}
+          onFinished={blockDone}
+        />
+      );
+    }
+    if (block.kind === "review" || block.kind === "focus") {
+      return (
+        <ReviewPlayer
+          items={block.items}
+          date={date}
+          support={support}
+          title={block.title}
+          exitHref="/hoje"
+          sessionId={sessionId}
+          onFinished={blockDone}
+        />
+      );
+    }
+  }
+
+  const stations = blocks.map((item, index) => ({
+    id: `${index}`,
+    label: item.title,
+    detail:
+      index === cursor && !finished
+        ? `${minutesLabel(item.seconds)} · ${item.reason}`
+        : minutesLabel(item.seconds),
+    state: (index < cursor ? "done" : index === cursor ? "current" : "upcoming") as
+      "done" | "current" | "upcoming",
+  }));
+
+  return (
+    <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-5 pt-5 pb-8 sm:px-8">
+      <header className="flex items-center justify-between">
+        <Button asChild variant="ghost" size="icon-lg" aria-label="Voltar para hoje">
+          <Link href="/hoje">
+            <X />
+          </Link>
+        </Button>
+        <span className="text-muted-foreground text-sm">
+          {extra ? "Prática extra" : "Sessão de hoje"}
+        </span>
+      </header>
+
+      {finished ? (
+        <div className="mt-10">
+          <Fr as="p" className="text-primary text-2xl">
+            {"Bravo, c'est fait !"}
+          </Fr>
+          <h1 className="mt-1 text-[2rem] leading-tight font-bold">Sessão concluída</h1>
+          <p className="text-muted-foreground mt-3 text-lg leading-relaxed">
+            Tudo o que você praticou já foi reagendado. Amanhã a sessão muda conforme o que você
+            acertou e errou hoje.
+          </p>
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <Button asChild className="h-12 rounded-xl px-6 text-base">
+              <Link href="/hoje">Voltar para hoje</Link>
+            </Button>
+            <form action={extraSessionAction}>
+              <Button
+                type="submit"
+                variant="outline"
+                className="h-12 w-full rounded-xl px-6 text-base"
+              >
+                Praticar mais um pouco
+              </Button>
+            </form>
+          </div>
+        </div>
+      ) : (
+        <div className="mt-8 flex flex-1 flex-col">
+          <Fr as="p" className="text-primary text-xl">
+            {cursor === 0 ? "On y va ?" : "On continue ?"}
+          </Fr>
+          <h1 className="mt-1 text-[2rem] leading-tight font-bold">
+            {cursor === 0
+              ? `Sua sessão de hoje · ~${plannedMinutes} min`
+              : `Próximo: ${block?.title}`}
+          </h1>
+          <LineProgress
+            orientation="vertical"
+            stations={stations}
+            className="mt-8"
+            ariaLabel="Etapas da sessão"
+          />
+
+          {block?.kind === "conversation" ? (
+            <div className="border-border bg-card mt-6 rounded-2xl border p-5">
+              <p className="font-semibold">{block.title}</p>
+              <p className="text-muted-foreground mt-1">{block.reason}</p>
+              <div className="mt-4 flex flex-wrap gap-3">
+                <Button asChild className="h-11 rounded-xl px-5">
+                  <Link href={`/tutor?cenario=${block.scenarioId}&sessao=${sessionId}`}>
+                    Abrir conversa
+                  </Link>
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11 rounded-xl px-5"
+                  onClick={blockDone}
+                >
+                  Pular por hoje
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-background/95 sticky bottom-0 mt-auto pt-8 pb-2 backdrop-blur">
+              <Button
+                type="button"
+                onClick={() => {
+                  // A review block can end up empty if its items were reviewed elsewhere today.
+                  if (
+                    block &&
+                    (block.kind === "review" || block.kind === "focus") &&
+                    block.items.length === 0
+                  ) {
+                    blockDone();
+                    return;
+                  }
+                  setPlaying(true);
+                }}
+                disabled={pending || !block}
+                className="h-12 w-full rounded-xl text-base"
+              >
+                {pending ? "Salvando…" : cursor === 0 ? "Começar" : "Continuar"}
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

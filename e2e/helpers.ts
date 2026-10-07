@@ -41,17 +41,17 @@ export async function completeOnboarding(
 
 /**
  * Answers whatever activity is on screen (not necessarily correctly), then
- * checks it. Used to walk through lessons and sessions end to end.
+ * checks it. All locators are scoped to the active step: with Cache Components
+ * Next.js keeps previously visited routes mounted but hidden.
  */
 export async function answerCurrentStep(page: Page) {
-  const step = page.locator("form[data-step]");
-  await expect(step).toBeVisible();
+  const step = page.locator("form[data-step]:visible");
+  await expect(step).toHaveCount(1);
   const stepId = await step.getAttribute("data-step");
-  const continueButton = page.getByRole("button", { name: "Continuar", exact: true });
+  const continueButton = step.getByRole("button", { name: "Continuar", exact: true });
   const next = async () => {
     await continueButton.click();
-    // Wait until the next step (or the end screen) replaced this one.
-    await expect(page.locator(`form[data-step="${stepId}"][data-checked]`))
+    await expect(page.locator(`form[data-step="${stepId}"]:visible`))
       .toHaveCount(0, { timeout: 20_000 })
       .catch(() => undefined);
   };
@@ -59,35 +59,29 @@ export async function answerCurrentStep(page: Page) {
     await next();
     return;
   }
-  const pairs = page.locator("button[aria-pressed]");
+  const pairs = step.locator("button[aria-pressed]");
   const pairCount = await pairs.count();
-  if (pairCount > 0) {
-    for (let i = 0; i < pairCount; i += 1) {
-      await pairs.nth(i).click();
-      await page.locator("ul").nth(1).locator("button").nth(i).click();
-    }
+  for (let i = 0; i < pairCount; i += 1) {
+    await pairs.nth(i).click();
+    await step.locator("ul").nth(1).locator("button").nth(i).click();
   }
-  const bank = page.getByLabel("Palavras disponíveis").locator("button:enabled");
+  const bank = step.getByLabel("Palavras disponíveis").locator("button:enabled");
   while ((await bank.count()) > 0) await bank.first().click();
-  const radios = page.locator("label:has(input[type=radio]:enabled)");
-  if ((await radios.count()) > 0) {
-    const groups = await page.locator("fieldset, [role=radiogroup]").count();
-    // Answer every question group: pick the first option of each radio name.
-    const names = await radios.evaluateAll((labels) => [
+  const names = await step
+    .locator("label:has(input[type=radio]:enabled)")
+    .evaluateAll((labels) => [
       ...new Set(labels.map((label) => label.querySelector("input")?.getAttribute("name") ?? "")),
     ]);
-    for (const name of names) {
-      await page.locator(`label:has(input[type=radio][name="${name}"])`).first().click();
-    }
-    void groups;
+  for (const name of names) {
+    await step.locator(`label:has(input[type=radio][name="${name}"])`).first().click();
   }
-  const checkboxes = page.locator("label:has(input[type=checkbox]:enabled)");
+  const checkboxes = step.locator("label:has(input[type=checkbox]:enabled)");
   if ((await checkboxes.count()) > 0) await checkboxes.first().click();
-  const fields = page.locator("input[lang=fr]:enabled, textarea[lang=fr]:enabled");
+  const fields = step.locator("input[lang=fr]:enabled, textarea[lang=fr]:enabled");
   for (let i = 0; i < (await fields.count()); i += 1) {
     if (!(await fields.nth(i).inputValue())) await fields.nth(i).fill("bonjour");
   }
-  await page.getByRole("button", { name: "Verificar" }).click();
+  await step.getByRole("button", { name: "Verificar" }).click();
   await expect(step).toHaveAttribute("data-checked", "true", { timeout: 20_000 });
   await next();
 }

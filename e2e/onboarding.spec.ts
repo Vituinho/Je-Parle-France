@@ -6,7 +6,8 @@ test("a beginner signs up, answers onboarding and lands on today's page", async 
   await expect(page.getByText("Pourquoi le français ?")).toBeVisible();
   await completeOnboarding(page, { experience: "Nunca estudei francês", start: "Começar do zero" });
   await expect(page).toHaveURL(/\/hoje$/);
-  await expect(page.getByRole("heading", { level: 1 })).toContainText(learner.name);
+  await expect(page.getByRole("heading", { level: 1 })).toContainText(learner.name.split(" ")[0]!);
+  await expect(page.getByRole("link", { name: "Começar a sessão de hoje" })).toBeVisible();
 });
 
 test("unauthenticated visitors are sent to sign in", async ({ page }) => {

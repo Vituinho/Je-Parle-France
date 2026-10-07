@@ -28,6 +28,8 @@ export interface LessonPlayerProps {
   conceptLabels: Record<string, ConceptLabel>;
   exitHref: string;
   sessionId?: string;
+  /** Micro-lesson: stop after this many steps and keep the rest for later. */
+  maxSteps?: number;
   /** Called instead of showing the summary (daily session continues to the next block). */
   onFinished?: (summary: { score: number; changes: MasteryChange[] }) => void;
 }
@@ -45,12 +47,14 @@ export function LessonPlayer({
   conceptLabels,
   exitHref,
   sessionId,
+  maxSteps,
   onFinished,
 }: LessonPlayerProps) {
-  const initialQueue = useMemo(
-    () => steps.map((_, index) => index).slice(Math.min(startAt, steps.length - 1)),
-    [steps, startAt],
-  );
+  const initialQueue = useMemo(() => {
+    const from = Math.min(startAt, steps.length - 1);
+    const to = maxSteps ? Math.min(steps.length, from + maxSteps) : steps.length;
+    return steps.map((_, index) => index).slice(from, to);
+  }, [steps, startAt, maxSteps]);
   const [queue, setQueue] = useState(initialQueue);
   const [position, setPosition] = useState(0);
   const [firstScores, setFirstScores] = useState<Record<number, number>>({});
@@ -69,6 +73,13 @@ export function LessonPlayer({
     async (scores: Record<number, number>, allChanges: MasteryChange[]) => {
       const values = Object.values(scores);
       const score = values.length ? values.reduce((sum, v) => sum + v, 0) / values.length : 1;
+      const lastPlanned = initialQueue.at(-1) ?? 0;
+      if (lastPlanned < steps.length - 1) {
+        // Micro-lesson: remember where to resume tomorrow; the lesson is not complete yet.
+        await saveStepAction({ lessonId, stepIndex: lastPlanned + 1 });
+        onFinished?.({ score, changes: allChanges });
+        return;
+      }
       const next = await completeLessonAction({ lessonId, score });
       if (onFinished) {
         onFinished({ score, changes: allChanges });
@@ -76,7 +87,7 @@ export function LessonPlayer({
       }
       setFinished({ score, next });
     },
-    [lessonId, onFinished],
+    [initialQueue, lessonId, onFinished, steps.length],
   );
 
   const advance = useCallback(

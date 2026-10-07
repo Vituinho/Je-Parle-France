@@ -20,9 +20,9 @@ Status vocabulary: **complete** · **mocked** (real interface + adapter, dev moc
 | Deterministic graders | complete | French-aware text comparison, red-pen diffs |
 | A0 curriculum | complete | Module A0.1: 4 units, 14 lessons, 115 activities, 44 concepts (greetings, tu/vous, sounds, numbers, café) |
 | Lesson player + activity engine | complete | 15 activity types, server-side grading, missed items re-queued once, honest summary; browser TTS with a single notice when no French voice |
-| Daily session planner | planned | |
-| Dashboard | planned | |
-| Review session | planned | |
+| Daily session planner | complete | Duration-aware composition, backlog handling, cognitive-load caps, destination tracks, skill rotation |
+| Dashboard | complete | One primary action, mastery-based progress per skill, weekly goal with rest days, weekly numbers |
+| Review session | complete | Per-day generated exercises for every concept × dimension, tutor corrections included |
 | Audio / TTS | planned | |
 | Pronunciation lab | planned | |
 | AI tutor (text) | planned | |
