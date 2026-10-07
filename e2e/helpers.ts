@@ -36,6 +36,7 @@ export async function completeOnboarding(
   await page.getByRole("button", { name: "Continuar" }).click();
   await page.getByText(options.start, { exact: true }).click();
   await page.getByRole("button", { name: "Montar meu plano" }).click();
+  await page.waitForURL((url) => !url.pathname.startsWith("/comecar"), { timeout: 30_000 });
 }
 
 /**
