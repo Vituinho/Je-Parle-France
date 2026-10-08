@@ -13,7 +13,7 @@ Course
 │       └── Unit (one can-do objective, optional tutor mission)
 │           └── Lesson (5–8 min: teach → recognise → produce)
 │               └── Activity (15 types, each targets concept × dimension)
-├── Placement bank  125 calibrated items                          (content/placement/)
+├── Placement bank  125 items (authored difficulty estimates)     (content/placement/)
 └── Scenarios       tutor roleplays tied to units                 (content/scenarios.ts)
 ```
 
