@@ -34,16 +34,8 @@ function createAuth() {
       // password, which Better Auth verifies. All data cascades from users.
       deleteUser: { enabled: true },
     },
-    databaseHooks: {
-      user: {
-        create: {
-          before: async (user) => {
-            const isAdmin = env.ADMIN_EMAILS.includes(user.email.toLowerCase());
-            return { data: { ...user, role: isAdmin ? "admin" : "learner" } };
-          },
-        },
-      },
-    },
+    // Sign-up emails are unverified. Admin roles are provisioned by an operator
+    // in the database after verifying the person's identity, never by sign-up.
     rateLimit: { enabled: env.NODE_ENV === "production", window: 60, max: 30 },
     telemetry: { enabled: false },
     plugins: [nextCookies()],

@@ -19,12 +19,6 @@ const serverEnvSchema = z
     DATABASE_URL: z.string().url(),
     BETTER_AUTH_SECRET: z.string().min(32, "BETTER_AUTH_SECRET must be at least 32 characters"),
     BETTER_AUTH_URL: z.preprocess(emptyToUndefined, z.string().url().optional()),
-    ADMIN_EMAILS: z.preprocess(emptyToUndefined, z.string().optional()).transform((value) =>
-      (value ?? "")
-        .split(",")
-        .map((email) => email.trim().toLowerCase())
-        .filter(Boolean),
-    ),
     LLM_PROVIDER: z.enum(["anthropic", "mock"]).default("mock"),
     ANTHROPIC_API_KEY: optionalString,
     /** Claude model for the tutor. Defaults to the current Opus; set a cheaper model to reduce cost. */

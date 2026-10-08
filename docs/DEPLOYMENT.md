@@ -15,7 +15,6 @@ works (`npm run build && npm start`).
    | `DATABASE_URL`                                               | yes      | Pooled connection string when the provider offers one                                            |
    | `BETTER_AUTH_SECRET`                                         | yes      | ≥ 32 random characters; rotating it signs everyone out                                           |
    | `BETTER_AUTH_URL`                                            | yes      | The public origin, e.g. `https://jeparlefrancais.app` (requests from other origins are rejected) |
-   | `ADMIN_EMAILS`                                               | no       | Comma-separated; these accounts get the admin role on sign-up                                    |
    | `LLM_PROVIDER`, `ANTHROPIC_API_KEY`, `LLM_MODEL`             | no       | Without them the tutor runs the labelled mock                                                    |
    | `TUTOR_DAILY_TURNS`, `TUTOR_DAILY_REPORTS`                   | no       | Per-learner daily quotas (cost control)                                                          |
    | `SPEECH_PROVIDER`, `AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION` | no       | Without them: browser voices, self-rated pronunciation, no STT                                   |
@@ -56,10 +55,15 @@ tests run locally (`npm run test:e2e`, which starts the dev server) or against a
 
 ## Operations
 
-| Task                        | How                                                                                     |
-| --------------------------- | --------------------------------------------------------------------------------------- |
-| Make someone admin          | Add the e-mail to `ADMIN_EMAILS` before they sign up, or update `users.role`            |
-| Learner asks for their data | They can export it themselves in `/conta` (JSON)                                        |
-| Learner asks for deletion   | Self-service in `/conta`; an operator can delete the `users` row — every table cascades |
-| Rotate the auth secret      | Change `BETTER_AUTH_SECRET` and redeploy; all sessions end                              |
-| Lower AI cost               | Set `LLM_MODEL` to a smaller model and/or lower the daily quotas                        |
+| Task                        | How                                                                                                              |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Make someone admin          | Verify the person's identity, then update that account's `users.role` to `admin` through trusted database access |
+| Learner asks for their data | They can export it themselves in `/conta` (JSON)                                                                 |
+| Learner asks for deletion   | Self-service in `/conta`; an operator can delete the `users` row — every table cascades                          |
+| Rotate the auth secret      | Change `BETTER_AUTH_SECRET` and redeploy; all sessions end                                                       |
+| Lower AI cost               | Set `LLM_MODEL` to a smaller model and/or lower the daily quotas                                                 |
+
+`ADMIN_EMAILS` is no longer used. Email addresses supplied at sign-up are unverified and must
+never grant administrative access. Existing admin accounts retain their roles; review any
+accounts previously promoted automatically. Email verification and recovery still need an
+email provider.
