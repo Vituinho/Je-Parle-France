@@ -10,11 +10,11 @@ assessment, **not** an official certification; the report says so.
 
 ## Modes
 
-| Mode         | Duration                  | Objective blocks                                                                                                             | Self-assessment                       |
-| ------------ | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
-| Quick        | ~8–12 min (≈ 14–24 items) | vocabulary, grammar, reading, listening                                                                                      | speaking, writing (can-do statements) |
-| Complete     | ~25–40 min                | + writing (constrained production), pronunciation (minimal-pair perception), speaking (when a speech provider is configured) | speaking, when no speech provider     |
-| Skill retake | ~4–8 items                | the chosen skill only, starting from the current estimate                                                                    | —                                     |
+| Mode         | Duration                  | Objective blocks                                                                                                        | Self-assessment                       |
+| ------------ | ------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| Quick        | ~8–12 min (≈ 14–24 items) | vocabulary, grammar, reading, listening                                                                                 | speaking, writing (can-do statements) |
+| Complete     | ~25–40 min                | + writing (constrained production); pronunciation perception and scripted speaking when a speech provider is configured | speaking, when no speech provider     |
+| Skill retake | ~4–8 items                | the chosen skill only, starting from the current estimate                                                               | —                                     |
 
 ## Scale
 
@@ -53,8 +53,13 @@ Exposure control: one of the top-3 items is chosen with a PRNG seeded by
 `attemptId:responseCount`, so the sequence is reproducible and responses are the single source
 of truth (the engine can always recompute the next item and every estimate).
 
-Items that need an unavailable capability (`speech` for spoken items, `ai` for open writing) are
-never served. Spoken items are scored from the learner's own stored pronunciation assessment
+Items that need an unavailable capability are never served. Open writing is not selected:
+the tutor LLM is implemented, but a placement writing grader is not. Writing uses constrained
+answers. Minimal-pair assessment requires server audio: only an opaque, authenticated URL for
+the current item reaches the client (`/api/placement/audio`), never the correct played word.
+Without the speech provider pronunciation is reported as not assessed; browser synthesis
+remains available for learning exercises, where it is useful rather than an assessment secret.
+Spoken items are scored from the learner's own stored pronunciation assessment
 (transcript recall and the provider's overall score, 50/50), resolved on the server from its id —
 a transcript or score sent by the browser is ignored (`server/services/speech-evidence.ts`).
 The stored assessment must be recent, successful, produced by the real provider and match
@@ -111,7 +116,8 @@ Known weaknesses, in priority order:
   cell and the C1 estimate rests on few responses; pronunciation has 1 B2 item and none at C1
   (perception drills discriminate poorly above B1 — this is a deliberate cap, reported as such).
 - **Few speaking and writing items are objectively scored.** Without a speech provider, speaking
-  is self-assessed; open writing needs the AI provider. Most writing items are short typed
+  is self-assessed and pronunciation is not assessed; open-writing grading is not implemented.
+  Most writing items are short typed
   answers (form, not composition).
 - **Regional content.** 6 items are Québec-specific and none France-specific; the rest are
   neutral French. Fine for level, weak for destination readiness.

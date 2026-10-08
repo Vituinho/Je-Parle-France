@@ -61,7 +61,12 @@ function engineState(
   attempt: { id: string; plan: Prisma.JsonValue },
   responses: ResponseRecord[],
 ): EngineState {
-  return { plan: attempt.plan as unknown as PlacementPlan, responses, seed: attempt.id };
+  const plan = attempt.plan as unknown as PlacementPlan;
+  return {
+    plan: { ...plan, capabilities: { ...plan.capabilities, ai: false } },
+    responses,
+    seed: attempt.id,
+  };
 }
 
 async function loadAttempt(userId: string, attemptId: string) {
@@ -106,9 +111,15 @@ export async function startPlacement(
   const plan = createPlan({
     mode,
     prior,
-    capabilities: { speech: capabilities.speechRecognition, ai: capabilities.llm },
+    // The tutor's LLM is not an open-writing grader. Do not select ungradable items.
+    capabilities: {
+      speech: capabilities.pronunciationAssessment && capabilities.serverTts,
+      ai: false,
+    },
     onlySkills,
   });
+  if (!capabilities.serverTts)
+    plan.skills = plan.skills.filter((skill) => skill !== "pronunciation");
 
   // Abandon older unfinished attempts so only one is active.
   await db.placementAttempt.updateMany({
@@ -174,7 +185,9 @@ export async function loadPlacement(userId: string, attemptId: string): Promise<
     mode: state.plan.mode,
     itemId: item.id,
     skill: item.skill,
-    activity: toClientActivity(item.activity, attemptId),
+    activity: toClientActivity(item.activity, attemptId, {
+      minimalPairAudioUrl: `/api/placement/audio?attemptId=${encodeURIComponent(attemptId)}&itemId=${encodeURIComponent(item.id)}`,
+    }),
     phase: step.phase,
     blocks: blocksOf(state.plan),
     block: step.block,

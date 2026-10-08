@@ -25,7 +25,7 @@ const MODES = [
     title: "Diagnóstico completo",
     duration: "25 a 40 minutos",
     cta: "Começar o completo",
-    text: "Tudo do rápido, mais escrita, percepção dos sons do francês e — quando o reconhecimento de fala estiver ativo — fala.",
+    text: "Tudo do rápido, mais escrita com respostas curtas. Quando o serviço de fala estiver ativo, também mede percepção dos sons e leitura em voz alta. Sem ele, a fala entra como autoavaliação e a pronúncia fica não avaliada.",
   },
 ] as const;
 

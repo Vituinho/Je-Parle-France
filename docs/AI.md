@@ -88,6 +88,12 @@ Secrets are read only on the server (`src/lib/env.ts`). The browser learns three
 - Grading never trusts client-sent transcripts or scores: speaking answers reference a
   `speechAttemptId`, and the server reads transcript and score from its own record (≤ 30 min old,
   same learner). Score = ½ word recall + ½ pronunciation accuracy.
+  The saved reference must also match the current exercise, and the provider result must be
+  successful with a valid overall score. Self-ratings never score objective placement items.
+
+Placement perception audio uses `/api/placement/audio` with attempt/item identifiers only;
+the correct played word stays server-side. It requires a real speech provider. The tutor's
+LLM capability does not enable open-writing assessment, whose grader is still unimplemented.
 
 ## Planned
 

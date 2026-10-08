@@ -103,7 +103,20 @@ export function MinimalPairRenderer({
   return (
     <div className="space-y-6">
       <div className="flex justify-center py-2">
-        <AudioButton size="lg" lines={[{ text: activity.playText, region: activity.region }]} />
+        {activity.audioUrl ? (
+          <audio
+            controls
+            preload="none"
+            src={activity.audioUrl}
+            aria-label="Ouvir a palavra do diagnóstico"
+            className="max-w-full"
+          />
+        ) : (
+          <AudioButton
+            size="lg"
+            lines={[{ text: activity.playText ?? "", region: activity.region }]}
+          />
+        )}
       </div>
       <div role="radiogroup" className="grid grid-cols-2 gap-3">
         {activity.pair.map((word, index) => {

@@ -75,10 +75,10 @@ function methodFor(
   if (estimate.selfAssessedOnly) return "self_assessment";
   if (skill === "pronunciation") {
     const answered = items.filter((item) => item.bank.skill === "pronunciation");
-    // Without a speech provider pronunciation is measured through perception only.
+    // Secure server audio does not turn a perception drill into production evidence.
     if (
       !plan.capabilities.speech ||
-      answered.every((item) => !item.bank.requires.includes("speech"))
+      answered.every((item) => item.bank.perception ?? !item.bank.requires.includes("speech"))
     ) {
       return "perception";
     }

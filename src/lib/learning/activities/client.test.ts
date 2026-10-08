@@ -45,6 +45,26 @@ describe("client activities", () => {
     expect(orders.size).toBeGreaterThan(1);
   });
 
+  it("keeps the played word out of a placement minimal-pair payload", () => {
+    const activity = make("minimal_pair", {
+      id: "p1",
+      type: "minimal_pair",
+      pair: [
+        { word: "tu", ipa: "/ty/" },
+        { word: "tout", ipa: "/tu/" },
+      ],
+      answer: 0,
+    });
+    const client = toClientActivity(activity, "s", {
+      minimalPairAudioUrl: "/api/placement/audio?attemptId=a&itemId=p1",
+    });
+    expect(client).not.toHaveProperty("playText");
+    expect(client).not.toHaveProperty("answer");
+    expect(client).toHaveProperty("audioUrl", "/api/placement/audio?attemptId=a&itemId=p1");
+    // The learning exercise still supports browser synthesis outside placement.
+    expect(toClientActivity(activity, "s")).toHaveProperty("playText", "tu");
+  });
+
   it("maps a displayed choice back to the authored index for grading", () => {
     const client = toClientActivity(choice, "s");
     if (client.type !== "choice") throw new Error("unexpected type");

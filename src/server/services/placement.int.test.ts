@@ -108,6 +108,65 @@ describe.skipIf(!hasTestDatabase)("placement service", () => {
     expect(stored).toMatchObject({ score: 0, scored: true });
   });
 
+  it("does not select open writing merely because the tutor LLM is configured", async () => {
+    vi.spyOn(capabilities, "getCapabilities").mockReturnValue({
+      speechRecognition: false,
+      pronunciationAssessment: false,
+      serverTts: false,
+      llm: true,
+    });
+    const user = await onboardedUser();
+    const attemptId = await startPlacement(user.id, "complete");
+    const stored = await db.placementAttempt.findUniqueOrThrow({ where: { id: attemptId } });
+    expect(stored.plan).toMatchObject({
+      capabilities: { ai: false },
+      selfAssessSkills: ["speaking"],
+    });
+    expect((stored.plan as { skills: string[] }).skills).not.toContain("pronunciation");
+    await takeTest(user.id, attemptId, 5.6);
+    const responses = await db.placementResponse.findMany({ where: { attemptId } });
+    expect(
+      responses.every(
+        (r) => getContent().placementItems.get(r.itemId)!.activity.type !== "open_writing",
+      ),
+    ).toBe(true);
+    expect(
+      (await getPlacementReport(user.id, attemptId))!.report.skills.find(
+        (s) => s.skill === "pronunciation",
+      )?.method,
+    ).toBe("not_assessed");
+    // Advanced results persist the highest authored level, not the first A0 lesson.
+    expect(
+      (await db.learnerProfile.findUniqueOrThrow({ where: { userId: user.id } })).startLessonId,
+    ).toMatch(/^b1-/);
+  });
+
+  it("serves a perception item with opaque audio and labels the result as perception", async () => {
+    vi.spyOn(capabilities, "getCapabilities").mockReturnValue({
+      speechRecognition: true,
+      pronunciationAssessment: true,
+      serverTts: true,
+      llm: false,
+    });
+    const user = await onboardedUser();
+    const attemptId = await startPlacement(user.id, "skill", ["pronunciation"]);
+    const view = await loadPlacement(user.id, attemptId);
+    if (view.status !== "in_progress") throw new Error("expected an item");
+    expect(view.activity).toMatchObject({ type: "minimal_pair" });
+    expect(view.activity).not.toHaveProperty("playText");
+    expect(view.activity).not.toHaveProperty("answer");
+    expect(view.activity).toHaveProperty(
+      "audioUrl",
+      `/api/placement/audio?attemptId=${attemptId}&itemId=${view.itemId}`,
+    );
+    await takeTest(user.id, attemptId, 2.5);
+    expect(
+      (await getPlacementReport(user.id, attemptId))!.report.skills.find(
+        (s) => s.skill === "pronunciation",
+      )?.method,
+    ).toBe("perception");
+  });
+
   it("scores speaking only from a matching real assessment, never self-rating or forged fields", async () => {
     vi.spyOn(capabilities, "getCapabilities").mockReturnValue({
       speechRecognition: true,

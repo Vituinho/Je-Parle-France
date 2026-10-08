@@ -28,6 +28,8 @@ export interface BankItem {
   params: ItemParams;
   calibration: boolean;
   selfAssessment: boolean;
+  /** Recognition of a sound, not evidence of producing it. */
+  perception?: boolean;
   /** External capabilities needed to score the item. */
   requires: readonly Capability[];
 }

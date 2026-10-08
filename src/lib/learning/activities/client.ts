@@ -53,7 +53,9 @@ export type ClientActivity =
         { word: string; ipa: string; pt?: string },
       ];
       /** The word that is played. Needed for browser speech synthesis. */
-      playText: string;
+      playText?: string;
+      /** Placement audio keeps the played word on the server. */
+      audioUrl?: string;
       region: "fr-FR" | "fr-CA";
     })
   | (Common & {
@@ -87,7 +89,11 @@ function order(length: number, seed: string): number[] {
   );
 }
 
-export function toClientActivity(activity: Activity, seed: string): ClientActivity {
+export function toClientActivity(
+  activity: Activity,
+  seed: string,
+  options?: { minimalPairAudioUrl?: string },
+): ClientActivity {
   if (activity.type === "teach") return activity;
   const common = { id: activity.id, instruction: activity.instruction, hint: activity.hint };
   switch (activity.type) {
@@ -158,7 +164,9 @@ export function toClientActivity(activity: Activity, seed: string): ClientActivi
         ...common,
         type: "minimal_pair",
         pair: activity.pair,
-        playText: activity.pair[activity.answer].word,
+        ...(options?.minimalPairAudioUrl
+          ? { audioUrl: options.minimalPairAudioUrl }
+          : { playText: activity.pair[activity.answer].word }),
         region: activity.region,
       };
     case "reading":

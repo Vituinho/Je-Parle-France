@@ -32,6 +32,8 @@ export function itemParams(item: PlacementItem): ItemParams {
 
 export function itemRequirements(item: PlacementItem): Capability[] {
   if (item.activity.type === "speak") return ["speech"];
+  // Browser synthesis would expose the correct word in the assessment payload.
+  if (item.activity.type === "minimal_pair") return ["speech"];
   if (item.activity.type === "open_writing") return ["ai"];
   return [];
 }
@@ -43,6 +45,7 @@ export function toBankItem(item: PlacementItem): BankItem {
     params: itemParams(item),
     calibration: item.calibration,
     selfAssessment: item.activity.type === "self_assess",
+    perception: item.activity.type === "minimal_pair",
     requires: itemRequirements(item),
   };
 }
