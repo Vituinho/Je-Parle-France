@@ -52,6 +52,17 @@ async function Lab() {
         </p>
       </header>
 
+      <Link
+        href="/pronuncia/sombra"
+        className="border-primary/30 bg-accent hover:border-primary/60 block rounded-2xl border px-5 py-4 transition-colors"
+      >
+        <span className="block text-lg font-semibold">Shadowing: frases dos seus diálogos</span>
+        <span className="text-muted-foreground mt-0.5 block text-sm leading-relaxed">
+          Ouça frases reais das lições e repita colado na voz: ritmo, ligações e entonação. Grave e
+          compare com o modelo.
+        </span>
+      </Link>
+
       <ul className="divide-border border-border divide-y border-y">
         {targets.map((target) => (
           <li key={target.id}>

@@ -80,7 +80,7 @@ function timeBuckets(activity: Activity, seconds: number) {
   return { listening, speaking };
 }
 
-async function bumpDailyActivity(
+export async function bumpDailyActivity(
   tx: Prisma.TransactionClient,
   userId: string,
   date: string,

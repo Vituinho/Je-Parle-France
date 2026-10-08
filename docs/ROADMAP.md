@@ -25,7 +25,7 @@ Status vocabulary: **complete** · **mocked** (real interface + adapter, dev moc
 | Dashboard | complete | One primary action, mastery-based progress per skill, weekly goal with rest days, weekly numbers |
 | Review session | complete | Per-day generated exercises for every concept × dimension, tutor corrections included |
 | Audio / TTS | complete | Azure neural voices via /api/tts when configured; browser voices otherwise |
-| Pronunciation lab | complete | 4 A0 targets; perception drills; production with Azure word-level assessment or self-rating |
+| Pronunciation lab | complete | 4 A0 targets; perception drills; production with Azure word-level assessment or self-rating; shadowing of studied dialogue lines (listen, speak along, record, compare) |
 | AI tutor (text) | complete | Claude adapter (structured outputs, refusal fallbacks) + labelled mock; scenarios, 4 correction modes, report, corrections → review; daily quotas |
 | Account, preferences & privacy | complete | /conta: study preferences, support language, tutor corrections, time zone, password, LGPD export (JSON) and deletion (selected data or whole account, password re-check) |
 | AI tutor (voice) | experimental | Spoken turns via Azure STT (/api/speech/transcribe; transcript reviewed before sending, spelling ignored in corrections), replies read aloud in the scenario's region with optional auto-play. Not yet verified against a live Azure resource; no mic without a provider |

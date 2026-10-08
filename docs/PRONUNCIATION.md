@@ -37,8 +37,18 @@ struck-through = word not said.
   round). Drills update memory traces like any practice.
 - The daily planner schedules a pronunciation focus block when pronunciation targets are weak.
 
+## Shadowing
+
+`/pronuncia/sombra` trains connected speech — rhythm, linking (*liaison*, *enchaînement*) and
+intonation — which single-word drills do not reach. Lines come from the listening dialogues of
+lessons the learner has studied (or the first dialogues at their level), 3–16 words long, in the
+voice of their destination first. For each line the learner can listen (normal or slow), hide the
+text, record on their own or **speak along** with the voice (with headphones), and compare their
+recording with the model. With a pronunciation provider the recording can also be scored at word
+level; otherwise it stays practice, never a score. Time spent counts as study and speaking time.
+
 ## Planned
 
 More targets (`/ø/` and `/œ/`, schwa, liaison and enchaînement, intonation), Québec-specific
 features (affrication *tu → tsu*, diphthongised long vowels) as *recognition* targets, varied
-voices for perception training, shadowing.
+voices for perception training, shadowing with prosody comparison.
