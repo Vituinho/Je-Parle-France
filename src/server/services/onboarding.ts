@@ -41,6 +41,7 @@ export async function completeOnboarding(userId: string, input: OnboardingInput)
           sd: prior.sd,
           source: "self_report",
           assessed: false,
+          method: "self_report",
         },
         // Never overwrite a real assessment with a self-report.
         update: {},

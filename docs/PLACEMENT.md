@@ -82,3 +82,15 @@ and checks the mean absolute error (quick < 0.6 levels, complete < 0.45), skill 
 - Re-estimate item difficulties (and discriminations) from logged responses (IRT calibration).
 - Content-balanced selection by topic within a skill.
 - Speaking items scored from transcripts + pronunciation provider when configured.
+
+## How each skill was estimated
+
+Every skill estimate stores its **method** (`skill_estimates.method`): `objective` (scored
+items), `perception` (pronunciation heard but not produced), `self_assessment` (the learner's
+own judgement at the end of the test), `self_report` (onboarding answers) or `not_assessed`.
+Screens that make claims about ability use only measured evidence: the exam readiness page
+(`/provas`) computes the probability that a skill is at or above a target level — from the
+estimate and its uncertainty, 1 − Φ((target − θ)/σ) — only for `objective` skills, shows
+self-assessments as such, and marks the rest "ainda não medido". The result is shown as a band
+("ainda distante", "chegando perto", "provavelmente no nível"), never as a number that could be
+mistaken for an official score, and the page says so.

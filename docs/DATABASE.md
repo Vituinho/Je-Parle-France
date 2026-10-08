@@ -23,6 +23,7 @@ reference content by stable string IDs — `conceptId`, `lessonId`, `activityId`
 | Personal review | `personal_items` | Learner-specific items (tutor corrections) reviewed as `personal:<id>` concepts |
 | Tutor | `conversations`, `conversation_turns` | Report stored as JSON at the end |
 | Speech | `speech_attempts` | Scores only; `recordingKey` set only when the learner opted in |
+| Skill estimates | `skill_estimates` (θ, σ, source, method) | `method` says whether an estimate was measured, self-assessed or self-reported; only measured evidence feeds ability claims |
 | Analytics & motivation | `study_events`, `user_achievements`, `usage_counters` | Usage counters back AI quotas/rate limits |
 
 ## Privacy (LGPD)

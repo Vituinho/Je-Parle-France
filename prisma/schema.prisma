@@ -97,6 +97,16 @@ enum EstimateSource {
   practice
 }
 
+/// How a skill estimate was obtained — only "objective" (and "perception" for
+/// pronunciation) is measured evidence; the rest is what the learner said.
+enum EstimateMethod {
+  objective
+  perception
+  self_assessment
+  self_report
+  not_assessed
+}
+
 enum PlacementMode {
   quick
   complete
@@ -276,6 +286,7 @@ model SkillEstimate {
   sd        Float
   source    EstimateSource
   assessed  Boolean        @default(true)
+  method    EstimateMethod @default(objective)
   updatedAt DateTime       @updatedAt
 
   @@id([userId, skill])

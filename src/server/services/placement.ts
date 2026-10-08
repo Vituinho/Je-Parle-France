@@ -298,8 +298,15 @@ export async function completePlacement(
           sd: result.sd,
           source: "placement",
           assessed,
+          method: result.method,
         },
-        update: { theta: result.theta, sd: result.sd, source: "placement", assessed },
+        update: {
+          theta: result.theta,
+          sd: result.sd,
+          source: "placement",
+          assessed,
+          method: result.method,
+        },
       });
     }
     if (!partial) {

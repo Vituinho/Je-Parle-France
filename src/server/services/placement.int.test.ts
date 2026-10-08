@@ -71,7 +71,12 @@ describe.skipIf(!hasTestDatabase)("placement service", () => {
     expect(estimates.find((e) => e.skill === "reading")).toMatchObject({
       source: "placement",
       assessed: true,
+      method: "objective",
     });
+    // How each skill was estimated is kept, so self-assessment is never shown as measured.
+    for (const skill of report.skills) {
+      expect(estimates.find((e) => e.skill === skill.skill)?.method, skill.skill).toBe(skill.method);
+    }
     expect(
       await db.studyEvent.count({ where: { userId: user.id, type: "placement_completed" } }),
     ).toBe(1);

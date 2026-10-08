@@ -1,6 +1,6 @@
 import "server-only";
 import { cache } from "react";
-import type { LearnerProfile } from "@/generated/prisma/client";
+import type { EstimateMethod, LearnerProfile } from "@/generated/prisma/client";
 import { readTheta, type CefrLevel } from "@/lib/learning/cefr";
 import { supportMode, type SupportMode } from "@/lib/learning/language-support";
 import { SKILLS, type Skill } from "@/lib/learning/skills";
@@ -11,6 +11,8 @@ export interface SkillState {
   theta: number;
   sd: number;
   assessed: boolean;
+  /** How the estimate was obtained (measured, self-assessed, self-reported…). */
+  method: EstimateMethod;
 }
 
 export interface LearnerLevel {
@@ -29,7 +31,12 @@ export const getLearnerLevel = cache(async (userId: string): Promise<LearnerLeve
       const row = rows.find((r) => r.skill === skill);
       return [
         skill,
-        { theta: row?.theta ?? 0.2, sd: row?.sd ?? 1, assessed: row?.assessed ?? false },
+        {
+          theta: row?.theta ?? 0.2,
+          sd: row?.sd ?? 1,
+          assessed: row?.assessed ?? false,
+          method: row?.method ?? "self_report",
+        },
       ];
     }),
   ) as Record<Skill, SkillState>;
