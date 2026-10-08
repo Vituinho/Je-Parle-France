@@ -25,7 +25,7 @@ Status vocabulary: **complete** · **mocked** (real interface + adapter, dev moc
 | Review session | complete | Per-day generated exercises for every concept × dimension, tutor corrections included |
 | Audio / TTS | planned | |
 | Pronunciation lab | planned | |
-| AI tutor (text) | planned | |
+| AI tutor (text) | complete | Claude adapter (structured outputs, refusal fallbacks) + labelled mock; scenarios, 4 correction modes, report, corrections → review; daily quotas |
 | AI tutor (voice) | planned | |
 | Vocabulary & grammar library | planned | |
 | Vivre au Canada / Vivre en France | planned | |
