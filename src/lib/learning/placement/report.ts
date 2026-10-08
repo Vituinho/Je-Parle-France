@@ -247,14 +247,25 @@ export function recommendStart(theta: number, content: ContentIndex): Recommenda
   const highestLevel = highest?.unit.level;
   const higherThanContent =
     highestLevel !== undefined && levelIndex(target.level) > levelIndex(highestLevel);
+  if (higherThanContent) {
+    // Above the published course: start at the most advanced level that exists
+    // (its first unit — consolidation), never back at the beginning.
+    const first = path.find((ref) => ref.unit.level === highestLevel);
+    return {
+      level: target.level,
+      unitId: first?.unit.id ?? null,
+      lessonId: first?.lesson.id ?? null,
+      unitTitle: first?.unit.title.pt ?? null,
+      contentAvailable: false,
+      note: `As unidades do ${target.level} ainda estão em produção. Até lá, você começa pelo ${highestLevel}, o nível mais avançado publicado, para consolidar, e sua sessão diária combina revisão, escuta, pronúncia, conversa com o tutor e as trilhas Vivre au Canada e Vivre en France.`,
+    };
+  }
   return {
     level: target.level,
     unitId: null,
     lessonId: null,
     unitTitle: null,
     contentAvailable: false,
-    note: higherThanContent
-      ? `As unidades do ${target.level} ainda estão em produção. Até lá, sua sessão diária combina revisão, escuta, pronúncia, conversa com o tutor e as trilhas Vivre au Canada e Vivre en France.`
-      : "Ainda não há unidades publicadas para este nível.",
+    note: "Ainda não há unidades publicadas para este nível.",
   };
 }

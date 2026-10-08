@@ -134,6 +134,11 @@ describe("recommended start", () => {
     expect(recommendation.contentAvailable).toBe(false);
     expect(recommendation.level).toBe("B1");
     expect(recommendation.note).toContain("em produção");
+    // …and still starts at the most advanced published content, not at A0.
+    const last = content.paths.core.at(-1)!;
+    const firstOfLevel = content.paths.core.find((ref) => ref.unit.level === last.unit.level)!;
+    expect(recommendation.lessonId).toBe(firstOfLevel.lesson.id);
+    expect(recommendation.lessonId).not.toBe(content.paths.core[0]!.lesson.id);
   });
 });
 

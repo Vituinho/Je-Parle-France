@@ -71,7 +71,8 @@ a transcript or score sent by the browser is ignored (`server/services/speech-ev
 - **gaps**: concepts from failed items _below_ the learner's level that exist in the
   curriculum — these are seeded into spaced review;
 - recommended start: slightly below the estimate (θ − 0.25), positioned within the level by
-  progress; when that level's units are not published yet, the report says so.
+  progress; when that level's units are not published yet, the report says so and the learner
+  starts at the first unit of the most advanced published level (never back at A0).
 
 ## Validation
 
