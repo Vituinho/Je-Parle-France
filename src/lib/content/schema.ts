@@ -482,6 +482,11 @@ export const authenticContentSchema = z.object({
   /** We only link or use official embeds; nothing is rehosted. */
   rights: z.enum(["link", "official-embed"]),
   note: localizedSchema.optional(),
+  /** Day the link was last checked by a person (YYYY-MM-DD); links rot. */
+  checkedOn: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
 });
 
 export const courseSchema = z.object({

@@ -3,9 +3,12 @@ import { Award } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
 import { Fr } from "@/components/fr";
+import { AuthenticCard } from "@/components/authentic/authentic-card";
 import { LineProgress } from "@/components/line-progress";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getContent } from "@/lib/content";
+import { dailyAuthentic, regionsFor } from "@/lib/learning/authentic";
 import { SKILL_LABELS, SKILLS } from "@/lib/learning/skills";
 import { cn } from "@/lib/utils";
 import { getDashboard, type Dashboard } from "@/server/services/dashboard";
@@ -208,6 +211,11 @@ async function Today() {
     recentAchievements(user.id, profile),
   ]);
   const firstName = user.name.split(" ")[0] ?? user.name;
+  const authentic = dailyAuthentic(getContent().course.authentic, {
+    level: data.level.level,
+    regions: regionsFor(profile.destination),
+    date: data.date,
+  });
   const needsPlacement =
     profile.placementStatus === "not_started" || profile.placementStatus === "in_progress";
   return (
@@ -256,6 +264,20 @@ async function Today() {
                 <Link href="/revisar">Revisar agora</Link>
               </Button>
             </div>
+          )}
+          {authentic && (
+            <section aria-labelledby="authentic" className="border-border border-t pt-6">
+              <h2 id="authentic" className="font-semibold">
+                Para ouvir ou ler hoje
+              </h2>
+              <p className="text-muted-foreground mt-1 mb-3 text-sm">
+                Francês de verdade, no seu nível.{" "}
+                <Link href="/conteudo" className="text-primary underline-offset-4 hover:underline">
+                  Ver mais
+                </Link>
+              </p>
+              <AuthenticCard item={authentic} compact />
+            </section>
           )}
         </div>
       </div>

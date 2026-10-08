@@ -1,4 +1,5 @@
 import type { CourseInput } from "@/lib/content/schema";
+import { authentic } from "./authentic";
 import { a0Concepts } from "./concepts/a0";
 import { a1Concepts } from "./concepts/a1";
 import { canadaConcepts } from "./concepts/canada";
@@ -19,5 +20,5 @@ export const course: CourseInput = {
   modules: [...a0Modules, ...a1Modules, ...canadaModules, ...franceModules],
   placementItems,
   scenarios,
-  authentic: [],
+  authentic,
 };

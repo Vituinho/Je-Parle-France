@@ -1,0 +1,156 @@
+import type { AuthenticContentInput } from "@/lib/content/schema";
+
+/**
+ * Authentic French from official or established free sources. We only link
+ * to them — nothing is copied or rehosted. Every link was opened and checked
+ * by hand on the `checkedOn` date; re-check them when you touch this file.
+ *
+ * `level` is the level from which the material becomes useful, not the
+ * level it was written for.
+ */
+export const authentic: AuthenticContentInput[] = [
+  {
+    id: "tv5monde-apprendre",
+    title: "Apprendre le français avec TV5MONDE",
+    source: "TV5MONDE",
+    url: "https://apprendre.tv5monde.com/",
+    kind: "video",
+    region: "intl",
+    level: "A1",
+    transcript: "partial",
+    topics: ["vídeos curtos", "atualidades", "exercícios"],
+    rights: "link",
+    note: {
+      pt: "Vídeos reais da TV com exercícios gratuitos do A1 ao B2. Comece filtrando pelo nível A1.",
+    },
+    checkedOn: "2026-10-08",
+  },
+  {
+    id: "rfi-francais-facile",
+    title: "Le français facile avec RFI — Journal en français facile",
+    source: "RFI (Radio France Internationale)",
+    url: "https://francaisfacile.rfi.fr/",
+    kind: "podcast",
+    region: "intl",
+    level: "A2",
+    transcript: "available",
+    topics: ["notícias", "mundo"],
+    rights: "link",
+    note: {
+      pt: "Um jornal de verdade, falado mais devagar e com transcrição, de segunda a sexta. Ótimo para ouvir lendo.",
+    },
+    checkedOn: "2026-10-08",
+  },
+  {
+    id: "1jour1actu",
+    title: "1jour1actu — l'actualité expliquée aux enfants",
+    source: "Milan / Bayard",
+    url: "https://www.1jour1actu.com/",
+    kind: "article",
+    region: "fr-FR",
+    level: "B1",
+    transcript: "available",
+    topics: ["notícias", "ciência", "sociedade"],
+    rights: "link",
+    note: {
+      pt: "Notícias explicadas para crianças de 8 anos ou mais: frases curtas, temas atuais e vídeos de menos de dois minutos.",
+    },
+    checkedOn: "2026-10-08",
+  },
+  {
+    id: "innerfrench-podcast",
+    title: "innerFrench — le podcast",
+    source: "innerFrench",
+    url: "https://podcast.innerfrench.com/",
+    kind: "podcast",
+    region: "fr-FR",
+    level: "B1",
+    transcript: "available",
+    topics: ["cultura", "sociedade", "história"],
+    rights: "link",
+    note: {
+      pt: "Episódios gratuitos em francês claro, ficando mais difíceis com o tempo — comece pelos primeiros. A transcrição completa pede uma conta gratuita.",
+    },
+    checkedOn: "2026-10-08",
+  },
+  {
+    id: "radio-canada-ohdio",
+    title: "OHdio — radio, balados et livres audio",
+    source: "Radio-Canada",
+    url: "https://ici.radio-canada.ca/ohdio",
+    kind: "radio",
+    region: "fr-CA",
+    level: "B2",
+    transcript: "none",
+    topics: ["rádio", "podcasts", "Québec", "atualidades"],
+    rights: "link",
+    note: {
+      pt: "A rádio pública canadense em francês: ao vivo e em podcasts (*balados*). Velocidade nativa — escolha temas que você já conhece.",
+    },
+    checkedOn: "2026-10-08",
+  },
+  {
+    id: "quebec-apprendre-le-francais",
+    title: "Apprendre le français — Gouvernement du Québec",
+    source: "Gouvernement du Québec",
+    url: "https://www.quebec.ca/education/apprendre-le-francais",
+    kind: "article",
+    region: "fr-CA",
+    level: "A2",
+    transcript: "available",
+    topics: ["francisação", "cursos gratuitos", "imigração"],
+    rights: "link",
+    note: {
+      pt: "Página oficial dos cursos de francês do governo do Québec (presenciais e on-line, gratuitos para quem mora lá). Leitura útil e informação valiosa ao mesmo tempo.",
+    },
+    checkedOn: "2026-10-08",
+  },
+  {
+    id: "oqlf-vitrine-linguistique",
+    title: "Vitrine linguistique de l'OQLF",
+    source: "Office québécois de la langue française",
+    url: "https://vitrinelinguistique.oqlf.gouv.qc.ca/",
+    kind: "article",
+    region: "fr-CA",
+    level: "B1",
+    transcript: "available",
+    topics: ["dúvidas de língua", "gramática", "vocabulário do Québec"],
+    rights: "link",
+    note: {
+      pt: "A referência oficial do Québec para dúvidas de francês (*Banque de dépannage linguistique*) e para termos técnicos.",
+    },
+    checkedOn: "2026-10-08",
+  },
+  {
+    id: "canada-immigration-citoyennete",
+    title: "Immigration et citoyenneté — Canada.ca",
+    source: "Gouvernement du Canada",
+    url: "https://www.canada.ca/fr/services/immigration-citoyennete.html",
+    kind: "article",
+    region: "fr-CA",
+    level: "B2",
+    transcript: "available",
+    topics: ["imigração", "residência permanente", "autorizações"],
+    rights: "link",
+    note: {
+      pt: "O portal oficial de imigração do Canadá, em francês. Ler a informação oficial na língua de destino é treino e preparação ao mesmo tempo.",
+    },
+    checkedOn: "2026-10-08",
+  },
+  {
+    id: "service-public-etrangers",
+    title: "Étranger en France : titres de séjour — Service-Public",
+    source: "Service-Public (administration française)",
+    url: "https://www.service-public.gouv.fr/particuliers/vosdroits/N110",
+    kind: "article",
+    region: "fr-FR",
+    level: "B2",
+    transcript: "available",
+    topics: ["titre de séjour", "administração", "imigração"],
+    rights: "link",
+    note: {
+      pt: "As fichas oficiais da administração francesa sobre autorizações de residência. Vocabulário que você já viu em *Vivre en France*.",
+    },
+    checkedOn: "2026-10-08",
+  },
+];

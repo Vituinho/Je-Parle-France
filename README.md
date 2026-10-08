@@ -21,6 +21,8 @@ study and work in Canada/Québec or France — from A0 to C1.
 - **Pronunciation lab** for the sounds that trouble Brazilians, perception first.
 - **Meu caderno** (personal vocabulary with mastery per skill) and a **grammar library**
   explained from Portuguese.
+- **Francês de verdade**: curated links to authentic radio, video, podcasts and texts at the
+  learner's level, with a daily suggestion.
 - **Privacy controls**: data export, selective deletion and account deletion (LGPD).
 
 ## Documentation

@@ -7,6 +7,7 @@ import {
   CalendarCheck,
   Map as MapIcon,
   MessagesSquare,
+  Newspaper,
   RotateCcw,
 } from "lucide-react";
 
@@ -32,6 +33,8 @@ export const primaryNav: NavItem[] = [
   { href: "/caderno", label: "Caderno", icon: BookMarked, mobile: true },
   // On mobile, grammar is reached from the notebook.
   { href: "/gramatica", label: "Gramática", icon: BookOpenText, mobile: false },
+  // On mobile, authentic content is linked from the dashboard.
+  { href: "/conteudo", label: "Francês real", icon: Newspaper, mobile: false },
   // On mobile, progress is linked from the dashboard.
   { href: "/progresso", label: "Progresso", icon: ChartNoAxesColumn, mobile: false },
 ];

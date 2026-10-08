@@ -83,6 +83,15 @@ current numbers).
 - **Cross-notes.** Each track explains the other side briefly ("Na França…", "No Québec…"), so a
   learner choosing *Os dois* sees the contrast where it matters.
 
+## Authentic content
+
+`content/authentic.ts` lists real French from official or established free sources — video,
+radio, podcasts and texts — with the level from which each becomes useful, the region, whether a
+transcript exists and the date the link was last checked by hand. The app only links to them
+(`rights: "link"`); nothing is copied or rehosted. `/conteudo` ranks them by level (up to one
+level above the learner) and destination, and the dashboard suggests one per day. Re-check the
+links whenever the file is touched; the content test requires https and a `checkedOn` date.
+
 ## Growth plan
 
 1. **Core A1** — module A1.1 done (5 units, 15 lessons). Next for A1: food and shopping

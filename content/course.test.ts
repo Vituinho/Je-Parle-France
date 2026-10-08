@@ -45,6 +45,19 @@ describe("course content", () => {
   });
 });
 
+describe("authentic content", () => {
+  it("only links to official sources over https, with a date of the last manual check", () => {
+    const items = index!.course.authentic;
+    expect(items.length).toBeGreaterThanOrEqual(5);
+    for (const item of items) {
+      expect(item.url.startsWith("https://"), item.id).toBe(true);
+      expect(item.rights, item.id).toBe("link");
+      expect(item.checkedOn, item.id).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    }
+    expect(new Set(items.map((item) => item.region))).toEqual(new Set(["intl", "fr-FR", "fr-CA"]));
+  });
+});
+
 describe("curriculum pedagogy", () => {
   const PRODUCTION = new Set([
     "type",
