@@ -57,12 +57,13 @@ waiting until the learner has met it.
 | core | A0 | Os sons do francês — /y/–/u/, nasals, silent finals, R | 4 | — |
 | core | A0 | Os números — 0–20, age with *avoir* | 3 | — |
 | core | A0 | No café — ordering, prices, paying | 3 | Num café em Paris |
+| core | A1 | Quem sou eu — *être* and *avoir* in the present, *avoir faim/soif/froid*, professions in the feminine | 3 | Primeiro encontro |
 | canada | A0 | Bem-vindo ao Québec — Bonjour-Hi, *bienvenue*, *c'est correct*; *déjeuner/dîner/souper*, *fin de semaine*, *dépanneur* | 2 | Num café em Montréal |
 | canada | A1 | Chegar e se instalar — border questions, bank account, renting in Montréal | 3 | Abrir uma conta no banco |
 | france | A0 | O dia a dia na França — boulangerie, meal names and hours | 2 | Na boulangerie |
 | france | A1 | Se instalar na França — métro, préfecture and documents, renting | 3 | No guichê da préfecture |
 
-Totals: 105 concepts, 24 lessons, 205 activities, 7 scenarios (`npm run content:check` prints the
+Totals: 118 concepts, 27 lessons, 230 activities, 7 scenarios (`npm run content:check` prints the
 current numbers).
 
 ### What makes the tracks genuinely different
@@ -80,9 +81,10 @@ current numbers).
 
 ## Growth plan
 
-1. **Core A1** — *être* and *avoir* in the present, definite articles and contractions,
-   negation, regular -er verbs, questions, days and time, family, work and studies. Each unit with
-   a mission scenario. Placement start points move with it.
+1. **Core A1** (in progress) — done: *être*, *avoir*, professions. Next: family and possessives;
+   regular -er verbs, negation, days and time; definite articles and contractions (*au*, *du*);
+   questions, *aller* and the near future. Placement start points move with it: A1 learners now
+   start in A1 instead of only getting reviews and tracks.
 2. **Tracks A1–A2** — Canada: health card and clinic (*carte d'assurance maladie*, *CLSC*), job
    search and interview, winter, public transport (STM), Québec informal speech in
    *recognition-only* activities (*chu*, *pantoute*, *icitte*). France: health and *médecin
