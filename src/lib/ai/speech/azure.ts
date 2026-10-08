@@ -1,4 +1,6 @@
 import "server-only";
+import { z } from "zod";
+import { validateSpeechWav } from "./audio";
 import {
   SpeechProviderError,
   type PronunciationAssessmentProvider,
@@ -58,28 +60,42 @@ const escapeXml = (text: string) =>
       ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", "'": "&apos;", '"': "&quot;" })[char] ?? char,
   );
 
-interface AzureWord {
-  Word: string;
-  AccuracyScore?: number;
-  ErrorType?: string;
-}
-
-interface AzureNBest {
-  Display?: string;
-  Lexical?: string;
-  AccuracyScore?: number;
-  FluencyScore?: number;
-  CompletenessScore?: number;
-  ProsodyScore?: number;
-  PronScore?: number;
-  Words?: AzureWord[];
-}
-
-interface AzureRecognition {
-  RecognitionStatus: string;
-  DisplayText?: string;
-  NBest?: AzureNBest[];
-}
+const score = z.number().min(0).max(100);
+const recognitionSchema = z.object({
+  RecognitionStatus: z.enum([
+    "Success",
+    "InitialSilenceTimeout",
+    "BabbleTimeout",
+    "NoMatch",
+    "Error",
+    "EndOfDictation",
+  ]),
+  DisplayText: z.string().max(10_000).optional(),
+  NBest: z
+    .array(
+      z.object({
+        Display: z.string().max(10_000).optional(),
+        AccuracyScore: score.optional(),
+        FluencyScore: score.optional(),
+        CompletenessScore: score.optional(),
+        ProsodyScore: score.optional(),
+        PronScore: score.optional(),
+        Words: z
+          .array(
+            z.object({
+              Word: z.string().max(500),
+              AccuracyScore: score.optional(),
+              ErrorType: z.enum(["None", "Omission", "Insertion", "Mispronunciation"]).optional(),
+            }),
+          )
+          .max(1000)
+          .optional(),
+      }),
+    )
+    .max(20)
+    .optional(),
+});
+type AzureRecognition = z.infer<typeof recognitionSchema>;
 
 function statusOf(value: string): RecognitionStatus {
   if (value === "Success") return "ok";
@@ -103,17 +119,43 @@ export class AzureSpeechProvider
   constructor(
     private readonly key: string,
     private readonly region: string,
-  ) {}
+    private readonly timeoutMs = 20_000,
+  ) {
+    if (!/^[a-z0-9-]+$/.test(region)) throw new SpeechProviderError("Invalid Azure region.");
+  }
+
+  private async request<T>(
+    url: string,
+    init: RequestInit,
+    read: (response: Response) => Promise<T>,
+  ): Promise<T> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), this.timeoutMs);
+    try {
+      const response = await fetch(url, { ...init, signal: controller.signal });
+      if (!response.ok)
+        throw new SpeechProviderError(`Speech request failed with ${response.status}`);
+      return await read(response);
+    } catch (error) {
+      if (controller.signal.aborted)
+        throw new SpeechProviderError("Speech request timed out.", "timeout");
+      if (error instanceof SpeechProviderError) throw error;
+      throw new SpeechProviderError("Speech service unavailable.");
+    } finally {
+      clearTimeout(timer);
+    }
+  }
 
   private sttUrl(locale: SpeechLocale) {
     return `https://${this.region}.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1?language=${locale}&format=detailed`;
   }
 
   async synthesize(request: SynthesisRequest): Promise<SynthesisResult> {
+    this.features(request.locale);
     const voice = VOICES[request.locale][request.gender];
     const rate = request.rate === "slow" ? "-25%" : "0%";
     const ssml = `<speak version="1.0" xml:lang="${request.locale}"><voice name="${voice}"><prosody rate="${rate}">${escapeXml(request.text)}</prosody></voice></speak>`;
-    const response = await fetch(
+    const audio = await this.request(
       `https://${this.region}.tts.speech.microsoft.com/cognitiveservices/v1`,
       {
         method: "POST",
@@ -125,9 +167,11 @@ export class AzureSpeechProvider
         },
         body: ssml,
       },
+      (response) => response.arrayBuffer(),
     );
-    if (!response.ok) throw new SpeechProviderError(`TTS failed with ${response.status}`);
-    return { audio: await response.arrayBuffer(), contentType: "audio/mpeg" };
+    if (!audio.byteLength)
+      throw new SpeechProviderError("Empty synthesis output.", "invalid_output");
+    return { audio, contentType: "audio/mpeg" };
   }
 
   private async recognize(
@@ -135,6 +179,8 @@ export class AzureSpeechProvider
     locale: SpeechLocale,
     assessment?: object,
   ): Promise<AzureRecognition> {
+    this.features(locale);
+    validateSpeechWav(wav);
     const headers: Record<string, string> = {
       "Ocp-Apim-Subscription-Key": this.key,
       "Content-Type": "audio/wav; codecs=audio/pcm; samplerate=16000",
@@ -146,18 +192,35 @@ export class AzureSpeechProvider
         "utf8",
       ).toString("base64");
     }
-    const response = await fetch(this.sttUrl(locale), { method: "POST", headers, body: wav });
-    if (!response.ok) throw new SpeechProviderError(`Recognition failed with ${response.status}`);
-    return (await response.json()) as AzureRecognition;
+    return this.request(
+      this.sttUrl(locale),
+      { method: "POST", headers, body: wav },
+      async (response) => {
+        let body: unknown;
+        try {
+          body = await response.json();
+        } catch {
+          throw new SpeechProviderError("Invalid recognition JSON.", "invalid_output");
+        }
+        const parsed = recognitionSchema.safeParse(body);
+        if (!parsed.success)
+          throw new SpeechProviderError("Invalid recognition output.", "invalid_output");
+        return parsed.data;
+      },
+    );
   }
 
   features(locale: SpeechLocale): PronunciationFeatures {
+    if (!Object.hasOwn(AZURE_PRONUNCIATION_FEATURES, locale))
+      throw new SpeechProviderError("Unsupported speech locale.", "unsupported");
     return AZURE_PRONUNCIATION_FEATURES[locale];
   }
 
   async transcribe(wav: ArrayBuffer, locale: SpeechLocale): Promise<TranscriptionResult> {
     const result = await this.recognize(wav, locale);
     const status = statusOf(result.RecognitionStatus);
+    if (status === "ok" && !(result.NBest?.[0]?.Display ?? result.DisplayText)?.trim())
+      throw new SpeechProviderError("Missing recognition transcript.", "invalid_output");
     return {
       status,
       transcript:
@@ -184,19 +247,27 @@ export class AzureSpeechProvider
     });
     const status = statusOf(result.RecognitionStatus);
     const best = result.NBest?.[0];
-    if (status !== "ok" || !best) {
+    if (status !== "ok") {
       return { status, transcript: null, granularity: "word", scores: null, words: [] };
     }
+    if (
+      !best ||
+      best.AccuracyScore === undefined ||
+      best.FluencyScore === undefined ||
+      best.CompletenessScore === undefined ||
+      best.PronScore === undefined
+    )
+      throw new SpeechProviderError("Missing pronunciation metrics.", "invalid_output");
     return {
       status,
       transcript: best.Display ?? result.DisplayText ?? null,
       granularity: "word",
       scores: {
-        accuracy: best.AccuracyScore ?? 0,
-        fluency: best.FluencyScore ?? 0,
-        completeness: best.CompletenessScore ?? 0,
+        accuracy: best.AccuracyScore,
+        fluency: best.FluencyScore,
+        completeness: best.CompletenessScore,
         prosody: features.prosody ? (best.ProsodyScore ?? null) : null,
-        overall: best.PronScore ?? 0,
+        overall: best.PronScore,
       },
       words: (best.Words ?? []).map((word) => ({
         word: word.Word,

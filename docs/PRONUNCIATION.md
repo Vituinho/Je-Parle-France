@@ -82,6 +82,31 @@ text, record on their own or **speak along** with the voice (with headphones), a
 recording with the model. With a pronunciation provider the recording can also be scored at word
 level; otherwise it stays practice, never a score. Time spent counts as study and speaking time.
 
+## Provider readiness and live smoke test
+
+Azure calls have a 20-second deadline including response decoding, no automatic paid retries,
+and validated JSON with scores in 0–100. Missing metrics are rejected, never replaced with zero.
+The upload must be an actual WAV container: PCM16, mono, 16 kHz, nonempty, at most 37 seconds
+and 1,200,000 bytes. Invalid recordings receive HTTP 400 before consuming quota or contacting Azure.
+Network failures, bad output and timeouts return a retryable service error without upstream details.
+Unit tests cover both locales, HTTP failures, network failure, timeout, invalid audio/output and
+unsupported locale/prosody handling. Raw audio is neither logged nor stored.
+
+Set `SPEECH_PROVIDER=azure`, `AZURE_SPEECH_KEY` and `AZURE_SPEECH_REGION` in the server environment
+for the application. For the standalone smoke command only the two Azure variables are required.
+Use two recordings of the same reference phrase (one per locale):
+
+```sh
+npm run smoke:speech -- /private/fr-FR.wav /private/fr-CA.wav "Bonjour, je voudrais un café, s’il vous plaît."
+```
+
+This uses the application adapter for four paid calls (STT and scripted assessment per locale),
+prints statuses only, validates unsupported prosody stays absent and rejects malformed audio locally.
+It exits unsuccessfully if credentials, files, recognition or required metrics are missing.
+Failure/timeout tests use injected responses, not intentional paid failures. **Live validation has
+not run: Azure credentials were absent on 2026-10-08.** Browser TTS and explicit self-rating remain
+available without Azure; they never become objective pronunciation evidence.
+
 ## Planned
 
 More targets (`/ø/` and `/œ/`, schwa, liaison and enchaînement, intonation), Québec-specific

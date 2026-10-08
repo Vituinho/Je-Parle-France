@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { Prisma } from "@/generated/prisma/client";
 import { getSpeech, SpeechProviderError } from "@/lib/ai/speech";
+import { validateSpeechWav } from "@/lib/ai/speech/audio";
 import { localDate } from "@/lib/learning/time";
 import { db } from "@/server/db";
 import { consumeQuota, QuotaError, throttle } from "@/server/quota";
@@ -29,7 +30,12 @@ export async function POST(request: Request) {
     return Response.json({ error: "Espere um instante." }, { status: 429 });
   }
 
-  const form = await request.formData();
+  let form: FormData;
+  try {
+    form = await request.formData();
+  } catch {
+    return Response.json({ error: "Pedido inválido." }, { status: 400 });
+  }
   const audio = form.get("audio");
   const fields = fieldsSchema.safeParse({
     referenceText: form.get("referenceText"),
@@ -44,9 +50,11 @@ export async function POST(request: Request) {
   }
 
   try {
+    const wav = await audio.arrayBuffer();
+    validateSpeechWav(wav);
     await consumeQuota(user.id, "speech", localDate(new Date(), "UTC"), 300);
     const result = await speech.pronunciation.assess(
-      await audio.arrayBuffer(),
+      wav,
       fields.data.referenceText,
       fields.data.locale,
     );
@@ -73,6 +81,8 @@ export async function POST(request: Request) {
     if (error instanceof QuotaError)
       return Response.json({ error: error.message }, { status: 429 });
     if (error instanceof SpeechProviderError) {
+      if (error.reason === "malformed_audio")
+        return Response.json({ error: "Gravação inválida. Grave novamente." }, { status: 400 });
       return Response.json(
         { error: "O serviço de fala não respondeu. Tente de novo." },
         { status: 502 },

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { getSpeech, SpeechProviderError } from "@/lib/ai/speech";
+import { validateSpeechWav } from "@/lib/ai/speech/audio";
 import { localDate } from "@/lib/learning/time";
 import { consumeQuota, QuotaError, throttle } from "@/server/quota";
 import { getCurrentUser } from "@/server/session";
@@ -23,7 +24,12 @@ export async function POST(request: Request) {
     return Response.json({ error: "Espere um instante." }, { status: 429 });
   }
 
-  const form = await request.formData();
+  let form: FormData;
+  try {
+    form = await request.formData();
+  } catch {
+    return Response.json({ error: "Pedido inválido." }, { status: 400 });
+  }
   const audio = form.get("audio");
   const fields = fieldsSchema.safeParse({ locale: form.get("locale") ?? undefined });
   if (!(audio instanceof Blob) || !fields.success) {
@@ -34,13 +40,17 @@ export async function POST(request: Request) {
   }
 
   try {
+    const wav = await audio.arrayBuffer();
+    validateSpeechWav(wav);
     await consumeQuota(user.id, "speech", localDate(new Date(), "UTC"), 300);
-    const result = await speech.stt.transcribe(await audio.arrayBuffer(), fields.data.locale);
+    const result = await speech.stt.transcribe(wav, fields.data.locale);
     return Response.json(result);
   } catch (error) {
     if (error instanceof QuotaError)
       return Response.json({ error: error.message }, { status: 429 });
     if (error instanceof SpeechProviderError) {
+      if (error.reason === "malformed_audio")
+        return Response.json({ error: "Gravação inválida. Grave novamente." }, { status: 400 });
       return Response.json(
         { error: "O serviço de fala não respondeu. Tente de novo." },
         { status: 502 },

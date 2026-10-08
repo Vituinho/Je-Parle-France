@@ -92,4 +92,17 @@ export interface PronunciationAssessmentProvider {
   ): Promise<PronunciationResult>;
 }
 
-export class SpeechProviderError extends Error {}
+export class SpeechProviderError extends Error {
+  constructor(
+    message: string,
+    readonly reason:
+      | "malformed_audio"
+      | "unsupported"
+      | "timeout"
+      | "invalid_output"
+      | "unavailable" = "unavailable",
+  ) {
+    super(message);
+    this.name = "SpeechProviderError";
+  }
+}
