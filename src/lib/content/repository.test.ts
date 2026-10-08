@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { buildContentIndex, prerequisiteClosure } from "./repository";
+import { course } from "@content/index";
+import { buildContentIndex, lessonDependencies, prerequisiteClosure } from "./repository";
 import type { CourseInput } from "./schema";
 
 function fixture(overrides: Partial<CourseInput> = {}): CourseInput {
@@ -148,5 +149,24 @@ describe("buildContentIndex", () => {
   it("computes transitive prerequisites", () => {
     const { index } = buildContentIndex(fixture());
     expect(prerequisiteClosure(index!, "gram:etre-present")).toEqual(["gram:subject-pronouns"]);
+  });
+});
+
+describe("lessonDependencies", () => {
+  it("lists what a lesson practises without teaching it", () => {
+    const { index } = buildContentIndex(course);
+    const bank = index!.lessons.get("ca-u2-l2");
+    expect(bank && lessonDependencies(bank)).toEqual([]);
+    const ref = index!.lessons.get("a0-u4-l1")!;
+    const altered = {
+      ...ref,
+      lesson: {
+        ...ref.lesson,
+        steps: ref.lesson.steps.filter(
+          (step) => step.type !== "teach" || !step.introduces.includes("lex:je-voudrais"),
+        ),
+      },
+    };
+    expect(lessonDependencies(altered)).toContain("lex:je-voudrais");
   });
 });

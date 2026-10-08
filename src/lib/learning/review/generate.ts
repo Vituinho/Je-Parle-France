@@ -65,6 +65,10 @@ export function recallForms(concept: LexicalConcept): string[] {
     );
 }
 
+/** Québec concepts are voiced with a Canadian French voice. */
+const voiceFor = (concept: Concept): "fr-FR" | "fr-CA" =>
+  concept.region === "fr-CA" ? "fr-CA" : "fr-FR";
+
 function numberRange(concept: LexicalConcept): [number, number] | null {
   const match = /nombres-(\d+)-(\d+)$/.exec(concept.id);
   return match ? [Number(match[1]), Number(match[2])] : null;
@@ -80,6 +84,7 @@ function distractorMeanings(
       other.kind === "lexical" &&
       other.id !== concept.id &&
       other.meaning !== concept.meaning &&
+      other.french !== concept.french &&
       other.pos !== "number",
   );
   const sameTag = others.filter((other) => other.tags.some((tag) => concept.tags.includes(tag)));
@@ -133,7 +138,7 @@ function lexicalActivity(
             fr: "Quel nombre avez-vous entendu ?",
           },
           prompt: {
-            audio: { text: word, region: "fr-FR", gender: "f", rate: "normal" },
+            audio: { text: word, region: voiceFor(concept), gender: "f", rate: "normal" },
             hideText: true,
           },
           options: [String(value), ...others.map(String)],
@@ -165,7 +170,7 @@ function lexicalActivity(
             .map((n) => NUMBER_WORDS[n])
             .join(", "),
           accept: [],
-          region: "fr-FR",
+          region: voiceFor(concept),
         };
     }
   }
@@ -180,7 +185,7 @@ function lexicalActivity(
         instruction: { pt: "O que significa?", fr: "Qu'est-ce que ça veut dire ?" },
         prompt: {
           fr: concept.french,
-          audio: { text: concept.french, region: "fr-FR", gender: "f", rate: "normal" },
+          audio: { text: concept.french, region: voiceFor(concept), gender: "f", rate: "normal" },
           hideText: false,
         },
         options: [concept.meaning, ...distractorMeanings(index, concept, random)],
@@ -198,7 +203,7 @@ function lexicalActivity(
           fr: "Écoutez. Qu'est-ce que ça veut dire ?",
         },
         prompt: {
-          audio: { text: spoken, region: "fr-FR", gender: "f", rate: "normal" },
+          audio: { text: spoken, region: voiceFor(concept), gender: "f", rate: "normal" },
           hideText: true,
         },
         options: example
@@ -231,7 +236,7 @@ function lexicalActivity(
         text,
         translation: example?.pt ?? concept.meaning,
         accept: [],
-        region: "fr-FR",
+        region: voiceFor(concept),
       };
     }
   }
@@ -289,7 +294,7 @@ function pronunciationActivity(
       instruction: { pt: "Qual palavra você ouviu?", fr: "Quel mot avez-vous entendu ?" },
       pair,
       answer: random() < 0.5 ? 0 : 1,
-      region: "fr-FR",
+      region: voiceFor(concept),
     };
   }
   if (dimension === "listening") {
@@ -302,7 +307,7 @@ function pronunciationActivity(
       targets,
       instruction: { pt: "Qual palavra você ouviu?", fr: "Quel mot avez-vous entendu ?" },
       prompt: {
-        audio: { text: heard.word, region: "fr-FR", gender: "f", rate: "normal" },
+        audio: { text: heard.word, region: voiceFor(concept), gender: "f", rate: "normal" },
         hideText: true,
       },
       options: options.map((word) => word.word),
@@ -320,7 +325,7 @@ function pronunciationActivity(
     text: words.map((word) => word.word).join(", "),
     translation: words.map((word) => word.pt ?? word.word).join(", "),
     accept: [],
-    region: "fr-FR",
+    region: voiceFor(concept),
   };
 }
 
@@ -367,7 +372,7 @@ function grammarFallback(
     text: example.fr,
     translation: example.pt,
     accept: [],
-    region: "fr-FR",
+    region: voiceFor(concept),
   };
 }
 

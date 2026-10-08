@@ -1,7 +1,7 @@
 import "server-only";
 import type { DailySession, LearnerProfile, Prisma } from "@/generated/prisma/client";
 import { getCapabilities } from "@/lib/ai/capabilities";
-import { getContent, type ContentIndex, type LessonRef } from "@/lib/content";
+import { getContent, lessonDependencies, type ContentIndex, type LessonRef } from "@/lib/content";
 import { levelIndex, type CefrLevel } from "@/lib/learning/cefr";
 import type { MemoryTraceState } from "@/lib/learning/memory/memory";
 import {
@@ -83,6 +83,9 @@ export function upcomingLessons(params: {
     index.paths[track]
       .filter((ref) => levelIndex(ref.unit.level) <= levelIndex(params.level) + 1)
       .filter((ref) => progress.get(ref.lesson.id)?.status !== "completed")
+      // Tracks run beside the core path: a track lesson waits until the
+      // learner has met whatever it practises without teaching.
+      .filter((ref) => lessonDependencies(ref).every((id) => traced.has(id)))
       .slice(0, 2)
       .map(toUpcoming),
   );

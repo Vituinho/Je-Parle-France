@@ -261,6 +261,20 @@ export function prerequisiteClosure(index: ContentIndex, conceptId: string): str
   return [...seen];
 }
 
+/**
+ * Concepts a lesson practises without teaching them itself: the learner must
+ * have met them before the lesson makes sense.
+ */
+export function lessonDependencies(ref: LessonRef): string[] {
+  const taught = new Set(
+    ref.lesson.steps.flatMap((step) => (step.type === "teach" ? step.introduces : [])),
+  );
+  const practised = ref.lesson.steps.flatMap((step) =>
+    step.type === "teach" ? [] : step.targets.map((target) => target.concept),
+  );
+  return [...new Set(practised.filter((id) => !taught.has(id)))];
+}
+
 /** Placement items available per skill and level — used to check bank coverage. */
 export function placementCoverage(index: ContentIndex): Record<string, Record<string, number>> {
   const coverage: Record<string, Record<string, number>> = {};

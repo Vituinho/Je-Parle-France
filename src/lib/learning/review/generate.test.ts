@@ -119,3 +119,33 @@ describe("review activity generator", () => {
     expect(choose?.type).toBe("choice");
   });
 });
+
+describe("regional vocabulary in reviews", () => {
+  it("voices Québec words with a Canadian voice", () => {
+    const activity = buildReviewActivity({
+      index,
+      conceptId: "lex:le-souper",
+      dimension: "recognition",
+      seed: "s1",
+    });
+    expect(activity?.type).toBe("choice");
+    if (activity?.type !== "choice") return;
+    expect(activity.prompt.audio?.region).toBe("fr-CA");
+  });
+
+  it("never offers the meaning of a homograph from the other region as a distractor", () => {
+    const france = index.concepts.get("lex:le-diner-fr");
+    expect(france?.kind).toBe("lexical");
+    if (france?.kind !== "lexical") return;
+    for (let i = 0; i < 40; i += 1) {
+      const activity = buildReviewActivity({
+        index,
+        conceptId: "lex:le-diner-qc",
+        dimension: "recognition",
+        seed: `s${i}`,
+      });
+      if (activity?.type !== "choice") throw new Error("expected a choice");
+      expect(activity.options).not.toContain(france.meaning);
+    }
+  });
+});

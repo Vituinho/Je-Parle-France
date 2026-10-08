@@ -74,6 +74,28 @@ describe("curriculum pedagogy", () => {
     }
   });
 
+  it("makes every destination track self-contained, so it can start after the first core lesson", () => {
+    for (const track of ["canada", "france"] as const) {
+      const path = index!.paths[track];
+      expect(path.length, track).toBeGreaterThanOrEqual(4);
+      const introduced = new Set<string>();
+      for (const ref of path) {
+        for (const step of ref.lesson.steps) {
+          if (step.type === "teach") {
+            step.introduces.forEach((id) => introduced.add(id));
+            continue;
+          }
+          for (const target of step.targets) {
+            expect(
+              introduced.has(target.concept),
+              `${step.id} practises ${target.concept} before the ${track} track teaches it`,
+            ).toBe(true);
+          }
+        }
+      }
+    }
+  });
+
   it("gives every lesson a teaching card and active production", () => {
     for (const ref of index!.lessons.values()) {
       const steps = ref.lesson.steps;

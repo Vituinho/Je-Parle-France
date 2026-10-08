@@ -78,7 +78,13 @@ export const scenarios: ScenarioInput[] = [
       fr: "Répondre aux questions de base avec des phrases simples.",
     },
     openingLine: "Bonjour. Votre passeport, s'il vous plaît. Quel est le but de votre voyage ?",
-    keyConcepts: ["lex:je-viens-du-bresil"],
+    keyConcepts: [
+      "lex:le-passeport",
+      "lex:le-but-du-voyage",
+      "lex:je-suis-ici-pour",
+      "lex:combien-de-temps",
+      "lex:un-permis-de-travail",
+    ],
   },
   {
     id: "scn-bank-canada",
@@ -97,7 +103,13 @@ export const scenarios: ScenarioInput[] = [
       fr: "Expliquer ce dont vous avez besoin, comprendre les documents demandés et poser des questions.",
     },
     openingLine: "Bonjour ! Bienvenue. Comment est-ce que je peux vous aider aujourd'hui ?",
-    keyConcepts: ["lex:avoir-besoin-de", "lex:ouvrir-un-compte", "lex:j-aurais-besoin-de"],
+    keyConcepts: [
+      "lex:avoir-besoin-de",
+      "lex:ouvrir-un-compte",
+      "lex:j-aurais-besoin-de",
+      "lex:une-piece-d-identite",
+      "lex:une-carte-de-debit",
+    ],
   },
   {
     id: "scn-boulangerie",
@@ -116,6 +128,36 @@ export const scenarios: ScenarioInput[] = [
       fr: "Saluer, commander, demander le total et dire au revoir.",
     },
     openingLine: "Bonjour, monsieur-dame ! Qu'est-ce qu'il vous faut ?",
-    keyConcepts: ["lex:bonjour", "lex:je-voudrais", "lex:c-est-combien", "lex:au-revoir"],
+    keyConcepts: [
+      "lex:bonjour",
+      "lex:je-vais-prendre",
+      "lex:et-avec-ceci",
+      "lex:ce-sera-tout",
+      "lex:une-baguette",
+    ],
+  },
+  {
+    id: "scn-prefecture",
+    track: "france",
+    region: "fr-FR",
+    minLevel: "A1",
+    title: { pt: "No guichê da préfecture", fr: "Au guichet de la préfecture" },
+    setting: {
+      pt: "Você tem horário marcado na préfecture para o seu titre de séjour e precisa mostrar os documentos.",
+      fr: "Vous avez rendez-vous à la préfecture pour votre titre de séjour et devez présenter vos documents.",
+    },
+    aiRole:
+      "Tu es agent d'accueil à la préfecture. Tu vouvoies, tu es correct mais pressé. Tu demandes la convocation, le passeport, un justificatif de domicile de moins de trois mois et des photos d'identité. S'il manque un document, tu l'expliques simplement et tu proposes de reprendre rendez-vous. Tu parles lentement et clairement.",
+    learnerGoal: {
+      pt: "Dizer por que você veio, entregar os documentos pedidos e entender o que falta.",
+      fr: "Dire pourquoi vous venez, présenter les documents demandés et comprendre ce qui manque.",
+    },
+    openingLine: "Bonjour. Vous avez une convocation ?",
+    keyConcepts: [
+      "lex:un-rendez-vous",
+      "lex:un-titre-de-sejour",
+      "lex:un-justificatif-de-domicile",
+      "lex:le-passeport",
+    ],
   },
 ];
