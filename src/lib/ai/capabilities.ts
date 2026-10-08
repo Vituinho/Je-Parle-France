@@ -23,3 +23,21 @@ export function getCapabilities(): Capabilities {
     llm: env.LLM_PROVIDER === "anthropic",
   };
 }
+
+/** The subset the browser may know about (no secrets). */
+export interface PublicCapabilities {
+  serverTts: boolean;
+  pronunciation: boolean;
+}
+
+export function publicCapabilities(): PublicCapabilities {
+  try {
+    const capabilities = getCapabilities();
+    return {
+      serverTts: capabilities.serverTts,
+      pronunciation: capabilities.pronunciationAssessment,
+    };
+  } catch {
+    return { serverTts: false, pronunciation: false };
+  }
+}

@@ -264,6 +264,7 @@ export function ListeningRenderer({
           lines={activity.lines.map((line) => ({
             text: line.text,
             region: line.region,
+            gender: line.gender,
             alternate: speakers.indexOf(line.speaker) % 2 === 1,
           }))}
         />

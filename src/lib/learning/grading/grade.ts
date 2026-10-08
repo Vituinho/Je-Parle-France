@@ -22,6 +22,10 @@ export const activityResponseSchema = z.discriminatedUnion("kind", [
     kind: z.literal("speech"),
     /** Transcript from a speech-to-text provider, when available. */
     transcript: z.string().max(1000).optional(),
+    /** Stored assessment to grade from (resolved on the server). */
+    speechAttemptId: z.string().max(64).optional(),
+    /** Overall pronunciation score 0–100 — only ever set by the server from a stored attempt. */
+    pronunciation: z.number().min(0).max(100).optional(),
     /** Learner's own rating when no recogniser is available. */
     selfRating: z.union([z.literal(0), z.literal(0.5), z.literal(1)]).optional(),
   }),
@@ -233,7 +237,12 @@ export function gradeActivity(activity: Activity, response: ActivityResponse): G
         const recall = Math.max(
           ...targets.map((target) => wordRecall(speech.transcript ?? "", target)),
         );
-        const score = Math.round(recall * 100) / 100;
+        // With a pronunciation assessment, intelligibility and sound accuracy count equally.
+        const combined =
+          speech.pronunciation === undefined
+            ? recall
+            : 0.5 * recall + 0.5 * (speech.pronunciation / 100);
+        const score = Math.round(combined * 100) / 100;
         return {
           score,
           correct: score >= 0.8,

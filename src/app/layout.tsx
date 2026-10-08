@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, Spectral } from "next/font/google";
 import { brand } from "@/config/brand";
 import { Providers } from "@/components/providers";
+import { publicCapabilities } from "@/lib/ai/capabilities";
 import { cn } from "@/lib/utils";
 import "./globals.css";
 
@@ -41,7 +42,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={cn("h-full antialiased", bricolage.variable, spectral.variable)}
     >
       <body className="flex min-h-full flex-col">
-        <Providers>{children}</Providers>
+        <Providers capabilities={publicCapabilities()}>{children}</Providers>
       </body>
     </html>
   );

@@ -5,7 +5,9 @@ import { useState } from "react";
 import { Fr } from "@/components/fr";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useCapabilities } from "@/components/capabilities";
 import { AudioButton } from "../audio-button";
+import { PronunciationCheck } from "../pronunciation-check";
 import { useRecorder } from "../recorder";
 import { DiffView } from "./text";
 import { OptionRow, PromptView, type RendererProps } from "./shared";
@@ -199,7 +201,10 @@ export function SpeakRenderer({
   feedback,
 }: RendererProps<"speak">) {
   const recorder = useRecorder();
+  const { pronunciation } = useCapabilities();
   const rating = draft.kind === "speech" ? draft.selfRating : null;
+  const assessed = draft.kind === "speech" && Boolean(draft.speechAttemptId);
+  const canAssess = pronunciation && activity.mode !== "respond";
   const showText = activity.mode !== "respond" || locked;
   return (
     <div className="space-y-6">
@@ -258,6 +263,19 @@ export function SpeakRenderer({
           />
         )}
       </div>
+      {canAssess && recorder.blob && (
+        <PronunciationCheck
+          key={recorder.audioUrl ?? "none"}
+          recording={recorder.blob}
+          referenceText={activity.text}
+          locale={activity.region}
+          activityId={activity.id}
+          disabled={locked}
+          onAssessed={(speechAttemptId) =>
+            onDraft({ kind: "speech", selfRating: null, speechAttemptId })
+          }
+        />
+      )}
       {recorder.state === "denied" && (
         <p className="text-muted-foreground text-sm" role="status">
           O microfone não foi liberado. Você ainda pode falar em voz alta e se avaliar.
@@ -269,28 +287,34 @@ export function SpeakRenderer({
         </p>
       )}
 
-      <fieldset className="space-y-2.5">
-        <legend className="mb-2 font-semibold">Compare com o modelo. Como foi?</legend>
-        <div className="grid gap-2 sm:grid-cols-3">
-          {SELF_RATINGS.map((option, index) => (
-            <OptionRow
-              key={option.value}
-              type="radio"
-              name={`${activity.id}-rating`}
-              index={index}
-              label={option.label}
-              lang="pt"
-              disabled={locked}
-              state={rating === option.value ? "selected" : "idle"}
-              onSelect={() => onDraft({ kind: "speech", selfRating: option.value })}
-            />
-          ))}
-        </div>
-        <p className="text-muted-foreground text-xs">
-          Sua gravação fica só no seu navegador. A autoavaliação conta como evidência mais fraca do
-          que a correção automática.
-        </p>
-      </fieldset>
+      {!assessed && (
+        <fieldset className="space-y-2.5">
+          <legend className="mb-2 font-semibold">
+            {canAssess ? "Ou compare com o modelo e se avalie:" : "Compare com o modelo. Como foi?"}
+          </legend>
+          <div className="grid gap-2 sm:grid-cols-3">
+            {SELF_RATINGS.map((option, index) => (
+              <OptionRow
+                key={option.value}
+                type="radio"
+                name={`${activity.id}-rating`}
+                index={index}
+                label={option.label}
+                lang="pt"
+                disabled={locked}
+                state={rating === option.value ? "selected" : "idle"}
+                onSelect={() => onDraft({ kind: "speech", selfRating: option.value })}
+              />
+            ))}
+          </div>
+          <p className="text-muted-foreground text-xs">
+            {canAssess
+              ? "Para avaliar, a gravação é enviada ao serviço de fala e descartada logo depois; guardamos só as notas."
+              : "Sua gravação fica só no seu navegador."}{" "}
+            A autoavaliação conta como evidência mais fraca do que a avaliação automática.
+          </p>
+        </fieldset>
+      )}
       {feedback?.diff && <DiffView diff={feedback.diff} />}
     </div>
   );

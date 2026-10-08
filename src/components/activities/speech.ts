@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useCapabilities } from "@/components/capabilities";
 
 /**
  * French speech synthesis in the browser — the zero-cost TTS fallback
@@ -14,6 +15,29 @@ export interface SpeakOptions {
   rate?: Rate;
   /** Use a different voice than the default for this region (second speaker). */
   alternate?: boolean;
+  /** Speaker gender, honoured by server voices. */
+  gender?: "f" | "m";
+}
+
+/** Synthesised clips are reused for the whole visit (object URLs). */
+const serverClips = new Map<string, Promise<string | null>>();
+
+function serverClip(text: string, options: SpeakOptions): Promise<string | null> {
+  const params = new URLSearchParams({
+    text,
+    locale: options.region ?? "fr-FR",
+    gender: options.gender ?? (options.alternate ? "m" : "f"),
+    rate: options.rate ?? "normal",
+  });
+  const key = params.toString();
+  let clip = serverClips.get(key);
+  if (!clip) {
+    clip = fetch(`/api/tts?${key}`)
+      .then(async (response) => (response.ok ? URL.createObjectURL(await response.blob()) : null))
+      .catch(() => null);
+    serverClips.set(key, clip);
+  }
+  return clip;
 }
 
 export type VoiceStatus = "loading" | "ready" | "no-french-voice" | "unsupported";
@@ -89,18 +113,26 @@ export function useVoiceStatus(): VoiceStatus {
 }
 
 export function useFrenchSpeech() {
-  const voiceStatus = useVoiceStatus();
+  const { serverTts } = useCapabilities();
+  const browserStatus = useVoiceStatus();
+  const voiceStatus: VoiceStatus = serverTts ? "ready" : browserStatus;
   const [speaking, setSpeaking] = useState(false);
   const cancelled = useRef(false);
+  const current = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     return () => {
+      current.current?.pause();
       if ("speechSynthesis" in window) window.speechSynthesis.cancel();
     };
   }, []);
 
-  const speakOne = useCallback((text: string, options: SpeakOptions = {}) => {
+  const speakBrowser = useCallback((text: string, options: SpeakOptions = {}) => {
     return new Promise<void>((resolve) => {
+      if (!("speechSynthesis" in window)) {
+        resolve();
+        return;
+      }
       const region = options.region ?? "fr-FR";
       const voices = frenchVoices(region);
       const utterance = new SpeechSynthesisUtterance(text);
@@ -114,11 +146,31 @@ export function useFrenchSpeech() {
     });
   }, []);
 
+  const speakOne = useCallback(
+    async (text: string, options: SpeakOptions = {}) => {
+      if (serverTts) {
+        const url = await serverClip(text, options);
+        if (url) {
+          await new Promise<void>((resolve) => {
+            const audio = new Audio(url);
+            current.current = audio;
+            audio.onended = () => resolve();
+            audio.onerror = () => resolve();
+            audio.play().catch(() => resolve());
+          });
+          return;
+        }
+      }
+      await speakBrowser(text, options);
+    },
+    [serverTts, speakBrowser],
+  );
+
   /** Speaks one text or a sequence of lines (dialogues). */
   const speak = useCallback(
     async (lines: string | { text: string; options?: SpeakOptions }[], options?: SpeakOptions) => {
-      if (!("speechSynthesis" in window)) return;
-      window.speechSynthesis.cancel();
+      current.current?.pause();
+      if ("speechSynthesis" in window) window.speechSynthesis.cancel();
       cancelled.current = false;
       setSpeaking(true);
       const sequence = typeof lines === "string" ? [{ text: lines, options }] : lines;
@@ -133,6 +185,7 @@ export function useFrenchSpeech() {
 
   const stop = useCallback(() => {
     cancelled.current = true;
+    current.current?.pause();
     if ("speechSynthesis" in window) window.speechSynthesis.cancel();
     setSpeaking(false);
   }, []);

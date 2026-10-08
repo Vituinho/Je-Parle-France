@@ -3,6 +3,7 @@
 import { Pause, Snail, Volume2, VolumeX } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { useCapabilities } from "@/components/capabilities";
 import { useFrenchSpeech, useVoiceStatus, type SpeakOptions, type VoiceRegion } from "./speech";
 
 export interface AudioLine {
@@ -10,6 +11,7 @@ export interface AudioLine {
   region?: VoiceRegion;
   /** Distinguish speakers in dialogues. */
   alternate?: boolean;
+  gender?: "f" | "m";
 }
 
 /**
@@ -41,7 +43,7 @@ export function AudioButton({
     void speak(
       lines.map((line) => ({
         text: line.text,
-        options: { region: line.region, alternate: line.alternate, rate },
+        options: { region: line.region, alternate: line.alternate, gender: line.gender, rate },
       })),
     );
   };
@@ -101,7 +103,9 @@ export function AudioButton({
  * repeating it next to every audio button.
  */
 export function VoiceNotice({ className }: { className?: string }) {
+  const { serverTts } = useCapabilities();
   const status = useVoiceStatus();
+  if (serverTts) return null;
   if (status !== "unsupported" && status !== "no-french-voice") return null;
   return (
     <p

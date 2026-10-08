@@ -7,7 +7,7 @@ import {
   toClientFeedback,
   type ClientFeedback,
 } from "@/lib/learning/activities/client";
-import { gradeActivity, type ActivityResponse } from "@/lib/learning/grading/grade";
+import { gradeActivity, GradingError, type ActivityResponse } from "@/lib/learning/grading/grade";
 import {
   applyReview,
   introduceTrace,
@@ -39,6 +39,34 @@ export interface MasteryChange {
 export interface SubmitResult {
   feedback: ClientFeedback;
   changes: MasteryChange[];
+}
+
+/**
+ * Speech responses may reference a stored pronunciation assessment; its
+ * transcript and score are read from the server-side record (never trusted
+ * from the client). Assessments older than 30 minutes are not accepted.
+ */
+async function resolveSpeech(
+  userId: string,
+  response: ActivityResponse,
+): Promise<ActivityResponse> {
+  if (response.kind !== "speech") return response;
+  const { speechAttemptId, selfRating } = response;
+  // Transcripts are only accepted from the server-side record, never from the client.
+  if (!speechAttemptId) return { kind: "speech", selfRating };
+  const attempt = await db.speechAttempt.findFirst({
+    where: { id: speechAttemptId, userId, createdAt: { gte: new Date(Date.now() - 30 * 60_000) } },
+  });
+  if (!attempt?.transcript) {
+    throw new PracticeError("Avaliação de pronúncia não encontrada. Grave de novo.");
+  }
+  const overall = (attempt.scores as { scores?: { overall?: number } | null } | null)?.scores
+    ?.overall;
+  return {
+    kind: "speech",
+    transcript: attempt.transcript,
+    pronunciation: typeof overall === "number" ? Math.min(100, Math.max(0, overall)) : undefined,
+  };
 }
 
 /** Seconds credited per activity are capped so an idle tab does not inflate study time. */
@@ -117,7 +145,15 @@ export async function submitActivity(params: {
   if (activity.type === "teach") throw new PracticeError("Teaching cards are not graded.");
   const now = params.now ?? new Date();
   const seed = activitySeed(userId);
-  const grade = gradeActivity(activity, toAuthoredResponse(activity, params.response, seed));
+  const response = await resolveSpeech(userId, params.response);
+  let grade;
+  try {
+    grade = gradeActivity(activity, toAuthoredResponse(activity, response, seed));
+  } catch (error) {
+    if (error instanceof GradingError)
+      throw new PracticeError("Resposta inválida para esta atividade.");
+    throw error;
+  }
   const feedback = toClientFeedback(activity, grade, seed);
 
   const conceptIds = [...new Set(activity.targets.map((target) => target.concept))];

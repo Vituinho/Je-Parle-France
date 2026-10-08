@@ -11,7 +11,7 @@ export type Draft =
   | { kind: "blanks"; blanks: string[] }
   | { kind: "text"; text: string }
   | { kind: "answers"; answers: (number | null)[] }
-  | { kind: "speech"; selfRating: 0 | 0.5 | 1 | null; transcript?: string }
+  | { kind: "speech"; selfRating: 0 | 0.5 | 1 | null; speechAttemptId?: string }
   | { kind: "self"; rating: 0 | 0.5 | 1 | null };
 
 export function emptyDraft(activity: ClientActivity): Draft {
@@ -63,7 +63,7 @@ export function isAnswerable(activity: ClientActivity, draft: Draft): boolean {
     case "answers":
       return draft.answers.every((answer) => answer !== null);
     case "speech":
-      return draft.selfRating !== null || Boolean(draft.transcript);
+      return draft.selfRating !== null || Boolean(draft.speechAttemptId);
     case "self":
       return draft.rating !== null;
   }
@@ -91,8 +91,8 @@ export function toResponse(activity: ClientActivity, draft: Draft): ActivityResp
     case "answers":
       return { kind: "answers", answers: draft.answers.map((answer) => answer ?? -1) };
     case "speech":
-      return draft.transcript
-        ? { kind: "speech", transcript: draft.transcript }
+      return draft.speechAttemptId
+        ? { kind: "speech", speechAttemptId: draft.speechAttemptId }
         : { kind: "speech", selfRating: draft.selfRating ?? 0 };
     case "self":
       return { kind: "self", rating: draft.rating ?? 0 };

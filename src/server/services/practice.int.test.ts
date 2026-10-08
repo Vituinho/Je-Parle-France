@@ -112,6 +112,47 @@ describe.skipIf(!hasTestDatabase)("practice service", () => {
     expect(progress).toMatchObject({ status: "completed", score: 0.9, runs: 2 });
   });
 
+  it("grades speaking from a stored assessment and ignores client transcripts", async () => {
+    const user = await learner();
+    const speak = lessonActivity("a0-u1-l1", "a0-u1-l1-a6");
+    const attempt = await db.speechAttempt.create({
+      data: {
+        userId: user.id,
+        targetText: "Bonjour, madame. Au revoir, monsieur !",
+        provider: "azure",
+        transcript: "Bonjour madame. Au revoir monsieur.",
+        scores: { status: "ok", scores: { overall: 90 }, words: [] },
+      },
+    });
+    const graded = await submitActivity({
+      userId: user.id,
+      activity: speak,
+      response: { kind: "speech", speechAttemptId: attempt.id },
+      context: "lesson",
+    });
+    expect(graded.feedback.correct).toBe(true);
+    expect(graded.feedback.score).toBeCloseTo(0.95, 2);
+
+    await expect(
+      submitActivity({
+        userId: user.id,
+        activity: speak,
+        response: { kind: "speech", transcript: "Bonjour, madame. Au revoir, monsieur !" },
+        context: "lesson",
+      }),
+    ).rejects.toThrow("Resposta inválida");
+
+    const other = await learner();
+    await expect(
+      submitActivity({
+        userId: other.id,
+        activity: speak,
+        response: { kind: "speech", speechAttemptId: attempt.id },
+        context: "lesson",
+      }),
+    ).rejects.toThrow("não encontrada");
+  });
+
   it("refuses activities that do not belong to the lesson", () => {
     expect(() => lessonActivity("a0-u1-l1", "a0-u4-l1-a1")).toThrow();
     expect(getContent().activities.get("a0-u4-l1-a1")).toBeDefined();
