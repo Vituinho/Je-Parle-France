@@ -9,7 +9,7 @@ import { UserMenu } from "./user-menu";
 async function CurrentUserMenu() {
   const user = await getCurrentUser();
   if (!user) return null;
-  return <UserMenu name={user.name} email={user.email} />;
+  return <UserMenu name={user.name} email={user.email} isAdmin={user.role === "admin"} />;
 }
 
 /**
