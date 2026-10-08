@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import { detectErrors } from "../errors/patterns";
 import {
   buildTutorSystemPrompt,
+  boundedConversation,
+  transcriptForReport,
+  tutorTurnSchema,
   clampScores,
   markSpoken,
   mergeCorrections,
@@ -94,5 +97,36 @@ describe("spoken turns", () => {
     expect(marked.startsWith(SPOKEN_MARKER)).toBe(true);
     expect(stripSpokenMarker(marked)).toBe("je besoin d'un compte");
     expect(stripSpokenMarker("Bonjour !")).toBe("Bonjour !");
+  });
+});
+
+describe("bounded tutor context", () => {
+  it("sends recent conversation only and limits both turns and characters", () => {
+    const turns = Array.from({ length: 100 }, (_, i) => ({
+      role: "learner" as const,
+      content: `turn-${i}: ${"x".repeat(1500)}`,
+    }));
+    const selected = boundedConversation(turns);
+    expect(selected.length).toBeLessThanOrEqual(24);
+    expect(selected.reduce((sum, t) => sum + t.content.length, 0)).toBeLessThanOrEqual(14_000);
+    expect(selected.at(-1)?.content).toContain("turn-99");
+    const transcript = transcriptForReport(
+      turns,
+      Array.from({ length: 100 }, () => important),
+    );
+    expect(transcript).toContain("assess only this sample");
+    expect(transcript).not.toContain("turn-0:");
+    expect(transcript.match(/je besoin/gi)?.length ?? 0).toBeLessThanOrEqual(8);
+  });
+  it("enforces the correction and reply budget", () => {
+    expect(
+      tutorTurnSchema.safeParse({
+        reply: "Oui",
+        corrections: [important, important, important, important],
+      }).success,
+    ).toBe(false);
+    expect(tutorTurnSchema.safeParse({ reply: "x".repeat(1201), corrections: [] }).success).toBe(
+      false,
+    );
   });
 });

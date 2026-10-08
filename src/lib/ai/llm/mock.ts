@@ -32,12 +32,14 @@ export class MockProvider implements LLMProvider {
       const recast = fixed !== last ? `${fixed.replace(/[.!?]*$/, "")}, je comprends. ` : "";
       candidate = {
         reply: `${recast}${REPLIES[Math.min(assistantTurns - 1, REPLIES.length - 1)] ?? REPLIES[0]}`,
-        corrections: detectErrors(last).map((error) => ({
-          wrong: error.wrong,
-          right: error.right,
-          explanationPt: error.explanation,
-          severity: error.severity,
-        })),
+        corrections: detectErrors(last)
+          .slice(0, 3)
+          .map((error) => ({
+            wrong: error.wrong,
+            right: error.right,
+            explanationPt: error.explanation,
+            severity: error.severity,
+          })),
       };
     } else if (params.purpose === "tutor_report") {
       const transcript = last;

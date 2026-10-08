@@ -56,10 +56,38 @@ Secrets are read only on the server (`src/lib/env.ts`). The browser learns three
   Model-generated corrections carry no concept id and never touch course mastery.
 - **Cost controls**: daily per-learner quotas (`usage_counters`), a 1.5 s throttle, 500-character
   messages, a cached system prompt, token usage recorded per day.
-- **Safety**: server-side refusal fallbacks (`fallbacks: "default"`); a refusal or provider error
+- **Safety**: validated structured output; a refusal or provider error
   shows a friendly message; the report degrades to the corrections already collected.
 - **Privacy**: conversations are stored so the learner can reread them and can be deleted; their
   content is not logged.
+
+### Real tutor readiness
+
+The adapter uses the SDK's stable `messages.parse` / `zodOutputFormat` API, then validates the
+result with the original Zod schema (including numeric bounds and array/string limits).
+Calls have a 30-second SDK timeout and zero automatic retries to bound latency and paid calls.
+Timeout, rate limit, refusal, truncation, invalid JSON/output and network failures become friendly
+provider errors; failed turns are not saved and a failed report falls back to collected corrections.
+Daily quotas and throttling still apply before provider calls; failed calls consume a quota slot.
+
+Context reads at most 120 recent concept traces and eight personal corrections, selecting at most
+60 known words and ten weaknesses. It sends only the latest 24 conversation turns, at most 1,200
+characters each and 14,000 in total. Reports explicitly identify a truncated excerpt, with at most
+eight already noted corrections. Full conversations remain stored locally for the learner.
+Tutor reports are relative practice feedback, not objective CEFR or pronunciation measurements.
+
+Configure the server with `LLM_PROVIDER=anthropic`, `ANTHROPIC_API_KEY` and a supported `LLM_MODEL`.
+The standalone command requires only the key and an explicit model:
+
+```sh
+npm run smoke:tutor
+```
+
+It makes one paid adapter call using synthetic A2/Québec context, checks the structured result and
+prints only status and token usage. **Live validation has not run: the Anthropic key was absent on
+2026-10-08.** `LLM_PROVIDER=mock` continues to show the simulation label. Adapter tests inject HTTP
+responses through the real SDK, including 429/401/500, timeout, refusal and invalid constrained output.
+Reference: [Anthropic structured outputs](https://platform.claude.com/docs/en/build-with-claude/structured-outputs).
 
 ## Voice conversation
 

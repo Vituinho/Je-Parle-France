@@ -45,7 +45,7 @@ export interface LLMProvider {
 export class LLMUnavailableError extends Error {
   constructor(
     message: string,
-    readonly reason: "refusal" | "invalid_output" | "rate_limited" | "unavailable",
+    readonly reason: "refusal" | "invalid_output" | "rate_limited" | "unavailable" | "timeout",
   ) {
     super(message);
   }

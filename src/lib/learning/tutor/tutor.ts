@@ -40,10 +40,12 @@ export const CORRECTION_MODE_LABELS: Record<
 };
 
 const correctionSchema = z.object({
-  wrong: z.string().describe("The exact fragment the learner wrote"),
-  right: z.string().describe("Natural, correct French for that fragment"),
+  wrong: z.string().min(1).max(500).describe("The exact fragment the learner wrote"),
+  right: z.string().min(1).max(500).describe("Natural, correct French for that fragment"),
   explanationPt: z
     .string()
+    .min(1)
+    .max(500)
     .describe(
       "One sentence in Brazilian Portuguese; contrast with Portuguese when the error comes from it",
     ),
@@ -52,9 +54,10 @@ const correctionSchema = z.object({
 export type TutorCorrection = z.infer<typeof correctionSchema>;
 
 export const tutorTurnSchema = z.object({
-  reply: z.string().describe("The tutor's in-character reply, in French"),
+  reply: z.string().min(1).max(1200).describe("The tutor's in-character reply, in French"),
   corrections: z
     .array(correctionSchema)
+    .max(3)
     .describe("Real errors in the learner's last message (max 3)"),
 });
 export type TutorTurn = z.infer<typeof tutorTurnSchema>;
@@ -63,31 +66,52 @@ export const tutorReportSchema = z.object({
   scores: z.object({
     fluency: z
       .number()
+      .min(0)
+      .max(100)
       .describe("0-100: message length, continuity and initiative for the learner's level"),
     vocabulary: z
       .number()
+      .min(0)
+      .max(100)
       .describe("0-100: range and precision of vocabulary for the learner's level"),
-    grammar: z.number().describe("0-100: grammatical accuracy for the learner's level"),
+    grammar: z
+      .number()
+      .min(0)
+      .max(100)
+      .describe("0-100: grammatical accuracy for the learner's level"),
     comprehension: z
       .number()
+      .min(0)
+      .max(100)
       .describe("0-100: how well the learner understood and answered the tutor"),
   }),
   summaryPt: z
     .string()
+    .min(1)
+    .max(1500)
     .describe("2-3 sentences in Brazilian Portuguese summarising the conversation"),
-  strengths: z.array(z.string()).describe("Up to 3 concrete strengths, in Portuguese"),
+  strengths: z
+    .array(z.string().min(1).max(500))
+    .max(3)
+    .describe("Up to 3 concrete strengths, in Portuguese"),
   corrections: z
     .array(
       z.object({
-        wrong: z.string(),
-        right: z.string(),
+        wrong: z.string().min(1).max(500),
+        right: z.string().min(1).max(500),
         explanationPt: z
           .string()
+          .min(1)
+          .max(500)
           .describe("Portuguese explanation with the PT → FR contrast when relevant"),
       }),
     )
+    .max(5)
     .describe("The most important corrections (max 5), most useful first"),
-  nextSteps: z.array(z.string()).describe("Up to 3 concrete next steps, in Portuguese"),
+  nextSteps: z
+    .array(z.string().min(1).max(500))
+    .max(3)
+    .describe("Up to 3 concrete next steps, in Portuguese"),
 });
 export type TutorReport = z.infer<typeof tutorReportSchema>;
 
@@ -257,12 +281,17 @@ export function transcriptForReport(
   turns: readonly { role: "learner" | "tutor"; content: string }[],
   corrections: readonly TutorCorrection[],
 ): string {
-  const lines = turns.map(
+  const selected = boundedConversation(turns);
+  const lines = selected.map(
     (turn) => `${turn.role === "learner" ? "LEARNER" : "TUTOR"}: ${turn.content}`,
   );
-  const noted = corrections.map((c) => `- "${c.wrong}" → "${c.right}" (${c.severity})`);
+  const noted = corrections
+    .slice(-8)
+    .map((c) => `- "${c.wrong.slice(0, 500)}" → "${c.right.slice(0, 500)}" (${c.severity})`);
   return [
-    "Conversation transcript:",
+    turns.length > selected.length
+      ? "Recent conversation excerpt; assess only this sample, not the whole conversation:"
+      : "Conversation transcript:",
     ...lines,
     "",
     noted.length > 0
@@ -270,4 +299,17 @@ export function transcriptForReport(
       : "No corrections were noted during the conversation.",
     ...noted,
   ].join("\n");
+}
+
+/** Recent local conversation only, bounded by both turns and characters. */
+export function boundedConversation<T extends { content: string }>(turns: readonly T[]): T[] {
+  const selected: T[] = [];
+  let budget = 14_000;
+  for (const turn of turns.slice(-24).toReversed()) {
+    const content = turn.content.slice(0, 1200);
+    if (content.length > budget) break;
+    selected.unshift({ ...turn, content });
+    budget -= content.length;
+  }
+  return selected;
 }

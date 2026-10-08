@@ -7,6 +7,7 @@ import { detectErrors } from "@/lib/learning/errors/patterns";
 import { applyReview, MASTERY_VALUE, masteryOf } from "@/lib/learning/memory/memory";
 import {
   buildReportSystemPrompt,
+  boundedConversation,
   buildTutorSystemPrompt,
   clampScores,
   markSpoken,
@@ -23,7 +24,7 @@ import {
 import type { Dimension } from "@/lib/learning/skills";
 import { serverEnv } from "@/lib/env";
 import { db } from "@/server/db";
-import { loadTraces, saveReviewLogs, saveTraces } from "@/server/repositories/memory";
+import { loadTraces, saveReviewLogs, saveTraces, traceFromRow } from "@/server/repositories/memory";
 import { consumeQuota, QuotaError, throttle, addUsageUnits } from "@/server/quota";
 import { getLearnerLevel, today } from "./learner";
 
@@ -56,7 +57,9 @@ async function tutorContext(
   const [profile, level, traces, personal] = await Promise.all([
     profileOf(userId),
     getLearnerLevel(userId),
-    loadTraces(db, userId),
+    db.memoryTrace
+      .findMany({ where: { userId }, orderBy: { lastReview: "desc" }, take: 120 })
+      .then((rows) => rows.map(traceFromRow)),
     db.personalItem.findMany({ where: { userId }, orderBy: { createdAt: "desc" }, take: 8 }),
   ]);
   const now = new Date();
@@ -90,9 +93,11 @@ async function tutorContext(
           region: scenario.region,
         }
       : undefined,
-    knownVocabulary: [...known],
-    weakItems: [...weak],
-    recentMistakes: personal.map((item) => `${item.wrong ?? "?"} → ${item.french}`),
+    knownVocabulary: [...known].slice(0, 60),
+    weakItems: [...weak].slice(0, 10),
+    recentMistakes: personal.map(
+      (item) => `${(item.wrong ?? "?").slice(0, 150)} → ${item.french.slice(0, 150)}`,
+    ),
   };
 }
 
@@ -202,7 +207,7 @@ export async function sendLearnerMessage(
 
   const mode = conversation.correctionMode as CorrectionMode;
   const context = await tutorContext(userId, mode, conversation.scenarioId);
-  const history: LLMMessage[] = conversation.turns.map((turn) => ({
+  const history: LLMMessage[] = boundedConversation(conversation.turns).map((turn) => ({
     role: turn.role === "tutor" ? "assistant" : "user",
     content: turn.content,
   }));
