@@ -120,6 +120,48 @@ export const scenarios: ScenarioInput[] = [
     ],
   },
   {
+    id: "scn-weekend-recap",
+    track: "core",
+    minLevel: "A2",
+    title: { pt: "Como foi o seu fim de semana?", fr: "Ton week-end, c'était comment ?" },
+    setting: {
+      pt: "Segunda de manhã, um colega quer saber o que você fez no fim de semana.",
+      fr: "Lundi matin, un collègue vous demande ce que vous avez fait ce week-end.",
+    },
+    aiRole:
+      "Tu es un collègue curieux et sympathique. Tu demandes à l'apprenant ce qu'il a fait ce week-end, avec qui, où il est allé, et tu racontes aussi ton week-end au passé composé. Tu poses des questions de relance (« Et après ? », « C'était bien ? »). Tu tutoies, phrases simples.",
+    learnerGoal: {
+      pt: "Contar o que você fez com o passé composé (avoir e être) e fazer perguntas sobre o fim de semana do colega.",
+      fr: "Raconter votre week-end au passé composé et poser des questions.",
+    },
+    openingLine: "Salut ! Alors, qu'est-ce que tu as fait ce week-end ?",
+    keyConcepts: ["gram:passe-compose-avoir", "gram:passe-compose-etre", "lex:hier"],
+  },
+  {
+    id: "scn-comparer-villes",
+    track: "core",
+    minLevel: "A2",
+    title: { pt: "Lá e aqui", fr: "Là-bas et ici" },
+    setting: {
+      pt: "Um vizinho curioso pergunta como era a sua vida no Brasil e o que muda na cidade nova.",
+      fr: "Un voisin vous demande comment était votre vie au Brésil et ce qui change ici.",
+    },
+    aiRole:
+      "Tu es un voisin curieux et bienveillant. Tu demandes à l'apprenant où il habitait avant, comment c'était (imparfait), et ce qui est différent maintenant : le climat, les logements, les prix, les gens. Tu utilises des comparaisons simples (plus… que, moins… que, meilleur, mieux). Tu vouvoies d'abord, puis tu proposes de te tutoyer.",
+    learnerGoal: {
+      pt: "Descrever como era antes (imparfait) e comparar com agora (plus, moins, meilleur, mieux).",
+      fr: "Décrire votre vie d'avant et la comparer avec aujourd'hui.",
+    },
+    openingLine: "Bonjour ! Vous êtes nouveau dans l'immeuble ? Vous habitiez où avant ?",
+    keyConcepts: [
+      "gram:imparfait",
+      "gram:comparatif",
+      "gram:adjectifs",
+      "lex:avant",
+      "lex:maintenant",
+    ],
+  },
+  {
     id: "scn-cafe-paris",
     track: "france",
     region: "fr-FR",

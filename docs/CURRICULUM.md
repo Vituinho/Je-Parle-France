@@ -67,12 +67,17 @@ waiting until the learner has met it.
 | core | A1 | O tempo e as estações — *il fait* (never *il est chaud*), *il fait froid* vs *j'ai froid*, *au printemps*, Québec's *tuque*, forecasts | 3 | — |
 | core | A1 | Minha rotina — reflexive verbs, *ne… pas* around pronoun + verb, verbs reflexive only in French, sequencing | 3 | — |
 | core | A1 | Querer, poder, fazer, pegar — *vouloir/pouvoir* + infinitive, survival phrases, *faire les courses*, *prendre le bus* | 3 | — |
+| core | A2 | O que você fez? — *passé composé* with *avoir* (regular and irregular participles), *hier*, *il y a* + duration | 3 | Como foi o seu fim de semana? |
+| core | A2 | Para onde você foi? — *passé composé* with *être*, agreement, reflexive verbs in the past, *rester* ≠ restar | 3 | — |
+| core | A2 | Antes e agora — the *imparfait* (= Portuguese -ava/-ia) for description and habits, *avant / maintenant* | 3 | — |
+| core | A2 | Y e en — the two pronouns Portuguese lacks: *j'y vais*, *j'en ai deux*, *on y va !* | 2 | — |
+| core | A2 | Descrever e comparar — adjective agreement and position, *plus / moins / aussi… que*, *meilleur* vs *mieux* | 3 | Lá e aqui |
 | canada | A0 | Bem-vindo ao Québec — Bonjour-Hi, *bienvenue*, *c'est correct*; *déjeuner/dîner/souper*, *fin de semaine*, *dépanneur* | 2 | Num café em Montréal |
 | canada | A1 | Chegar e se instalar — border questions, bank account, renting in Montréal | 3 | Abrir uma conta no banco |
 | france | A0 | O dia a dia na França — boulangerie, meal names and hours | 2 | Na boulangerie |
 | france | A1 | Se instalar na França — métro, préfecture and documents, renting | 3 | No guichê da préfecture |
 
-Totals: 208 concepts, 54 lessons, 420 activities, 11 scenarios (`npm run content:check` prints the
+Totals: 229 concepts, 68 lessons, 508 activities, 13 scenarios (`npm run content:check` prints the
 current numbers).
 
 ### What makes the tracks genuinely different
@@ -99,9 +104,9 @@ links whenever the file is touched; the content test requires https and a `check
 
 ## Growth plan
 
-1. **Core A1** — done: modules A1.1 and A1.2 (10 units, 30 lessons). Next: A2 — the *passé
-   composé* (with *avoir* and *être*), the *imparfait*, pronouns *y* and *en*, comparisons,
-   describing people and places, work and housing in more depth.
+1. **Core A1–A2** — done: A1.1, A1.2 and A2.1 (15 units, 44 lessons). Next for A2: *passé composé*
+   vs *imparfait* in the same story, object pronouns (*le, la, lui, leur*), the future tense, *il faut*
+   and obligation, work and housing in more depth.
 2. **Tracks A1–A2** — Canada: health card and clinic (*carte d'assurance maladie*, *CLSC*), job
    search and interview, winter, public transport (STM), Québec informal speech in
    *recognition-only* activities (*chu*, *pantoute*, *icitte*). France: health and *médecin

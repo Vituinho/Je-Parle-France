@@ -1,0 +1,266 @@
+import type { UnitInput } from "@/lib/content/schema";
+import { say, t } from "../../_kit";
+
+export const unitComparer: UnitInput = {
+  id: "a2-u5",
+  level: "A2",
+  title: { pt: "Descrever e comparar", fr: "Décrire et comparer" },
+  canDo: {
+    pt: "Descrever um apartamento, um bairro ou uma cidade e comparar com o lugar de onde você veio.",
+    fr: "Décrire un logement, un quartier, une ville et les comparer.",
+  },
+  missionScenario: "scn-comparer-villes",
+  lessons: [
+    {
+      id: "a2-u5-l1",
+      title: { pt: "Un grand appartement calme", fr: "Un grand appartement calme" },
+      objective: {
+        pt: "Fazer a concordância e escolher a posição dos adjetivos.",
+        fr: "Accorder et placer les adjectifs.",
+      },
+      minutes: 7,
+      steps: [
+        {
+          id: "a2-u5-l1-t1",
+          type: "teach",
+          title: { pt: "Antes ou depois do nome?" },
+          body: {
+            pt: "O adjetivo **concorda**: *grand → grande → grands → grandes*. Alguns mudam mais: *beau → **belle***, *nouveau → **nouvelle***, *vieux → **vieille***, *bon → **bonne***.\n\nA maioria vem **depois** do nome: *un quartier **calme***, *une ville **moderne***.\n\nAlguns curtos vêm **antes**: *beau, joli, jeune, vieux, nouveau, bon, mauvais, grand, petit*: *un **petit** appartement*, *une **belle** vue*.\n\nVocabulário: **cher** (caro) · **calme** (tranquilo) · **bruyant** (barulhento).",
+          },
+          examples: [
+            { fr: "Un petit appartement calme.", pt: "Um apartamento pequeno e tranquilo." },
+            {
+              fr: "Une belle ville, mais un peu chère.",
+              pt: "Uma cidade bonita, mas um pouco cara.",
+            },
+            { fr: "La rue est bruyante.", pt: "A rua é barulhenta." },
+          ],
+          introduces: ["gram:adjectifs", "lex:cher", "lex:calme-bruyant"],
+        },
+        {
+          id: "a2-u5-l1-a1",
+          type: "choice",
+          instruction: { pt: "Qual está correto?" },
+          prompt: { pt: "uma casa bonita" },
+          options: ["une belle maison", "une maison beau", "une beau maison", "une maison belle"],
+          answer: 0,
+          optionFeedback: [
+            null,
+            { pt: "*Beau* vem antes e faz feminino *belle*." },
+            { pt: "No feminino: *belle*." },
+            { pt: "*Belle* é dos que vêm antes do nome: *une belle maison*." },
+          ],
+          targets: [t("gram:adjectifs", "recognition")],
+        },
+        {
+          id: "a2-u5-l1-a2",
+          type: "match",
+          instruction: say.match,
+          pairs: [
+            { left: "cher", right: "caro" },
+            { left: "calme", right: "tranquilo" },
+            { left: "bruyant", right: "barulhento" },
+          ],
+          targets: [t("lex:cher", "recognition"), t("lex:calme-bruyant", "recognition")],
+        },
+        {
+          id: "a2-u5-l1-a3",
+          type: "fill",
+          instruction: say.complete,
+          sentence: "C'est une ___ ville, avec des rues ___.",
+          blanks: [{ accept: ["belle"] }, { accept: ["calmes"] }],
+          wordBank: ["belle", "beau", "calmes", "calme"],
+          translation: "É uma cidade bonita, com ruas tranquilas.",
+          targets: [t("gram:adjectifs", "writing")],
+        },
+        {
+          id: "a2-u5-l1-a4",
+          type: "error_correction",
+          instruction: say.fix,
+          sentence: "J'habite dans un appartement grand.",
+          accept: ["J'habite dans un grand appartement."],
+          explanation: { pt: "*Grand* vem antes do nome: *un grand appartement*." },
+          targets: [t("gram:adjectifs", "writing")],
+        },
+        {
+          id: "a2-u5-l1-a5",
+          type: "speak",
+          mode: "repeat",
+          instruction: say.repeat,
+          text: "J'habite dans un petit appartement calme, près d'un beau parc.",
+          translation: "Moro num apartamento pequeno e tranquilo, perto de um parque bonito.",
+          targets: [t("gram:adjectifs", "speaking")],
+        },
+      ],
+    },
+    {
+      id: "a2-u5-l2",
+      title: { pt: "Plus, moins, aussi", fr: "Plus, moins, aussi" },
+      objective: {
+        pt: "Comparar lugares e coisas.",
+        fr: "Comparer des lieux et des choses.",
+      },
+      minutes: 7,
+      steps: [
+        {
+          id: "a2-u5-l2-t1",
+          type: "teach",
+          title: { pt: "Mais, menos, tão" },
+          body: {
+            pt: "**plus** + adjetivo + **que** — mais… que\n**moins** + adjetivo + **que** — menos… que\n**aussi** + adjetivo + **que** — tão… quanto\n\n*Montréal est **plus** grande **que** Québec.*\n*Le bus est **moins** rapide **que** le métro.*\n\nCom nomes: **plus de / moins de** + nome: *il y a plus **de** neige au Québec*.",
+          },
+          examples: [
+            {
+              fr: "Le loyer est plus cher à Paris qu'à Lyon.",
+              pt: "O aluguel é mais caro em Paris do que em Lyon.",
+            },
+            {
+              fr: "Ici, l'hiver est plus long qu'au Brésil.",
+              pt: "Aqui o inverno é mais longo do que no Brasil.",
+            },
+            {
+              fr: "Il y a moins de bruit dans mon quartier.",
+              pt: "Tem menos barulho no meu bairro.",
+            },
+          ],
+          introduces: ["gram:comparatif"],
+        },
+        {
+          id: "a2-u5-l2-a1",
+          type: "choice",
+          instruction: say.meaning,
+          prompt: { fr: "Le métro est plus rapide que le bus." },
+          options: [
+            "O metrô é mais rápido que o ônibus.",
+            "O metrô é menos rápido que o ônibus.",
+            "O metrô é tão rápido quanto o ônibus.",
+          ],
+          optionsLang: "pt",
+          answer: 0,
+          targets: [t("gram:comparatif", "recognition")],
+        },
+        {
+          id: "a2-u5-l2-a2",
+          type: "fill",
+          instruction: say.complete,
+          sentence: "À Québec, l'hiver est ___ froid ___ à Paris.",
+          blanks: [{ accept: ["plus"] }, { accept: ["qu'"] }],
+          translation: "Em Québec o inverno é mais frio do que em Paris.",
+          targets: [t("gram:comparatif", "writing")],
+        },
+        {
+          id: "a2-u5-l2-a3",
+          type: "reading",
+          instruction: { pt: "Leia e responda.", fr: "Lisez et répondez." },
+          passage: {
+            title: "Deux appartements",
+            text: "L'appartement de la rue Saint-Denis est plus grand et plus lumineux, mais il est aussi plus cher : 1 600 $ par mois. L'appartement de Verdun est moins cher (1 250 $) et plus calme, mais il est plus loin du centre.",
+          },
+          questions: [
+            {
+              prompt: { pt: "Qual apartamento é mais barato?" },
+              options: ["O de Verdun", "O da rue Saint-Denis", "Custam o mesmo"],
+              optionsLang: "pt",
+              answer: 0,
+            },
+            {
+              prompt: { pt: "Qual é a desvantagem do apartamento de Verdun?" },
+              options: ["Fica mais longe do centro", "É mais barulhento", "É mais caro"],
+              optionsLang: "pt",
+              answer: 0,
+            },
+          ],
+          targets: [t("gram:comparatif", "recognition"), t("lex:cher", "recognition", 0.5)],
+        },
+        {
+          id: "a2-u5-l2-a4",
+          type: "type",
+          instruction: say.write,
+          prompt: { pt: "Paris é mais cara que Lyon." },
+          accept: ["Paris est plus chère que Lyon.", "Paris est plus cher que Lyon."],
+          targets: [t("gram:comparatif", "writing"), t("lex:cher", "recall", 0.5)],
+        },
+        {
+          id: "a2-u5-l2-a5",
+          type: "speak",
+          mode: "repeat",
+          instruction: say.repeat,
+          text: "Ici, la vie est plus chère, mais la ville est plus calme.",
+          translation: "Aqui a vida é mais cara, mas a cidade é mais tranquila.",
+          targets: [t("gram:comparatif", "speaking")],
+        },
+      ],
+    },
+    {
+      id: "a2-u5-l3",
+      title: { pt: "Meilleur ou mieux?", fr: "Meilleur ou mieux ?" },
+      objective: {
+        pt: "Usar os comparativos irregulares de bon e bien.",
+        fr: "Meilleur et mieux.",
+      },
+      minutes: 6,
+      steps: [
+        {
+          id: "a2-u5-l3-t1",
+          type: "teach",
+          title: { pt: "Dois “melhor”" },
+          body: {
+            pt: "*Plus bon* não existe — assim como “mais bom”:\n\n**meilleur** (*bon* → melhor) acompanha um **nome**: *un **meilleur** salaire*, *ce café est **meilleur***.\n**mieux** (*bien* → melhor) acompanha um **verbo**: *tu parles **mieux** français*, *je dors **mieux** ici*.",
+          },
+          examples: [
+            { fr: "Ce pain est meilleur.", pt: "Este pão é melhor." },
+            { fr: "Tu parles mieux français maintenant !", pt: "Agora você fala francês melhor!" },
+            { fr: "J'ai trouvé un meilleur travail.", pt: "Encontrei um trabalho melhor." },
+          ],
+          introduces: ["gram:comparatif"],
+        },
+        {
+          id: "a2-u5-l3-a1",
+          type: "choice",
+          instruction: say.complete,
+          prompt: { fr: "Elle chante ___ que moi." },
+          options: ["mieux", "meilleur", "plus bien"],
+          answer: 0,
+          optionFeedback: [
+            null,
+            { pt: "Com verbo (*chanter*), “melhor” é *mieux*." },
+            { pt: "*Plus bien* não existe: *mieux*." },
+          ],
+          targets: [t("gram:comparatif", "recognition")],
+        },
+        {
+          id: "a2-u5-l3-a2",
+          type: "choice",
+          instruction: say.complete,
+          prompt: { fr: "C'est un ___ restaurant." },
+          options: ["meilleur", "mieux", "plus bon"],
+          answer: 0,
+          optionFeedback: [
+            null,
+            { pt: "Com nome (*restaurant*), *meilleur*." },
+            { pt: "*Plus bon* não existe: *meilleur*." },
+          ],
+          targets: [t("gram:comparatif", "recognition")],
+        },
+        {
+          id: "a2-u5-l3-a3",
+          type: "error_correction",
+          instruction: say.fix,
+          sentence: "Ce café est plus bon.",
+          accept: ["Ce café est meilleur."],
+          explanation: { pt: "O comparativo de *bon* é *meilleur*." },
+          targets: [t("gram:comparatif", "writing")],
+        },
+        {
+          id: "a2-u5-l3-a4",
+          type: "speak",
+          mode: "repeat",
+          instruction: say.repeat,
+          text: "Je parle mieux français et j'ai un meilleur travail.",
+          translation: "Falo francês melhor e tenho um trabalho melhor.",
+          targets: [t("gram:comparatif", "speaking")],
+        },
+      ],
+    },
+  ],
+};
