@@ -109,7 +109,7 @@ function WeekPanel({ habits }: { habits: Dashboard["habits"] }) {
   );
 }
 
-function ProgressPanel({ data }: { data: Dashboard }) {
+function ProgressPanel({ data, examGoal }: { data: Dashboard; examGoal: boolean }) {
   return (
     <section aria-labelledby="level" className="border-border border-t pt-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
@@ -175,6 +175,11 @@ function ProgressPanel({ data }: { data: Dashboard }) {
         <Link href="/gramatica" className="text-primary underline-offset-4 hover:underline">
           Gramática
         </Link>
+        {examGoal && (
+          <Link href="/provas" className="text-primary underline-offset-4 hover:underline">
+            Provas oficiais
+          </Link>
+        )}
       </p>
     </section>
   );
@@ -310,7 +315,7 @@ async function Today() {
         </section>
       )}
 
-      <ProgressPanel data={data} />
+      <ProgressPanel data={data} examGoal={profile.goals.includes("exam")} />
       <StatsPanel data={data} />
     </div>
   );

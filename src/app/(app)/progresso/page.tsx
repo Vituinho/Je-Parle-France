@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Suspense } from "react";
 import { Fr } from "@/components/fr";
 import { AchievementList } from "@/components/progress/achievement-list";
@@ -32,6 +33,14 @@ async function Progress() {
         <p className="text-muted-foreground mt-2 leading-relaxed">
           Tudo aqui vem do que você realmente pratica: o domínio é medido pela memória de cada item,
           não pelas lições abertas.
+        </p>
+        <p className="mt-3 text-sm">
+          <Link
+            href="/provas"
+            className="text-primary font-medium underline-offset-4 hover:underline"
+          >
+            Prontidão para as provas oficiais (TEF, TCF, DELF, DALF)
+          </Link>
         </p>
       </header>
 
