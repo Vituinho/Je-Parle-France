@@ -28,6 +28,7 @@ export function ReviewPlayer({
   title,
   exitHref,
   sessionId,
+  lab,
   onFinished,
 }: {
   items: PreparedReviewItem[];
@@ -36,6 +37,8 @@ export function ReviewPlayer({
   title: string;
   exitHref: string;
   sessionId?: string;
+  /** Pronunciation-lab drill (practice outside the review schedule). */
+  lab?: boolean;
   onFinished?: (summary: ReviewSummary) => void;
 }) {
   const [queue, setQueue] = useState(() => items.map((_, index) => index));
@@ -136,6 +139,8 @@ export function ReviewPlayer({
             checkReviewAction({
               conceptId: item.conceptId,
               dimension: item.dimension,
+              variant: item.variant,
+              lab,
               date,
               response,
               hinted,

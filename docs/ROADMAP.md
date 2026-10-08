@@ -23,8 +23,8 @@ Status vocabulary: **complete** · **mocked** (real interface + adapter, dev moc
 | Daily session planner | complete | Duration-aware composition, backlog handling, cognitive-load caps, destination tracks, skill rotation |
 | Dashboard | complete | One primary action, mastery-based progress per skill, weekly goal with rest days, weekly numbers |
 | Review session | complete | Per-day generated exercises for every concept × dimension, tutor corrections included |
-| Audio / TTS | planned | |
-| Pronunciation lab | planned | |
+| Audio / TTS | complete | Azure neural voices via /api/tts when configured; browser voices otherwise |
+| Pronunciation lab | complete | 4 A0 targets; perception drills; production with Azure word-level assessment or self-rating |
 | AI tutor (text) | complete | Claude adapter (structured outputs, refusal fallbacks) + labelled mock; scenarios, 4 correction modes, report, corrections → review; daily quotas |
 | AI tutor (voice) | planned | |
 | Vocabulary & grammar library | planned | |

@@ -15,7 +15,8 @@ export interface PreparedReviewItem extends ReviewItem {
 }
 
 /** Exercises are generated with a per-day seed so they vary from one day to the next. */
-export const reviewSeed = (userId: string, date: string) => `rv:${userId}:${date}`;
+export const reviewSeed = (userId: string, date: string, variant?: number) =>
+  `rv:${userId}:${date}${variant ? `:v${variant}` : ""}`;
 
 async function personalItems(userId: string, items: readonly ReviewItem[]) {
   const ids = items
@@ -39,13 +40,13 @@ export async function prepareReviewItems(
       index,
       conceptId: item.conceptId,
       dimension: item.dimension,
-      seed: reviewSeed(userId, date),
+      seed: reviewSeed(userId, date, item.variant),
       personal: personal.get(item.conceptId.replace("personal:", "")),
     });
     if (!activity) continue;
     prepared.push({
       ...item,
-      key: `${item.conceptId}#${item.dimension}`,
+      key: `${item.conceptId}#${item.dimension}#${item.variant ?? 0}`,
       activity: toClientActivity(activity, activitySeed(userId)),
     });
   }
@@ -89,7 +90,7 @@ export async function submitReview(params: {
     index,
     conceptId: params.item.conceptId,
     dimension: params.item.dimension,
-    seed: reviewSeed(params.userId, params.date),
+    seed: reviewSeed(params.userId, params.date, params.item.variant),
     personal: personal.get(params.item.conceptId.replace("personal:", "")),
   });
   if (!activity) throw new PracticeError("Este item não pode ser revisado.");

@@ -10,6 +10,8 @@ import { requireLearner } from "@/server/session";
 const reviewSchema = z.object({
   conceptId: z.string().min(1).max(80),
   dimension: z.enum(DIMENSIONS),
+  variant: z.number().int().min(0).max(99).optional(),
+  lab: z.boolean().optional(),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   response: activityResponseSchema,
   hinted: z.boolean().optional(),
@@ -23,14 +25,15 @@ export async function checkReviewAction(input: unknown): Promise<ReviewCheckResu
   const { user } = await requireLearner();
   const parsed = reviewSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Resposta inválida." };
-  const { conceptId, dimension, date, response, hinted, durationMs, sessionId } = parsed.data;
+  const { conceptId, dimension, variant, lab, date, response, hinted, durationMs, sessionId } =
+    parsed.data;
   try {
     const result = await submitReview({
       userId: user.id,
-      item: { conceptId, dimension },
+      item: { conceptId, dimension, variant },
       date,
       response,
-      context: sessionId ? "session" : "review",
+      context: sessionId ? "session" : lab ? "lab" : "review",
       sessionId,
       hinted,
       durationMs,

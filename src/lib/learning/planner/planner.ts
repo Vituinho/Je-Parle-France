@@ -14,6 +14,8 @@ import type { ConceptKind, Dimension, Skill } from "../skills";
 export interface ReviewItem {
   conceptId: string;
   dimension: Dimension;
+  /** Distinct exercise for the same item (drills repeat a concept with variety). */
+  variant?: number;
 }
 
 export type FocusSkill = "pronunciation" | "speaking" | "listening" | "writing";

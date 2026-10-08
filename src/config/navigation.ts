@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { CalendarCheck, MessagesSquare, RotateCcw } from "lucide-react";
+import { AudioLines, CalendarCheck, MessagesSquare, RotateCcw } from "lucide-react";
 
 export interface NavItem {
   href: string;
@@ -17,4 +17,5 @@ export const primaryNav: NavItem[] = [
   { href: "/hoje", label: "Hoje", icon: CalendarCheck, mobile: true },
   { href: "/revisar", label: "Revisão", icon: RotateCcw, mobile: true },
   { href: "/tutor", label: "Tutor", icon: MessagesSquare, mobile: true },
+  { href: "/pronuncia", label: "Pronúncia", icon: AudioLines, mobile: true },
 ];
