@@ -19,7 +19,7 @@ Status vocabulary: **complete** · **mocked** (real interface + adapter, dev moc
 | Memory model (FSRS + mastery) | complete | ts-fsrs, derived mastery states |
 | Deterministic graders | complete | French-aware text comparison, red-pen diffs |
 | A0 curriculum | complete | Module A0.1: 4 units, 14 lessons (greetings, tu/vous, sounds, numbers, café) |
-| A1 core curriculum | complete | Module A1.1: 5 units, 15 lessons (être/avoir/professions, family and possessives, -er verbs/negation/time, city/articles/il y a, questions/aller/futur proche), 2 new tutor missions; grammar ids aligned with the placement bank. A1.2 planned |
+| A1 core curriculum | complete | Modules A1.1 and A1.2: 10 units, 30 lessons (être/avoir, family, -er verbs/negation/time, city/articles, questions/futur proche, partitive/shopping, health, weather, routine/reflexive verbs, vouloir/pouvoir/faire/prendre), 4 tutor missions; grammar ids aligned with the placement bank |
 | Lesson player + activity engine | complete | 15 activity types, server-side grading, missed items re-queued once, honest summary; browser TTS with a single notice when no French voice |
 | Daily session planner | complete | Duration-aware composition, backlog handling, cognitive-load caps, destination tracks, skill rotation |
 | Dashboard | complete | One primary action, mastery-based progress per skill, weekly goal with rest days, weekly numbers |

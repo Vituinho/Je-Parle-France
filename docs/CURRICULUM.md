@@ -62,12 +62,17 @@ waiting until the learner has met it.
 | core | A1 | Meu dia — regular *-er* verbs (silent *-ent*), *ne… pas* and *pas de*, days of the week, telling the time | 3 | — |
 | core | A1 | Na cidade — definite articles and gender traps, *au/du* like “ao/do”, *il y a* (existence) vs *il a* (possession), places and *près de / à côté de / en face de* | 3 | Pedir informação na rua |
 | core | A1 | Perguntas e planos — intonation and *est-ce que* questions, question words, *aller*, the near future (= “vou + verbo”) | 3 | Planos para o fim de semana |
+| core | A1 | Compras e comida — the partitive where Portuguese has no article, *pas de*, quantities | 3 | Compras na feira |
+| core | A1 | Saúde — *avoir mal à* with contractions, symptoms, *ordonnance* (false friend), emergency numbers | 3 | Na farmácia |
+| core | A1 | O tempo e as estações — *il fait* (never *il est chaud*), *il fait froid* vs *j'ai froid*, *au printemps*, Québec's *tuque*, forecasts | 3 | — |
+| core | A1 | Minha rotina — reflexive verbs, *ne… pas* around pronoun + verb, verbs reflexive only in French, sequencing | 3 | — |
+| core | A1 | Querer, poder, fazer, pegar — *vouloir/pouvoir* + infinitive, survival phrases, *faire les courses*, *prendre le bus* | 3 | — |
 | canada | A0 | Bem-vindo ao Québec — Bonjour-Hi, *bienvenue*, *c'est correct*; *déjeuner/dîner/souper*, *fin de semaine*, *dépanneur* | 2 | Num café em Montréal |
 | canada | A1 | Chegar e se instalar — border questions, bank account, renting in Montréal | 3 | Abrir uma conta no banco |
 | france | A0 | O dia a dia na França — boulangerie, meal names and hours | 2 | Na boulangerie |
 | france | A1 | Se instalar na França — métro, préfecture and documents, renting | 3 | No guichê da préfecture |
 
-Totals: 165 concepts, 39 lessons, 322 activities, 9 scenarios (`npm run content:check` prints the
+Totals: 208 concepts, 54 lessons, 420 activities, 11 scenarios (`npm run content:check` prints the
 current numbers).
 
 ### What makes the tracks genuinely different
@@ -94,9 +99,9 @@ links whenever the file is touched; the content test requires https and a `check
 
 ## Growth plan
 
-1. **Core A1** — module A1.1 done (5 units, 15 lessons). Next for A1: food and shopping
-   (partitive *du / de la*), the body and health, the weather and seasons, *-ir* and *-re* verbs,
-   reflexive verbs for the daily routine. A1 learners already start in A1 after the placement.
+1. **Core A1** — done: modules A1.1 and A1.2 (10 units, 30 lessons). Next: A2 — the *passé
+   composé* (with *avoir* and *être*), the *imparfait*, pronouns *y* and *en*, comparisons,
+   describing people and places, work and housing in more depth.
 2. **Tracks A1–A2** — Canada: health card and clinic (*carte d'assurance maladie*, *CLSC*), job
    search and interview, winter, public transport (STM), Québec informal speech in
    *recognition-only* activities (*chu*, *pantoute*, *icitte*). France: health and *médecin

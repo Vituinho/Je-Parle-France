@@ -2,6 +2,7 @@ import type { CourseInput } from "@/lib/content/schema";
 import { authentic } from "./authentic";
 import { a0Concepts } from "./concepts/a0";
 import { a1Concepts } from "./concepts/a1";
+import { a12Concepts } from "./concepts/a1-2";
 import { canadaConcepts } from "./concepts/canada";
 import { franceConcepts } from "./concepts/france";
 import { a0Modules } from "./curriculum/a0";
@@ -16,7 +17,7 @@ import { scenarios } from "./scenarios";
  * files in this directory; see docs/CONTENT-GUIDELINES.md.
  */
 export const course: CourseInput = {
-  concepts: [...a0Concepts, ...a1Concepts, ...canadaConcepts, ...franceConcepts],
+  concepts: [...a0Concepts, ...a1Concepts, ...a12Concepts, ...canadaConcepts, ...franceConcepts],
   modules: [...a0Modules, ...a1Modules, ...canadaModules, ...franceModules],
   placementItems,
   scenarios,

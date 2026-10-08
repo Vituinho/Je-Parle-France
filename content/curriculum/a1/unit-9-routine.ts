@@ -1,0 +1,311 @@
+import type { UnitInput } from "@/lib/content/schema";
+import { say, t } from "../../_kit";
+
+export const unitRoutine: UnitInput = {
+  id: "a1-u9",
+  level: "A1",
+  title: { pt: "Minha rotina", fr: "Ma routine" },
+  canDo: {
+    pt: "Contar sua rotina do acordar ao dormir, em ordem, com os verbos pronominais.",
+    fr: "Raconter sa routine quotidienne, du lever au coucher.",
+  },
+  lessons: [
+    {
+      id: "a1-u9-l1",
+      title: { pt: "Je me lève", fr: "Je me lève" },
+      objective: {
+        pt: "Conjugar os verbos pronominais da rotina.",
+        fr: "Conjuguer les verbes pronominaux du quotidien.",
+      },
+      minutes: 7,
+      steps: [
+        {
+          id: "a1-u9-l1-t1",
+          type: "teach",
+          title: { pt: "“Eu me levanto”" },
+          body: {
+            pt: "Como em português, alguns verbos vêm com um pronome que retoma o sujeito:\n\n*je **me** lève* · *tu **te** lèves* · *il / elle **se** lève*\n*nous **nous** levons* · *vous **vous** levez* · *ils / elles **se** lèvent*\n\nAntes de vogal: **m'**, **t'**, **s'** — *je **m'**habille*.\n\nOs verbos da rotina: **se lever** (levantar-se), **se doucher** (tomar banho), **s'habiller** (vestir-se), **se coucher** (ir dormir).",
+          },
+          examples: [
+            { fr: "Je me lève à sept heures.", pt: "Eu me levanto às sete." },
+            { fr: "Il se douche le soir.", pt: "Ele toma banho à noite." },
+            { fr: "Nous nous habillons vite.", pt: "Nós nos vestimos rápido." },
+            { fr: "Vous vous couchez tard ?", pt: "Vocês vão dormir tarde?" },
+          ],
+          introduces: [
+            "gram:verbes-pronominaux",
+            "lex:se-lever",
+            "lex:se-doucher",
+            "lex:s-habiller",
+            "lex:se-coucher",
+          ],
+        },
+        {
+          id: "a1-u9-l1-a1",
+          type: "choice",
+          instruction: say.complete,
+          prompt: { fr: "Tu ___ lèves à quelle heure ?" },
+          options: ["te", "se", "me", "vous"],
+          answer: 0,
+          optionFeedback: [
+            null,
+            { pt: "*se* é para *il / elle / ils / elles*." },
+            { pt: "*me* é para *je*." },
+            { pt: "*vous* é para *vous*." },
+          ],
+          targets: [t("gram:verbes-pronominaux", "recognition")],
+        },
+        {
+          id: "a1-u9-l1-a2",
+          type: "match",
+          instruction: say.match,
+          pairs: [
+            { left: "se lever", right: "levantar-se" },
+            { left: "se doucher", right: "tomar banho" },
+            { left: "s'habiller", right: "vestir-se" },
+            { left: "se coucher", right: "ir dormir" },
+          ],
+          targets: [
+            t("lex:se-lever", "recognition"),
+            t("lex:se-doucher", "recognition"),
+            t("lex:s-habiller", "recognition"),
+            t("lex:se-coucher", "recognition"),
+          ],
+        },
+        {
+          id: "a1-u9-l1-a3",
+          type: "fill",
+          instruction: say.complete,
+          sentence: "Je ___ douche et je ___ habille.",
+          blanks: [{ accept: ["me"] }, { accept: ["m'"] }],
+          translation: "Eu tomo banho e me visto.",
+          targets: [t("gram:verbes-pronominaux", "writing")],
+        },
+        {
+          id: "a1-u9-l1-a4",
+          type: "error_correction",
+          instruction: say.fix,
+          sentence: "Je lève à six heures.",
+          accept: ["Je me lève à six heures."],
+          explanation: { pt: "*Se lever* precisa do pronome: *je me lève*." },
+          targets: [t("gram:verbes-pronominaux", "writing"), t("lex:se-lever", "recall", 0.5)],
+        },
+        {
+          id: "a1-u9-l1-a5",
+          type: "type",
+          instruction: say.write,
+          prompt: { pt: "Eu vou dormir às onze horas." },
+          accept: ["Je me couche à onze heures."],
+          targets: [t("lex:se-coucher", "recall"), t("gram:verbes-pronominaux", "writing", 0.5)],
+        },
+        {
+          id: "a1-u9-l1-a6",
+          type: "speak",
+          mode: "repeat",
+          instruction: say.repeat,
+          text: "Je me lève, je me douche et je m'habille.",
+          translation: "Eu me levanto, tomo banho e me visto.",
+          targets: [t("gram:verbes-pronominaux", "speaking")],
+        },
+      ],
+    },
+    {
+      id: "a1-u9-l2",
+      title: { pt: "Primeiro, depois…", fr: "D'abord, ensuite…" },
+      objective: {
+        pt: "Contar a rotina em ordem, com horários e conectores.",
+        fr: "Raconter sa journée dans l'ordre.",
+      },
+      minutes: 7,
+      steps: [
+        {
+          id: "a1-u9-l2-t1",
+          type: "teach",
+          title: { pt: "Em ordem" },
+          body: {
+            pt: "Para organizar a rotina: **d'abord** (primeiro) · **ensuite** (em seguida) · **puis** (depois) · **enfin** (por fim).\n\nCom os horários que você já sabe: *à sept heures*, *à midi*, *le soir*.\n\nE mais um pronominal: **se dépêcher** — apressar-se. *Dépêche-toi !* = Corre!",
+          },
+          examples: [
+            {
+              fr: "D'abord, je me lève. Ensuite, je me douche.",
+              pt: "Primeiro me levanto. Em seguida tomo banho.",
+            },
+            {
+              fr: "Puis je prends un café, et enfin je pars au travail.",
+              pt: "Depois tomo um café e, por fim, saio para o trabalho.",
+            },
+            { fr: "Dépêche-toi, le bus arrive !", pt: "Corre, o ônibus está chegando!" },
+          ],
+          introduces: ["lex:d-abord-ensuite", "lex:se-depecher"],
+        },
+        {
+          id: "a1-u9-l2-a1",
+          type: "reading",
+          instruction: { pt: "Leia a rotina de Marina e responda.", fr: "Lisez et répondez." },
+          passage: {
+            title: "La journée de Marina",
+            text: "Je me lève à six heures et demie. D'abord, je me douche. Ensuite, je m'habille et je prends un café. Puis je me dépêche : le métro part à sept heures et quart ! Le soir, je me repose un peu et enfin je me couche à vingt-deux heures.",
+          },
+          questions: [
+            {
+              prompt: { pt: "O que Marina faz primeiro?" },
+              options: ["Toma banho", "Se veste", "Toma café"],
+              optionsLang: "pt",
+              answer: 0,
+            },
+            {
+              prompt: { pt: "A que horas ela vai dormir?" },
+              options: ["Às 22h", "Às 20h", "Às 6h30"],
+              optionsLang: "pt",
+              answer: 0,
+            },
+          ],
+          targets: [
+            t("lex:d-abord-ensuite", "recognition"),
+            t("gram:verbes-pronominaux", "recognition"),
+          ],
+        },
+        {
+          id: "a1-u9-l2-a2",
+          type: "order",
+          instruction: say.order,
+          tokens: ["D'abord,", "je", "me", "lève.", "Ensuite,", "je", "m'habille."],
+          translation: "Primeiro me levanto. Em seguida me visto.",
+          targets: [
+            t("lex:d-abord-ensuite", "recall"),
+            t("gram:verbes-pronominaux", "writing", 0.5),
+          ],
+        },
+        {
+          id: "a1-u9-l2-a3",
+          type: "choice",
+          instruction: say.meaning,
+          prompt: { fr: "Dépêche-toi !" },
+          options: ["Corre! / Anda logo!", "Descansa!", "Vai dormir!"],
+          optionsLang: "pt",
+          answer: 0,
+          targets: [t("lex:se-depecher", "recognition")],
+        },
+        {
+          id: "a1-u9-l2-a4",
+          type: "listening",
+          instruction: say.listen,
+          lines: [
+            {
+              speaker: "Pai",
+              text: "Les enfants, dépêchez-vous ! L'école commence à huit heures !",
+              gender: "m",
+            },
+            { speaker: "Filha", text: "Oui papa, je m'habille !", gender: "f" },
+          ],
+          questions: [
+            {
+              prompt: { pt: "Por que o pai está apressando as crianças?" },
+              options: ["A escola começa às oito", "O ônibus já passou", "Eles vão ao médico"],
+              optionsLang: "pt",
+              answer: 0,
+            },
+          ],
+          targets: [t("lex:se-depecher", "listening"), t("lex:s-habiller", "listening", 0.5)],
+        },
+        {
+          id: "a1-u9-l2-a5",
+          type: "speak",
+          mode: "respond",
+          instruction: say.answer,
+          prompt: {
+            fr: "Tu te lèves à quelle heure ?",
+            audio: { text: "Tu te lèves à quelle heure ?", gender: "f" },
+          },
+          text: "Je me lève à sept heures.",
+          accept: [
+            "Je me lève à six heures.",
+            "Je me lève à sept heures.",
+            "Je me lève à huit heures.",
+            "Je me lève à six heures et demie.",
+            "Je me lève à sept heures et demie.",
+          ],
+          translation: "Eu me levanto às sete. (ou o seu horário)",
+          targets: [t("lex:se-lever", "speaking"), t("gram:verbes-pronominaux", "speaking", 0.5)],
+        },
+      ],
+    },
+    {
+      id: "a1-u9-l3",
+      title: { pt: "No fim de semana", fr: "Le week-end" },
+      objective: {
+        pt: "Usar a negação com os pronominais e os verbos que só são pronominais em francês.",
+        fr: "La négation avec les verbes pronominaux.",
+      },
+      minutes: 7,
+      steps: [
+        {
+          id: "a1-u9-l3-t1",
+          type: "teach",
+          title: { pt: "Je ne me lève pas tôt" },
+          body: {
+            pt: "Na negação, *ne… pas* abraça **pronome + verbo**: *je **ne** me lève **pas** tôt*.\n\nAlguns verbos são pronominais em francês e não em português:\n**se reposer** — descansar · **se promener** — passear · **se dépêcher** — apressar-se",
+          },
+          examples: [
+            { fr: "Le samedi, je ne me lève pas tôt.", pt: "No sábado não me levanto cedo." },
+            { fr: "Le dimanche, on se repose.", pt: "No domingo a gente descansa." },
+            { fr: "Nous nous promenons au parc.", pt: "Passeamos no parque." },
+          ],
+          introduces: ["gram:verbes-pronominaux", "lex:se-reposer"],
+        },
+        {
+          id: "a1-u9-l3-a1",
+          type: "choice",
+          instruction: { pt: "Qual é a negação correta?" },
+          prompt: { pt: "Não me levanto cedo." },
+          options: ["Je ne me lève pas tôt.", "Je me ne lève pas tôt.", "Je ne lève me pas tôt."],
+          answer: 0,
+          optionFeedback: [
+            null,
+            { pt: "O *ne* vem antes do pronome: *je ne me lève pas*." },
+            { pt: "Pronome e verbo ficam juntos: *ne me lève pas*." },
+          ],
+          targets: [t("gram:verbes-pronominaux", "recognition")],
+        },
+        {
+          id: "a1-u9-l3-a2",
+          type: "error_correction",
+          instruction: say.fix,
+          sentence: "Le dimanche, je repose.",
+          accept: ["Le dimanche, je me repose."],
+          explanation: { pt: "“Descansar” é pronominal em francês: *se reposer*." },
+          targets: [t("lex:se-reposer", "recall"), t("gram:verbes-pronominaux", "writing", 0.5)],
+        },
+        {
+          id: "a1-u9-l3-a3",
+          type: "fill",
+          instruction: { pt: "Passe para a negativa.", fr: "Mettez à la forme négative." },
+          sentence: "Le week-end, je ___ couche ___ tôt.",
+          blanks: [{ accept: ["ne me"] }, { accept: ["pas"] }],
+          translation: "No fim de semana não vou dormir cedo.",
+          targets: [
+            t("gram:verbes-pronominaux", "writing"),
+            t("gram:negation-ne-pas", "writing", 0.5),
+          ],
+        },
+        {
+          id: "a1-u9-l3-a4",
+          type: "type",
+          instruction: say.write,
+          prompt: { pt: "No domingo, eu descanso." },
+          accept: ["Le dimanche, je me repose.", "Dimanche, je me repose."],
+          targets: [t("lex:se-reposer", "recall")],
+        },
+        {
+          id: "a1-u9-l3-a5",
+          type: "speak",
+          mode: "repeat",
+          instruction: say.repeat,
+          text: "Le samedi, je ne me lève pas tôt : je me repose.",
+          translation: "No sábado não me levanto cedo: descanso.",
+          targets: [t("gram:verbes-pronominaux", "speaking"), t("lex:se-reposer", "speaking", 0.5)],
+        },
+      ],
+    },
+  ],
+};

@@ -73,6 +73,53 @@ export const scenarios: ScenarioInput[] = [
     ],
   },
   {
+    id: "scn-marche",
+    track: "core",
+    minLevel: "A1",
+    title: { pt: "Compras na feira", fr: "Au marché" },
+    setting: {
+      pt: "Numa banca de feira, você compra frutas, legumes e queijo para a semana.",
+      fr: "À un stand du marché, vous achetez des fruits, des légumes et du fromage pour la semaine.",
+    },
+    aiRole:
+      "Tu es marchand ou marchande au marché. Tu vends des fruits, des légumes et du fromage. Tu demandes « qu'est-ce que je vous sers ? », « et avec ça ? », tu proposes des quantités (un kilo, une barquette, un morceau), tu annonces le prix et tu dis parfois qu'un produit manque aujourd'hui. Tu vouvoies, phrases courtes.",
+    learnerGoal: {
+      pt: "Pedir quantidades com o partitivo, perguntar o preço e dizer o que você não quer.",
+      fr: "Demander des quantités, demander le prix et dire ce que vous ne voulez pas.",
+    },
+    openingLine: "Bonjour ! Qu'est-ce que je vous sers aujourd'hui ?",
+    keyConcepts: [
+      "gram:partitif",
+      "lex:un-kilo-de",
+      "lex:les-fruits",
+      "lex:les-legumes",
+      "lex:le-fromage",
+    ],
+  },
+  {
+    id: "scn-pharmacie",
+    track: "core",
+    minLevel: "A1",
+    title: { pt: "Na farmácia", fr: "À la pharmacie" },
+    setting: {
+      pt: "Você não está bem e vai à farmácia explicar os sintomas e pedir um remédio.",
+      fr: "Vous ne vous sentez pas bien et vous allez à la pharmacie.",
+    },
+    aiRole:
+      "Tu es pharmacien ou pharmacienne. Tu demandes où le client a mal, depuis quand, s'il a de la fièvre et s'il a une ordonnance. Tu proposes un médicament simple sans ordonnance, tu expliques la posologie (deux fois par jour, pendant trois jours) et tu conseilles de voir un médecin si les symptômes durent. Tu ne poses jamais de vrai diagnostic. Tu vouvoies, phrases courtes et claires.",
+    learnerGoal: {
+      pt: "Dizer onde dói e desde quando, responder às perguntas e entender como tomar o remédio.",
+      fr: "Dire où vous avez mal, répondre aux questions et comprendre la posologie.",
+    },
+    openingLine: "Bonjour, qu'est-ce qui ne va pas ?",
+    keyConcepts: [
+      "gram:avoir-mal-a",
+      "lex:avoir-de-la-fievre",
+      "lex:une-ordonnance",
+      "lex:un-medicament",
+    ],
+  },
+  {
     id: "scn-cafe-paris",
     track: "france",
     region: "fr-FR",
