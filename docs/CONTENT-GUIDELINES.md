@@ -6,13 +6,13 @@ reviewed like any other change.
 
 ## Where things live
 
-| What | Where |
-| --- | --- |
-| Concepts | `content/concepts/<level or track>.ts` |
-| Lessons | `content/curriculum/<path>/unit-*.ts`, assembled in each `index.ts` |
-| Placement items | `content/placement/*.ts` |
-| Tutor scenarios | `content/scenarios.ts` |
-| Shared helpers | `content/_kit.ts` (`t()` for targets, `say.*` for instructions) |
+| What            | Where                                                               |
+| --------------- | ------------------------------------------------------------------- |
+| Concepts        | `content/concepts/<level or track>.ts`                              |
+| Lessons         | `content/curriculum/<path>/unit-*.ts`, assembled in each `index.ts` |
+| Placement items | `content/placement/*.ts`                                            |
+| Tutor scenarios | `content/scenarios.ts`                                              |
+| Shared helpers  | `content/_kit.ts` (`t()` for targets, `say.*` for instructions)     |
 
 Everything is assembled in `content/index.ts`. Components never contain course text.
 
@@ -32,8 +32,8 @@ Everything is assembled in `content/index.ts`. Components never contain course t
   variants, with and without the article, regional alternatives).
 - `region`: `fr-CA` or `fr-FR` only for usage that is specific to one side; it also selects the
   review voice.
-- Add a `brazil` note or `falseFriend` whenever Portuguese predicts the wrong thing (*je besoin*,
-  *préfecture* ≠ prefeitura, *correspondance* ≠ correspondência).
+- Add a `brazil` note or `falseFriend` whenever Portuguese predicts the wrong thing (_je besoin_,
+  _préfecture_ ≠ prefeitura, _correspondance_ ≠ correspondência).
 - IPA follows standard Parisian French; Québec differences go in notes.
 
 ## Lessons
@@ -45,7 +45,7 @@ The content tests enforce:
 - every target concept is taught before it is practised (core path; tracks within the track);
 - options are unique inside a question.
 
-Write by the pattern *teach → recognise → produce*: one idea per teaching card; diagnostic
+Write by the pattern _teach → recognise → produce_: one idea per teaching card; diagnostic
 distractors with `optionFeedback` that explain the specific misconception; listening lines with
 the right `region` and speaker `gender`; a `context` gloss for words above the learner's level
 that are needed to answer.

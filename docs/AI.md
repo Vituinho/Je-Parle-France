@@ -3,12 +3,12 @@
 All external AI goes through interfaces in `src/lib/ai/` (ADR-004). Business logic never imports a
 vendor SDK.
 
-| Interface | Adapter | Without configuration |
-| --- | --- | --- |
-| `LLMProvider` (`lib/ai/llm`) | `AnthropicProvider` (Claude) | `MockProvider` — scripted replies, rule-based corrections, heuristic report, **labelled "simulado"** in the UI |
-| `TextToSpeechProvider` (`lib/ai/speech`) | Azure neural voices (fr-FR Denise/Henri, fr-CA Sylvie/Antoine) | Browser `speechSynthesis` with the best installed French voice; one notice per screen if none |
-| `SpeechToTextProvider` | Azure short-audio REST (`/api/speech/transcribe`) | Not available — no transcript is ever invented; the mic is not offered |
-| `PronunciationAssessmentProvider` | Azure pronunciation assessment (word granularity) | Self-rating against the model recording |
+| Interface                                | Adapter                                                        | Without configuration                                                                                          |
+| ---------------------------------------- | -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `LLMProvider` (`lib/ai/llm`)             | `AnthropicProvider` (Claude)                                   | `MockProvider` — scripted replies, rule-based corrections, heuristic report, **labelled "simulado"** in the UI |
+| `TextToSpeechProvider` (`lib/ai/speech`) | Azure neural voices (fr-FR Denise/Henri, fr-CA Sylvie/Antoine) | Browser `speechSynthesis` with the best installed French voice; one notice per screen if none                  |
+| `SpeechToTextProvider`                   | Azure short-audio REST (`/api/speech/transcribe`)              | Not available — no transcript is ever invented; the mic is not offered                                         |
+| `PronunciationAssessmentProvider`        | Azure pronunciation assessment (word granularity)              | Self-rating against the model recording                                                                        |
 
 There is intentionally **no speech mock in the product path**: a fake score would become fake
 evidence about the learner. Mocks for speech exist only in tests (`azure.test.ts` stubs `fetch`).
@@ -38,7 +38,7 @@ Secrets are read only on the server (`src/lib/env.ts`). The browser learns three
 - **Report** at the end (`tutorReportSchema`) at `effort: "medium"`, fed with the transcript and
   the corrections already collected (no re-analysis of every turn).
 - **Deterministic detectors first** (`lib/learning/errors/patterns.ts`): the most frequent
-  Brazilian errors (*je besoin*, *je suis 25 ans*, missing elision, *à le*) are caught by rules and
+  Brazilian errors (_je besoin_, _je suis 25 ans_, missing elision, _à le_) are caught by rules and
   merged with the model's corrections — free, explainable, never hallucinated.
 - **Correction modes**: `immediate` (all), `important_only` (meaning/core structure), `no_interruptions`
   and `report_only` (nothing during the chat). The model also recasts the correct form in its
@@ -50,7 +50,7 @@ Secrets are read only on the server (`src/lib/env.ts`). The browser learns three
   (`personal:<id>` × recognition/writing), so they come back in reviews as error-correction and
   choose-the-right-form exercises.
 - **Mastery integration**: each deterministic detector names the course concepts it is evidence
-  against (*je suis 25 ans* → `gram:age-avoir`). On every turn, a detected error records a failed
+  against (_je suis 25 ans_ → `gram:age-avoir`). On every turn, a detected error records a failed
   review of that concept on the dimension used — writing, or speaking for a spoken turn — but only
   for concepts the learner has already met, so the course concept itself comes back in reviews.
   Model-generated corrections carry no concept id and never touch course mastery.

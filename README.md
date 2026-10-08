@@ -1,6 +1,6 @@
 # Je Parle Français
 
-**French for real life.** · *Francês para a vida real.*
+**French for real life.** · _Francês para a vida real._
 
 A French-learning platform built specifically for Brazilian Portuguese speakers who want to live,
 study and work in Canada/Québec or France — from A0 to C1.
@@ -27,14 +27,14 @@ study and work in Canada/Québec or France — from A0 to C1.
 
 ## Documentation
 
-| Topic | Document |
-| --- | --- |
-| Product, audience, principles | [PRODUCT](docs/PRODUCT.md) |
-| How it teaches | [PEDAGOGY](docs/PEDAGOGY.md) · [CURRICULUM](docs/CURRICULUM.md) · [CONTENT-GUIDELINES](docs/CONTENT-GUIDELINES.md) |
-| Learning engines | [PLACEMENT](docs/PLACEMENT.md) · [MASTERY](docs/MASTERY.md) · [SPACED-REPETITION](docs/SPACED-REPETITION.md) · [PRONUNCIATION](docs/PRONUNCIATION.md) |
-| AI and speech | [AI](docs/AI.md) |
-| Engineering | [ARCHITECTURE](docs/ARCHITECTURE.md) · [DATABASE](docs/DATABASE.md) · [DEPLOYMENT](docs/DEPLOYMENT.md) |
-| Status | [ROADMAP](docs/ROADMAP.md) |
+| Topic                         | Document                                                                                                                                              |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Product, audience, principles | [PRODUCT](docs/PRODUCT.md)                                                                                                                            |
+| How it teaches                | [PEDAGOGY](docs/PEDAGOGY.md) · [CURRICULUM](docs/CURRICULUM.md) · [CONTENT-GUIDELINES](docs/CONTENT-GUIDELINES.md)                                    |
+| Learning engines              | [PLACEMENT](docs/PLACEMENT.md) · [MASTERY](docs/MASTERY.md) · [SPACED-REPETITION](docs/SPACED-REPETITION.md) · [PRONUNCIATION](docs/PRONUNCIATION.md) |
+| AI and speech                 | [AI](docs/AI.md)                                                                                                                                      |
+| Engineering                   | [ARCHITECTURE](docs/ARCHITECTURE.md) · [DATABASE](docs/DATABASE.md) · [DEPLOYMENT](docs/DEPLOYMENT.md)                                                |
+| Status                        | [ROADMAP](docs/ROADMAP.md)                                                                                                                            |
 
 ## Stack
 
@@ -58,14 +58,14 @@ You can also point `DATABASE_URL` to any PostgreSQL 15+ database (e.g. Neon).
 
 ## Scripts
 
-| Script | Purpose |
-| --- | --- |
-| `npm run dev` | Development server |
-| `npm run lint` / `npm run typecheck` | Static checks |
-| `npm test` | Unit + integration tests (integration needs `TEST_DATABASE_URL`) |
-| `npm run test:e2e` | Playwright end-to-end tests |
-| `npm run content:check` | Validate course content |
-| `npm run verify` | Everything CI runs |
+| Script                               | Purpose                                                          |
+| ------------------------------------ | ---------------------------------------------------------------- |
+| `npm run dev`                        | Development server                                               |
+| `npm run lint` / `npm run typecheck` | Static checks                                                    |
+| `npm test`                           | Unit + integration tests (integration needs `TEST_DATABASE_URL`) |
+| `npm run test:e2e`                   | Playwright end-to-end tests                                      |
+| `npm run content:check`              | Validate course content                                          |
+| `npm run verify`                     | Everything CI runs                                               |
 
 ## License
 

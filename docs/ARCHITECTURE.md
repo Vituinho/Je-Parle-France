@@ -53,12 +53,12 @@ never reused or renamed once shipped.
 
 **Decision.** Learner knowledge is stored as `MemoryTrace(userId, conceptId, dimension)` holding
 the FSRS card state plus evidence counters. Dimensions: `recognition`, `recall`, `listening`,
-`writing`, `speaking`, `pronunciation`. Mastery states (*unseen → introduced → learning →
-familiar → strong → mastered*, and *decaying*) are **derived** from FSRS stability,
+`writing`, `speaking`, `pronunciation`. Mastery states (_unseen → introduced → learning →
+familiar → strong → mastered_, and _decaying_) are **derived** from FSRS stability,
 retrievability and evidence, not stored as an independent score.
 
 **Why.** It unifies "what does the learner know" and "what should be reviewed" in one model,
-avoids two sources of truth drifting apart, and supports *recognises it but cannot say it*.
+avoids two sources of truth drifting apart, and supports _recognises it but cannot say it_.
 FSRS (via `ts-fsrs`) is an evidence-based, open scheduler used by Anki.
 
 ### ADR-003 — Lightweight Bayesian adaptive placement
@@ -77,7 +77,7 @@ response log are stored so difficulties can be re-estimated later.
 **Decision.** `LLMProvider`, `SpeechToTextProvider`, `TextToSpeechProvider`,
 `PronunciationAssessmentProvider` interfaces in `src/lib/ai`. Adapters: Anthropic (LLM), Azure
 Speech (STT, TTS, pronunciation). Mocks for development/tests. The browser's
-`speechSynthesis` is the zero-cost TTS fallback. The UI shows a *simulado* badge whenever a mock
+`speechSynthesis` is the zero-cost TTS fallback. The UI shows a _simulado_ badge whenever a mock
 produced a result, and assessments never count mock speech scores as evidence.
 
 **Why.** Avoid vendor lock-in, keep secrets server-side, keep the app usable offline, and never
@@ -136,9 +136,9 @@ blocks.
 
 ## Testing strategy
 
-| Layer | Tool | What |
-| --- | --- | --- |
-| Engines (`lib/learning`, grading, content) | Vitest unit | Placement, FSRS/mastery, planner, graders, schemas, content cross-references |
-| Services + repositories | Vitest integration (real PostgreSQL, `TEST_DATABASE_URL`) | Persistence, transactions, ownership |
-| Components | Vitest + Testing Library | Activity players, critical forms |
-| Critical flows | Playwright | signup → onboarding → placement → report → dashboard → session → review → progress |
+| Layer                                      | Tool                                                      | What                                                                               |
+| ------------------------------------------ | --------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Engines (`lib/learning`, grading, content) | Vitest unit                                               | Placement, FSRS/mastery, planner, graders, schemas, content cross-references       |
+| Services + repositories                    | Vitest integration (real PostgreSQL, `TEST_DATABASE_URL`) | Persistence, transactions, ownership                                               |
+| Components                                 | Vitest + Testing Library                                  | Activity players, critical forms                                                   |
+| Critical flows                             | Playwright                                                | signup → onboarding → placement → report → dashboard → session → review → progress |

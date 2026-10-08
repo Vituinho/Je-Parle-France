@@ -10,17 +10,18 @@ works (`npm run build && npm start`).
    São Paulo or Canada) and enable automated backups with point-in-time recovery.
 2. **Environment variables** (see `.env.example`):
 
-   | Variable | Required | Notes |
-   | --- | --- | --- |
-   | `DATABASE_URL` | yes | Pooled connection string when the provider offers one |
-   | `BETTER_AUTH_SECRET` | yes | ≥ 32 random characters; rotating it signs everyone out |
-   | `BETTER_AUTH_URL` | yes | The public origin, e.g. `https://jeparlefrancais.app` (requests from other origins are rejected) |
-   | `ADMIN_EMAILS` | no | Comma-separated; these accounts get the admin role on sign-up |
-   | `LLM_PROVIDER`, `ANTHROPIC_API_KEY`, `LLM_MODEL` | no | Without them the tutor runs the labelled mock |
-   | `TUTOR_DAILY_TURNS`, `TUTOR_DAILY_REPORTS` | no | Per-learner daily quotas (cost control) |
-   | `SPEECH_PROVIDER`, `AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION` | no | Without them: browser voices, self-rated pronunciation, no STT |
+   | Variable                                                     | Required | Notes                                                                                            |
+   | ------------------------------------------------------------ | -------- | ------------------------------------------------------------------------------------------------ |
+   | `DATABASE_URL`                                               | yes      | Pooled connection string when the provider offers one                                            |
+   | `BETTER_AUTH_SECRET`                                         | yes      | ≥ 32 random characters; rotating it signs everyone out                                           |
+   | `BETTER_AUTH_URL`                                            | yes      | The public origin, e.g. `https://jeparlefrancais.app` (requests from other origins are rejected) |
+   | `ADMIN_EMAILS`                                               | no       | Comma-separated; these accounts get the admin role on sign-up                                    |
+   | `LLM_PROVIDER`, `ANTHROPIC_API_KEY`, `LLM_MODEL`             | no       | Without them the tutor runs the labelled mock                                                    |
+   | `TUTOR_DAILY_TURNS`, `TUTOR_DAILY_REPORTS`                   | no       | Per-learner daily quotas (cost control)                                                          |
+   | `SPEECH_PROVIDER`, `AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION` | no       | Without them: browser voices, self-rated pronunciation, no STT                                   |
 
    Secrets are read only on the server (`src/lib/env.ts`, validated on first use).
+
 3. **Migrations** — run `npm run db:deploy` (`prisma migrate deploy`) against production
    **before** the new version receives traffic: as a release step in CI, or as the build command
    (`npm run db:deploy && npm run build`) when the host has no release phase. Migrations are
@@ -55,10 +56,10 @@ tests run locally (`npm run test:e2e`, which starts the dev server) or against a
 
 ## Operations
 
-| Task | How |
-| --- | --- |
-| Make someone admin | Add the e-mail to `ADMIN_EMAILS` before they sign up, or update `users.role` |
-| Learner asks for their data | They can export it themselves in `/conta` (JSON) |
-| Learner asks for deletion | Self-service in `/conta`; an operator can delete the `users` row — every table cascades |
-| Rotate the auth secret | Change `BETTER_AUTH_SECRET` and redeploy; all sessions end |
-| Lower AI cost | Set `LLM_MODEL` to a smaller model and/or lower the daily quotas |
+| Task                        | How                                                                                     |
+| --------------------------- | --------------------------------------------------------------------------------------- |
+| Make someone admin          | Add the e-mail to `ADMIN_EMAILS` before they sign up, or update `users.role`            |
+| Learner asks for their data | They can export it themselves in `/conta` (JSON)                                        |
+| Learner asks for deletion   | Self-service in `/conta`; an operator can delete the `users` row — every table cascades |
+| Rotate the auth secret      | Change `BETTER_AUTH_SECRET` and redeploy; all sessions end                              |
+| Lower AI cost               | Set `LLM_MODEL` to a smaller model and/or lower the daily quotas                        |

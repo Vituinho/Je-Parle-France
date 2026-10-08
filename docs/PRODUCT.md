@@ -1,6 +1,6 @@
 # Product — Je Parle Français
 
-> **French for real life.** · *Francês para a vida real.*
+> **French for real life.** · _Francês para a vida real._
 
 ## Vision
 
@@ -9,7 +9,7 @@ able to **live in French outside the app**: understand real speech, talk to real
 everyday problems, work, study and pass official exams.
 
 Success is not XP. Success is a learner who can open a bank account in Montréal, rent an apartment
-in Lyon, survive a job interview, or understand a radio interview — and say *je parle français*.
+in Lyon, survive a job interview, or understand a radio interview — and say _je parle français_.
 
 ## Who it is for
 
@@ -24,20 +24,20 @@ platform (multi-user, role-based, privacy-aware) without a rewrite.
 
 1. **Brazilian Portuguese → French pedagogy.** Explanations contrast French with Brazilian
    Portuguese where it matters: `/y/` vs `/u/`, nasal vowels, the French R, liaison and
-   enchaînement, silent final consonants, gender mismatches (*le lait*, *la mer*), false cognates
-   (*attendre* ≠ atender), literal-translation traps (*je suis 20 ans* → *j'ai 20 ans*), articles,
-   *en*/*y*, *tu*/*vous*, rhythm and stress.
+   enchaînement, silent final consonants, gender mismatches (_le lait_, _la mer_), false cognates
+   (_attendre_ ≠ atender), literal-translation traps (_je suis 20 ans_ → _j'ai 20 ans_), articles,
+   _en_/_y_, _tu_/_vous_, rhythm and stress.
 2. **Real mastery, not completion.** Every concept is tracked separately for recognition, recall,
-   listening, writing, speaking and pronunciation. Reading *j'aurais besoin de* is not the same as
+   listening, writing, speaking and pronunciation. Reading _j'aurais besoin de_ is not the same as
    saying it.
-3. **The learner never decides what to study.** One button — *Começar a sessão de hoje* — and a
+3. **The learner never decides what to study.** One button — _Começar a sessão de hoje_ — and a
    planner composes the most useful session for the time available.
 4. **Multi-dimensional level.** A learner can be B1 in reading and A2 in speaking; the product
    models and shows that.
-5. **Life tracks.** *Vivre au Canada* and *Vivre en France* teach the situations immigrants
+5. **Life tracks.** _Vivre au Canada_ and _Vivre en France_ teach the situations immigrants
    actually face, with genuine regional differences (not the same lesson with a different flag).
 6. **Portuguese support fades.** Heavy PT-BR scaffolding at A0, mostly French at B2, almost all
-   French at C1 — always with an *Explicar em português* escape hatch.
+   French at C1 — always with an _Explicar em português_ escape hatch.
 7. **Honest technology.** Speech scores are only shown at the granularity the provider really
    supports. Mocks are labelled as mocks. Internal level estimates are never presented as official
    certification.
@@ -60,12 +60,12 @@ landing → sign up → onboarding (goals, destination, experience, daily time, 
 
 The authoritative status list is [`ROADMAP.md`](ROADMAP.md). Status vocabulary used everywhere:
 
-| Status | Meaning |
-| --- | --- |
-| **complete** | Works end-to-end with real logic and persistence, covered by tests. |
-| **mocked** | Real interface and adapter exist; runs on a development mock when keys are absent. |
-| **experimental** | Works, but quality or accuracy is not yet validated. |
-| **planned** | Designed, not built. Never exposed as a working button. |
+| Status           | Meaning                                                                            |
+| ---------------- | ---------------------------------------------------------------------------------- |
+| **complete**     | Works end-to-end with real logic and persistence, covered by tests.                |
+| **mocked**       | Real interface and adapter exist; runs on a development mock when keys are absent. |
+| **experimental** | Works, but quality or accuracy is not yet validated.                               |
+| **planned**      | Designed, not built. Never exposed as a working button.                            |
 
 ## Product principles
 
@@ -74,7 +74,7 @@ The authoritative status list is [`ROADMAP.md`](ROADMAP.md). Status vocabulary u
 - **Production over recognition.** Multiple choice is a scaffold, not the course. Typing, speaking
   and open production grow in weight as the learner advances.
 - **International French first, regional variation progressively.** Beginners learn the common
-  core; *Au Québec, on entend aussi…* notes appear as soon as they help, slang comes later.
+  core; _Au Québec, on entend aussi…_ notes appear as soon as they help, slang comes later.
 - **Healthy motivation.** Weekly goals, rest days and streak recovery instead of guilt mechanics.
   Achievements reward meaningful milestones (first tutor conversation, 100 words recognised with
   confidence, four weeks meeting the goal) — never time on screen — and are never taken back.
