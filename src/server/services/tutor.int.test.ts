@@ -5,6 +5,7 @@ import { loadTraces, saveTraces } from "@/server/repositories/memory";
 import { createTestUser, hasTestDatabase, resetDatabase } from "@/test/db";
 import { completeOnboarding } from "./onboarding";
 import { dueReviewItems, prepareReviewItems } from "./review";
+import { buildPlan } from "./session";
 import {
   endConversation,
   getConversation,
@@ -118,6 +119,21 @@ describe.skipIf(!hasTestDatabase)("tutor service (mock provider)", () => {
     expect(await loadTraces(db, user.id, ["gram:contractions-a-de"])).toEqual([]);
     const logs = await db.reviewLog.findMany({ where: { userId: user.id } });
     expect(logs.map((log) => log.conceptId)).toEqual(["gram:age-avoir"]);
+
+    const later = new Date(Date.now() + 15 * 60_000);
+    const due = await dueReviewItems(user.id, 20, later);
+    const item = { conceptId: "gram:age-avoir", dimension: "writing" as const };
+    expect(due).toContainEqual(item);
+    const prepared = await prepareReviewItems(user.id, [item], "2026-10-08");
+    expect(prepared).toHaveLength(1);
+    expect(prepared[0]).toMatchObject(item);
+    expect(prepared[0]?.activity.type).not.toMatch(/teach|self_assess/);
+    const profile = await db.learnerProfile.findUniqueOrThrow({ where: { userId: user.id } });
+    const plan = await buildPlan(user.id, profile, later);
+    const scheduled = plan.blocks.flatMap((block) =>
+      block.kind === "review" || block.kind === "focus" ? block.items : [],
+    );
+    expect(scheduled).toContainEqual(item);
   });
 
   it("accepts spoken turns: voice mode, corrections kept, marker never shown", async () => {
