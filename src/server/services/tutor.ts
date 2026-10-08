@@ -20,6 +20,7 @@ import {
   type TutorContext,
   type TutorCorrection,
 } from "@/lib/learning/tutor/tutor";
+import type { Dimension } from "@/lib/learning/skills";
 import { serverEnv } from "@/lib/env";
 import { db } from "@/server/db";
 import { loadTraces, saveReviewLogs, saveTraces } from "@/server/repositories/memory";
@@ -93,6 +94,38 @@ async function tutorContext(
     weakItems: [...weak],
     recentMistakes: personal.map((item) => `${item.wrong ?? "?"} → ${item.french}`),
   };
+}
+
+/**
+ * A deterministic error in a tutor message is evidence against the course
+ * concept it breaks: a failed review on the dimension used (writing, or
+ * speaking for a spoken turn), so the concept comes back in reviews. Only
+ * concepts the learner has already met are touched — the tutor does not
+ * schedule what the course has not taught yet. AI-model corrections are not
+ * used here: they carry no concept id and can be wrong.
+ */
+async function mistakeEvidence(userId: string, conceptIds: string[], dimension: Dimension) {
+  const unique = [...new Set(conceptIds)];
+  if (unique.length === 0) return [];
+  const traces = await loadTraces(db, userId, unique);
+  const now = new Date();
+  return unique.flatMap((conceptId) => {
+    // Spoken turns fall back to writing when the concept has no speaking trace.
+    const trace =
+      traces.find((t) => t.conceptId === conceptId && t.dimension === dimension) ??
+      traces.find((t) => t.conceptId === conceptId && t.dimension === "writing");
+    if (!trace) return [];
+    return [
+      applyReview({
+        trace,
+        conceptId,
+        dimension: trace.dimension,
+        outcome: { score: 0, correct: false, verdict: "wrong" },
+        now,
+        source: "tutor",
+      }),
+    ];
+  });
 }
 
 export async function startConversation(
@@ -196,27 +229,46 @@ export async function sendLearnerMessage(
     result.usage.inputTokens + result.usage.outputTokens,
   );
 
-  const corrections = mergeCorrections(result.object.corrections, detectErrors(text));
+  const detected = detectErrors(text);
+  const corrections = mergeCorrections(result.object.corrections, detected);
   const stored: StoredCorrections = {
     all: corrections,
     visible: visibleCorrections(corrections, mode),
   };
   const reply = result.object.reply.trim().slice(0, 1200) || "Pardon, vous pouvez répéter ?";
+  const evidence = await mistakeEvidence(
+    userId,
+    detected.flatMap((error) => error.concepts),
+    options.spoken ? "speaking" : "writing",
+  );
 
-  const [learnerTurn, tutorTurn] = await db.$transaction([
-    db.conversationTurn.create({
+  const [learnerTurn, tutorTurn] = await db.$transaction(async (tx) => {
+    const learner = await tx.conversationTurn.create({
       data: {
         conversationId,
         role: "learner",
         content: text,
         corrections: stored as unknown as Prisma.InputJsonValue,
       },
-    }),
-    db.conversationTurn.create({ data: { conversationId, role: "tutor", content: reply } }),
-    ...(options.spoken && conversation.mode !== "voice"
-      ? [db.conversation.update({ where: { id: conversationId }, data: { mode: "voice" } })]
-      : []),
-  ]);
+    });
+    const tutor = await tx.conversationTurn.create({
+      data: { conversationId, role: "tutor", content: reply },
+    });
+    if (options.spoken && conversation.mode !== "voice") {
+      await tx.conversation.update({ where: { id: conversationId }, data: { mode: "voice" } });
+    }
+    await saveTraces(
+      tx,
+      userId,
+      evidence.map((entry) => entry.trace),
+    );
+    await saveReviewLogs(
+      tx,
+      userId,
+      evidence.flatMap((entry) => (entry.log ? [entry.log] : [])),
+    );
+    return [learner, tutor] as const;
+  });
   return {
     learner: { id: learnerTurn.id, content: text, corrections: stored.visible },
     tutor: { id: tutorTurn.id, content: reply },

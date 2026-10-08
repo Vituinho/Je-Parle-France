@@ -1,5 +1,7 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import { applyReview, introduceTrace } from "@/lib/learning/memory/memory";
 import { db } from "@/server/db";
+import { loadTraces, saveTraces } from "@/server/repositories/memory";
 import { createTestUser, hasTestDatabase, resetDatabase } from "@/test/db";
 import { completeOnboarding } from "./onboarding";
 import { dueReviewItems, prepareReviewItems } from "./review";
@@ -92,6 +94,30 @@ describe.skipIf(!hasTestDatabase)("tutor service (mock provider)", () => {
       where: { conversationId: conversation.id, role: "learner" },
     });
     expect(JSON.stringify(stored.corrections)).toContain("j'ai 25 ans");
+  });
+
+  it("turns a detected error into a failed review of the course concept already met", async () => {
+    const user = await learner();
+    const met = new Date(Date.now() - 3 * 86_400_000);
+    // The learner has met gram:age-avoir (and succeeded once) but never contractions.
+    const { trace } = applyReview({
+      trace: introduceTrace("gram:age-avoir", "writing", met),
+      conceptId: "gram:age-avoir",
+      dimension: "writing",
+      outcome: { score: 1, correct: true, verdict: "correct" },
+      now: met,
+      source: "lesson",
+    });
+    await saveTraces(db, user.id, [trace]);
+    const conversation = await startConversation(user.id, {});
+    await sendLearnerMessage(user.id, conversation.id, "Je suis 25 ans et je vais à le marché.");
+
+    const [after] = await loadTraces(db, user.id, ["gram:age-avoir"]);
+    expect(after).toMatchObject({ dimension: "writing", attempts: 2, lastScore: 0 });
+    expect(after!.due.getTime()).toBeLessThan(Date.now() + 60 * 60_000);
+    expect(await loadTraces(db, user.id, ["gram:contractions-a-de"])).toEqual([]);
+    const logs = await db.reviewLog.findMany({ where: { userId: user.id } });
+    expect(logs.map((log) => log.conceptId)).toEqual(["gram:age-avoir"]);
   });
 
   it("accepts spoken turns: voice mode, corrections kept, marker never shown", async () => {

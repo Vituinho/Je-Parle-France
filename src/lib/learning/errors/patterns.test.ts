@@ -36,6 +36,31 @@ describe("Brazilian learner error detectors", () => {
     expect(correctText("Le prix de le billet.")).toBe("Le prix du billet.");
   });
 
+  it("names the course concepts each error is evidence against", () => {
+    expect(detectErrors("je suis 25 ans")[0]?.concepts).toEqual(["gram:age-avoir"]);
+    expect(detectErrors("je suis faim")[0]?.concepts).toEqual(["lex:avoir-faim"]);
+    expect(detectErrors("je suis peur")[0]?.concepts).toEqual([]);
+    expect(detectErrors("je vais à le cinéma")[0]?.concepts).toEqual(["gram:contractions-a-de"]);
+    expect(detectErrors("je ai un chat")[0]?.concepts).toEqual([]);
+  });
+
+  it("maps only to concepts that exist in the course", async () => {
+    const { getContent } = await import("@/lib/content");
+    const samples = [
+      "je suis 25 ans",
+      "je besoin d'aide",
+      "je suis faim",
+      "je suis soif",
+      "je suis froid",
+      "je vais à le parc",
+      "le prix de le billet",
+      "tu es quel âge",
+    ];
+    const ids = samples.flatMap((text) => detectErrors(text).flatMap((error) => error.concepts));
+    expect(ids.length).toBeGreaterThan(0);
+    for (const id of ids) expect(getContent().concepts.has(id), id).toBe(true);
+  });
+
   it("leaves correct French alone", () => {
     expect(detectErrors("J'ai besoin d'aide, j'ai 30 ans et je vais au marché.")).toEqual([]);
   });

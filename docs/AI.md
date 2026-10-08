@@ -49,6 +49,11 @@ Secrets are read only on the server (`src/lib/env.ts`). The browser learns three
 - **Review integration**: important corrections become `PersonalItem`s with failed FSRS traces
   (`personal:<id>` × recognition/writing), so they come back in reviews as error-correction and
   choose-the-right-form exercises.
+- **Mastery integration**: each deterministic detector names the course concepts it is evidence
+  against (*je suis 25 ans* → `gram:age-avoir`). On every turn, a detected error records a failed
+  review of that concept on the dimension used — writing, or speaking for a spoken turn — but only
+  for concepts the learner has already met, so the course concept itself comes back in reviews.
+  Model-generated corrections carry no concept id and never touch course mastery.
 - **Cost controls**: daily per-learner quotas (`usage_counters`), a 1.5 s throttle, 500-character
   messages, a cached system prompt, token usage recorded per day.
 - **Safety**: server-side refusal fallbacks (`fallbacks: "default"`); a refusal or provider error
