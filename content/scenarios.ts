@@ -218,6 +218,24 @@ export const scenarios: ScenarioInput[] = [
     keyConcepts: ["gram:futur-simple", "gram:il-faut-devoir", "lex:l-annee-prochaine"],
   },
   {
+    id: "scn-debat",
+    track: "core",
+    minLevel: "B1",
+    title: { pt: "Dar a sua opinião", fr: "Donner son avis" },
+    setting: {
+      pt: "Numa conversa entre amigos, alguém lança um tema do dia a dia e pede a sua opinião.",
+      fr: "Entre amis, quelqu'un lance un sujet de société et vous demande votre avis.",
+    },
+    aiRole:
+      "Tu es un ami qui aime débattre gentiment. Tu proposes un sujet simple de la vie quotidienne (télétravail, vivre en ville ou à la campagne, réseaux sociaux, apprendre une langue à l'âge adulte), tu demandes l'avis de l'apprenant, tu donnes parfois un avis contraire pour le pousser à argumenter, et tu demandes de justifier (« Pourquoi ? », « Tu ne penses pas que… ? »). Tu tutoies, phrases naturelles de niveau B1.",
+    learnerGoal: {
+      pt: "Dar e justificar sua opinião, usar conectores (d'un côté, par contre, pourtant) e o subjuntivo depois de je ne pense pas que.",
+      fr: "Donner et justifier votre avis avec des connecteurs.",
+    },
+    openingLine: "Dis donc, toi, tu penses que le télétravail, c'est une bonne chose ?",
+    keyConcepts: ["gram:exprimer-opinion", "lex:a-mon-avis", "lex:par-contre", "lex:pourtant"],
+  },
+  {
     id: "scn-cafe-paris",
     track: "france",
     region: "fr-FR",
