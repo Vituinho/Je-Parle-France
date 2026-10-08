@@ -8,6 +8,32 @@ study and work in Canada/Québec or France — from A0 to C1.
 > Status: early development. See [`docs/ROADMAP.md`](docs/ROADMAP.md) for what is complete,
 > mocked, experimental or planned.
 
+## What is in it
+
+- **Adaptive placement** (quick or complete) with a per-skill report — an internal estimate, not an
+  official certification.
+- **Daily sessions** planned for 5, 15, 30 or 60 minutes: spaced review (FSRS), new lessons,
+  listening, pronunciation and speaking, sized to the time and the review backlog.
+- **A0 core path** plus the destination tracks **Vivre au Canada** (Québec usage, fr-CA voices)
+  and **Vivre en France**, on a browsable course map.
+- **AI tutor** for roleplays and free conversation, with four correction modes and a report;
+  important mistakes go back into review.
+- **Pronunciation lab** for the sounds that trouble Brazilians, perception first.
+- **Meu caderno** (personal vocabulary with mastery per skill) and a **grammar library**
+  explained from Portuguese.
+- **Privacy controls**: data export, selective deletion and account deletion (LGPD).
+
+## Documentation
+
+| Topic | Document |
+| --- | --- |
+| Product, audience, principles | [PRODUCT](docs/PRODUCT.md) |
+| How it teaches | [PEDAGOGY](docs/PEDAGOGY.md) · [CURRICULUM](docs/CURRICULUM.md) · [CONTENT-GUIDELINES](docs/CONTENT-GUIDELINES.md) |
+| Learning engines | [PLACEMENT](docs/PLACEMENT.md) · [MASTERY](docs/MASTERY.md) · [SPACED-REPETITION](docs/SPACED-REPETITION.md) · [PRONUNCIATION](docs/PRONUNCIATION.md) |
+| AI and speech | [AI](docs/AI.md) |
+| Engineering | [ARCHITECTURE](docs/ARCHITECTURE.md) · [DATABASE](docs/DATABASE.md) · [DEPLOYMENT](docs/DEPLOYMENT.md) |
+| Status | [ROADMAP](docs/ROADMAP.md) |
+
 ## Stack
 
 Next.js 16 (App Router, Cache Components) · React 19 · TypeScript (strict) · Tailwind CSS v4 ·
