@@ -100,6 +100,13 @@ export function vocabularyCounts(
 
 // ─── Healthy habits ────────────────────────────────────────────────────────
 
+/** Days with at least this much study count as active (a habit, not a click). */
+export const ACTIVE_DAY_SECONDS = 120;
+
+export function isActiveDay(day: { studySeconds: number; sessionCompleted: boolean }): boolean {
+  return day.studySeconds >= ACTIVE_DAY_SECONDS || day.sessionCompleted;
+}
+
 export interface HabitSummary {
   /** Mon…Sun of the current week: did the learner study that day? */
   week: { date: string; active: boolean; today: boolean }[];

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Award } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
 import { Fr } from "@/components/fr";
@@ -8,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { SKILL_LABELS, SKILLS } from "@/lib/learning/skills";
 import { cn } from "@/lib/utils";
 import { getDashboard, type Dashboard } from "@/server/services/dashboard";
+import { recentAchievements } from "@/server/services/progress";
 import { requireLearner } from "@/server/session";
 
 export const metadata: Metadata = { title: "Hoje" };
@@ -158,6 +160,9 @@ function ProgressPanel({ data }: { data: Dashboard }) {
         Medido pelo que você domina em cada habilidade, não pelas lições que já viu.
       </p>
       <p className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm font-medium">
+        <Link href="/progresso" className="text-primary underline-offset-4 hover:underline">
+          Ver seu progresso
+        </Link>
         <Link href="/curso" className="text-primary underline-offset-4 hover:underline">
           Ver o curso completo
         </Link>
@@ -198,7 +203,10 @@ function StatsPanel({ data }: { data: Dashboard }) {
 
 async function Today() {
   const { user, profile } = await requireLearner();
-  const data = await getDashboard(user.id, profile);
+  const [data, achievements] = await Promise.all([
+    getDashboard(user.id, profile),
+    recentAchievements(user.id, profile),
+  ]);
   const firstName = user.name.split(" ")[0] ?? user.name;
   const needsPlacement =
     profile.placementStatus === "not_started" || profile.placementStatus === "in_progress";
@@ -251,6 +259,34 @@ async function Today() {
           )}
         </div>
       </div>
+
+      {achievements.length > 0 && (
+        <section
+          aria-labelledby="achievements"
+          className="border-primary/30 bg-accent flex flex-wrap items-center gap-x-6 gap-y-2 rounded-2xl border px-5 py-4"
+        >
+          <h2 id="achievements" className="font-semibold">
+            {achievements.length === 1 ? "Nova conquista" : "Novas conquistas"}
+          </h2>
+          <ul className="flex flex-wrap gap-x-5 gap-y-1">
+            {achievements.map((achievement) => (
+              <li key={achievement.id} className="flex items-start gap-2">
+                <Award className="text-primary mt-1 size-4 shrink-0" aria-hidden />
+                <span>
+                  <strong>{achievement.title}</strong>
+                  <span className="text-muted-foreground"> — {achievement.description}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+          <Link
+            href="/progresso"
+            className="text-primary ml-auto text-sm font-medium underline-offset-4 hover:underline"
+          >
+            Ver todas
+          </Link>
+        </section>
+      )}
 
       <ProgressPanel data={data} />
       <StatsPanel data={data} />

@@ -76,7 +76,8 @@ The authoritative status list is [`ROADMAP.md`](ROADMAP.md). Status vocabulary u
 - **International French first, regional variation progressively.** Beginners learn the common
   core; *Au Québec, on entend aussi…* notes appear as soon as they help, slang comes later.
 - **Healthy motivation.** Weekly goals, rest days and streak recovery instead of guilt mechanics.
-  Achievements reward meaningful milestones (first 5-minute conversation, 100 mastered words).
+  Achievements reward meaningful milestones (first tutor conversation, 100 words recognised with
+  confidence, four weeks meeting the goal) — never time on screen — and are never taken back.
 - **Cost discipline.** LLMs are used only where they add value (conversation, open writing
   feedback, contextual explanation). Deterministic checks never call an LLM.
 - **Privacy by design (LGPD).** Voice audio is never stored (only transcripts and scores);

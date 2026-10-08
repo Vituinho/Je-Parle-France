@@ -3,15 +3,17 @@ import type { LearnerProfile } from "@/generated/prisma/client";
 import { getContent } from "@/lib/content";
 import { describeTheta } from "@/lib/learning/cefr";
 import { reviewCandidates } from "@/lib/learning/planner/planner";
-import { habitSummary, levelProgress, vocabularyCounts } from "@/lib/learning/progress";
+import {
+  habitSummary,
+  isActiveDay,
+  levelProgress,
+  vocabularyCounts,
+} from "@/lib/learning/progress";
 import { addDays, weekStart } from "@/lib/learning/time";
 import { db } from "@/server/db";
 import { loadTraces } from "@/server/repositories/memory";
 import { getLearnerLevel, today } from "./learner";
 import { blockTitle, getTodaySession, sessionPlan } from "./session";
-
-/** Days with at least this much study count as active (healthy habit, not a click). */
-const ACTIVE_DAY_SECONDS = 120;
 
 export async function getDashboard(userId: string, profile: LearnerProfile, now = new Date()) {
   const content = getContent();
@@ -38,9 +40,7 @@ export async function getDashboard(userId: string, profile: LearnerProfile, now 
   const progress = levelProgress(current?.unit.level ?? level.level, concepts, traces, now);
   const vocabulary = vocabularyCounts(concepts, traces, now);
   const habits = habitSummary({
-    activeDates: days
-      .filter((day) => day.studySeconds >= ACTIVE_DAY_SECONDS || day.sessionCompleted)
-      .map((day) => day.localDate),
+    activeDates: days.filter(isActiveDay).map((day) => day.localDate),
     today: date,
     weeklyGoal: profile.weeklyGoalDays,
   });
