@@ -32,7 +32,7 @@ Status vocabulary: **complete** · **mocked** (real interface + adapter, dev moc
 | Vivre au Canada / Vivre en France | complete | Two self-contained tracks (A0–A1, 5 lessons each, 61 concepts): Québec usage with fr-CA voices, arrival, bank, housing; boulangerie, meals, métro, préfecture, renting. Course map (/curso), mission scenarios, prerequisite-gated scheduling. More units per level as the core grows |
 | Admin content explorer | planned | |
 | Learning analytics, streaks, achievements | planned | |
-| E2E critical flow | planned | |
+| E2E critical flow | complete | e2e/critical-flow.spec.ts: sign-up → onboarding → placement → report → dashboard → session → review → higher mastery; plus feature specs (lesson, session, library, tracks, tutor, pronunciation, account), desktop + mobile |
 
 ## After the slice
 

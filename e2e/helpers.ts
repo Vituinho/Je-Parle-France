@@ -85,3 +85,45 @@ export async function answerCurrentStep(page: Page) {
   await expect(step).toHaveAttribute("data-checked", "true", { timeout: 20_000 });
   await next();
 }
+
+/** Answers placement items until the report shows: picks an option or says "não sei". */
+export async function finishPlacement(page: Page) {
+  for (let i = 0; i < 40; i += 1) {
+    await page.waitForURL(/\/diagnostico\/[a-z0-9]+(\/resultado)?$/);
+    if (page.url().endsWith("/resultado")) return;
+    await expect(page.getByText(/^Etapa \d+ de \d+/)).toBeVisible();
+    const dontKnow = page.getByRole("button", { name: "Não sei" });
+    if (await dontKnow.isVisible()) {
+      const firstOption = page.locator("label:has(input[type=radio])").first();
+      if (i % 2 === 0 && (await firstOption.isVisible())) {
+        await firstOption.click();
+        await page.getByRole("button", { name: "Responder" }).click();
+      } else {
+        await dontKnow.click();
+      }
+    } else {
+      await page.getByText("Com dificuldade").click();
+      await page.getByRole("button", { name: "Responder" }).click();
+    }
+    await expect(page.getByRole("button", { name: "Enviando…" })).toHaveCount(0, {
+      timeout: 20_000,
+    });
+  }
+  throw new Error("placement did not finish within 40 items");
+}
+
+/** Runs the session page until the "Sessão concluída" screen. */
+export async function runSession(page: Page) {
+  const stepForm = page.locator("form[data-step]:visible");
+  const startButton = page
+    .getByRole("button", { name: /^(Começar|Continuar)$/ })
+    .filter({ visible: true });
+  const done = page.getByRole("heading", { name: "Sessão concluída" });
+  for (let guard = 0; guard < 200; guard += 1) {
+    await expect(stepForm.or(startButton).or(done).first()).toBeVisible({ timeout: 20_000 });
+    if (await done.isVisible()) return;
+    if ((await stepForm.count()) > 0) await answerCurrentStep(page);
+    else await startButton.first().click();
+  }
+  throw new Error("session did not finish within 200 steps");
+}
