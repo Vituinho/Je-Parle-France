@@ -79,8 +79,10 @@ The authoritative status list is [`ROADMAP.md`](ROADMAP.md). Status vocabulary u
   Achievements reward meaningful milestones (first 5-minute conversation, 100 mastered words).
 - **Cost discipline.** LLMs are used only where they add value (conversation, open writing
   feedback, contextual explanation). Deterministic checks never call an LLM.
-- **Privacy by design (LGPD).** Recordings are not stored by default; users can delete
-  recordings and their account; sensitive conversation content is not logged.
+- **Privacy by design (LGPD).** Voice audio is never stored (only transcripts and scores);
+  learners can export everything as JSON, delete conversations, corrections or speech data, and
+  delete their account; the privacy page names the external AI providers in use; sensitive
+  conversation content is not logged.
 
 ## Non-goals (for now)
 

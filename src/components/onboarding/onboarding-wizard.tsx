@@ -10,7 +10,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import type { CefrLevel } from "@/lib/learning/cefr";
 import {
   DAILY_MINUTES,
   estimateTimeToLevel,
@@ -24,8 +23,12 @@ import {
   type PriorExperience,
   type StartChoice,
 } from "@/lib/learning/onboarding";
-
-type TargetLevel = Exclude<CefrLevel, "A0">;
+import {
+  DESTINATION_OPTIONS as DESTINATIONS,
+  SESSION_DESCRIPTIONS as DURATIONS,
+  TARGET_LEVEL_OPTIONS as LEVELS,
+  type TargetLevel,
+} from "@/lib/learning/preferences";
 
 interface Answers {
   goals: LearningGoal[];
@@ -53,25 +56,6 @@ const GOALS: { value: LearningGoal; label: string }[] = [
   { value: "other", label: "Outro" },
 ];
 
-const DESTINATIONS: { value: Destination; label: string; description: string }[] = [
-  {
-    value: "canada_quebec",
-    label: "Canadá / Québec",
-    description: "Damos mais atenção ao francês do Canadá: sotaque, vocabulário, situações locais.",
-  },
-  {
-    value: "france",
-    label: "França",
-    description: "Foco nas situações e no vocabulário do dia a dia na França.",
-  },
-  { value: "both", label: "Os dois", description: "Base internacional com notas dos dois lados." },
-  {
-    value: "undecided",
-    label: "Ainda não sei",
-    description: "Começamos pelo francês internacional — serve para qualquer destino.",
-  },
-];
-
 const EXPERIENCES: { value: PriorExperience; label: string }[] = [
   { value: "never", label: "Nunca estudei francês" },
   { value: "few_words", label: "Sei algumas palavras" },
@@ -80,21 +64,6 @@ const EXPERIENCES: { value: PriorExperience; label: string }[] = [
   { value: "intermediate", label: "Tenho francês intermediário" },
   { value: "advanced", label: "Já tenho francês avançado" },
   { value: "unknown", label: "Não sei meu nível" },
-];
-
-const DURATIONS: Record<DailyMinutes, string> = {
-  5: "Revisão do essencial, uma ideia nova e uma frase em voz alta.",
-  15: "Revisão, uma microlição, um pouco de escuta e prática ativa.",
-  30: "Sessão equilibrada: revisão, lição, escuta, pronúncia e fala.",
-  60: "Sessão completa, com leitura, escrita e conversa com o tutor.",
-};
-
-const LEVELS: { value: TargetLevel; description: string }[] = [
-  { value: "A1", description: "Se apresentar e resolver o básico do dia a dia." },
-  { value: "A2", description: "Conversas simples sobre rotina, compras e trabalho." },
-  { value: "B1", description: "Se virar sozinho na maioria das situações do dia a dia." },
-  { value: "B2", description: "Trabalhar e estudar em francês com desenvoltura." },
-  { value: "C1", description: "Francês preciso e natural, inclusive em contextos profissionais." },
 ];
 
 const STARTS: { value: StartChoice; label: string; description: string }[] = [

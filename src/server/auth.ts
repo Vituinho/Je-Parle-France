@@ -30,6 +30,9 @@ function createAuth() {
       additionalFields: {
         role: { type: "string", required: false, defaultValue: "learner", input: false },
       },
+      // LGPD: learners can delete their account; the client always sends the
+      // password, which Better Auth verifies. All data cascades from users.
+      deleteUser: { enabled: true },
     },
     databaseHooks: {
       user: {

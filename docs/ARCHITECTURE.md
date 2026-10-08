@@ -125,8 +125,14 @@ blocks.
   not the security boundary.
 - All client input is validated with Zod on the server.
 - Secrets only in server env (`src/lib/env.ts`); no provider SDK in client bundles.
-- AI and speech endpoints are rate-limited per user (`src/server/rate-limit.ts`).
-- Recordings are private: never in `public/`, served only through authorised handlers.
+- AI and speech endpoints have per-user daily quotas and a throttle (`src/server/quota.ts`).
+- Audio is assessed in memory and discarded; only transcripts and scores are stored. If recording
+  storage is added, files stay private (never in `public/`) and are served only through authorised
+  handlers.
+- LGPD rights in `/conta`: export of everything stored (`/api/conta/dados`, without password
+  hashes or tokens), deletion of selected data (tutor conversations, saved corrections, speech
+  assessments) and account deletion through Better Auth with a password re-check; every table
+  cascades from `users`.
 
 ## Testing strategy
 
