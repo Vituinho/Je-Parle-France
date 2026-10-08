@@ -14,6 +14,7 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "content:check": "tsx scripts/check-content.ts",
+    "placement:audit": "tsx scripts/placement-audit.ts",
     "db:local": "node scripts/db-local.mjs",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev && prisma generate",

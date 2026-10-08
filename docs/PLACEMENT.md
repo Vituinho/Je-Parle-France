@@ -79,6 +79,45 @@ a transcript or score sent by the browser is ignored (`server/services/speech-ev
 and checks the mean absolute error (quick < 0.6 levels, complete < 0.45), skill separation
 (reading 4.2 vs listening 1.8), determinism, capability fallbacks and stopping rules.
 
+## Bank coverage (audited 2026-10-08)
+
+`npm run placement:audit` prints the live numbers. 125 items (an earlier note said "about 150";
+that was wrong):
+
+| Skill         | A0  | A1  | A2  | B1  | B2  | C1  | Total |
+| ------------- | --- | --- | --- | --- | --- | --- | ----- |
+| grammar       | 2   | 5   | 5   | 5   | 4   | 3   | 24    |
+| vocabulary    | 3   | 4   | 4   | 4   | 3   | 3   | 21    |
+| reading       | 2   | 3   | 3   | 3   | 3   | 2   | 16    |
+| listening     | 2   | 3   | 3   | 3   | 3   | 2   | 16    |
+| writing       | 3   | 4   | 5   | 5   | 3   | 3   | 23    |
+| speaking      | 2   | 3   | 3   | 3   | 2   | 2   | 15    |
+| pronunciation | 2   | 3   | 2   | 2   | 1   | —   | 10    |
+
+What holds: answers never reach the browser (`toClientActivity` strips keys; grading is server
+side); objective items are scored deterministically; every item has authored level + offset
+metadata; selection is information-maximising with seeded exposure control; stopping uses item
+count and posterior SD; confidence is derived from the SD.
+
+Known weaknesses, in priority order:
+
+- **Difficulty is authored, not calibrated.** Level + offset is an expert guess until enough
+  responses exist to fit IRT parameters (see Planned).
+- **Thin cells.** B2/C1 have 2–4 items per skill, so a strong learner sees nearly the whole
+  cell and the C1 estimate rests on few responses; pronunciation has 1 B2 item and none at C1
+  (perception drills discriminate poorly above B1 — this is a deliberate cap, reported as such).
+- **Few speaking and writing items are objectively scored.** Without a speech provider, speaking
+  is self-assessed; open writing needs the AI provider. Most writing items are short typed
+  answers (form, not composition).
+- **Regional content.** 6 items are Québec-specific and none France-specific; the rest are
+  neutral French. Fine for level, weak for destination readiness.
+- **Per-option feedback** is authored on 8 of 42 multiple-choice items. Placement deliberately
+  shows no feedback during the test; the report explains gaps from concept data instead.
+- 52 of 125 items name the concepts they probe, so only those can produce review gaps.
+
+Growth should follow these gaps (B2/C1 reading and listening, France items, calibrated
+difficulties) rather than raw item count.
+
 ## Planned
 
 - Re-estimate item difficulties (and discriminations) from logged responses (IRT calibration).
