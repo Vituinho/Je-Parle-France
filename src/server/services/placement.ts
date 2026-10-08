@@ -32,6 +32,7 @@ import {
 import type { Skill } from "@/lib/learning/skills";
 import { db } from "@/server/db";
 import { loadTraces, saveReviewLogs, saveTraces } from "@/server/repositories/memory";
+import { resolveSpeechResponse, SpeechEvidenceError } from "./speech-evidence";
 
 export class PlacementError extends Error {}
 
@@ -202,10 +203,18 @@ export async function answerPlacement(
   let score = 0;
   let scored = true;
   if (answer.kind !== "dont_know") {
+    // Spoken answers are scored from the stored assessment, never from client-sent text.
+    let response: ActivityResponse;
+    try {
+      response = await resolveSpeechResponse(userId, answer);
+    } catch (error) {
+      if (error instanceof SpeechEvidenceError) throw new PlacementError(error.message);
+      throw error;
+    }
     try {
       score = gradeActivity(
         item.activity,
-        toAuthoredResponse(item.activity, answer, attemptId),
+        toAuthoredResponse(item.activity, response, attemptId),
       ).score;
     } catch (error) {
       if (!(error instanceof GradingError)) throw error;

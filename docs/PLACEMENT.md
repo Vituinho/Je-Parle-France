@@ -54,7 +54,9 @@ Exposure control: one of the top-3 items is chosen with a PRNG seeded by
 of truth (the engine can always recompute the next item and every estimate).
 
 Items that need an unavailable capability (`speech` for spoken items, `ai` for open writing) are
-never served.
+never served. Spoken items are scored from the learner's own stored pronunciation assessment
+(transcript recall and the provider's overall score, 50/50), resolved on the server from its id —
+a transcript or score sent by the browser is ignored (`server/services/speech-evidence.ts`).
 
 ## Report
 
@@ -81,7 +83,6 @@ and checks the mean absolute error (quick < 0.6 levels, complete < 0.45), skill 
 
 - Re-estimate item difficulties (and discriminations) from logged responses (IRT calibration).
 - Content-balanced selection by topic within a skill.
-- Speaking items scored from transcripts + pronunciation provider when configured.
 
 ## How each skill was estimated
 

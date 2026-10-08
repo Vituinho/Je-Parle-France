@@ -21,6 +21,7 @@ import type { Dimension } from "@/lib/learning/skills";
 import { localDate } from "@/lib/learning/time";
 import { db } from "@/server/db";
 import { loadTraces, saveReviewLogs, saveTraces, traceKey } from "@/server/repositories/memory";
+import { resolveSpeechResponse, SpeechEvidenceError } from "./speech-evidence";
 
 export class PracticeError extends Error {}
 
@@ -41,32 +42,13 @@ export interface SubmitResult {
   changes: MasteryChange[];
 }
 
-/**
- * Speech responses may reference a stored pronunciation assessment; its
- * transcript and score are read from the server-side record (never trusted
- * from the client). Assessments older than 30 minutes are not accepted.
- */
-async function resolveSpeech(
-  userId: string,
-  response: ActivityResponse,
-): Promise<ActivityResponse> {
-  if (response.kind !== "speech") return response;
-  const { speechAttemptId, selfRating } = response;
-  // Transcripts are only accepted from the server-side record, never from the client.
-  if (!speechAttemptId) return { kind: "speech", selfRating };
-  const attempt = await db.speechAttempt.findFirst({
-    where: { id: speechAttemptId, userId, createdAt: { gte: new Date(Date.now() - 30 * 60_000) } },
-  });
-  if (!attempt?.transcript) {
-    throw new PracticeError("Avaliação de pronúncia não encontrada. Grave de novo.");
+async function resolveSpeech(userId: string, response: ActivityResponse) {
+  try {
+    return await resolveSpeechResponse(userId, response);
+  } catch (error) {
+    if (error instanceof SpeechEvidenceError) throw new PracticeError(error.message);
+    throw error;
   }
-  const overall = (attempt.scores as { scores?: { overall?: number } | null } | null)?.scores
-    ?.overall;
-  return {
-    kind: "speech",
-    transcript: attempt.transcript,
-    pronunciation: typeof overall === "number" ? Math.min(100, Math.max(0, overall)) : undefined,
-  };
 }
 
 /** Seconds credited per activity are capped so an idle tab does not inflate study time. */
