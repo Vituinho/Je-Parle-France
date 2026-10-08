@@ -15,9 +15,9 @@
  */
 
 @theme inline {
-  --font-sans: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
-  --font-heading: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
-  --font-fr: var(--font-spectral), ui-serif, Georgia, serif;
+  --font-sans: var(--font-bricolage, ui-sans-serif), system-ui, sans-serif;
+  --font-heading: var(--font-bricolage, ui-sans-serif), system-ui, sans-serif;
+  --font-fr: var(--font-spectral, ui-serif), Georgia, serif;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
