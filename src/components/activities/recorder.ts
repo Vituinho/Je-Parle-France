@@ -15,7 +15,11 @@ const recordingSupported = () =>
   Boolean(navigator.mediaDevices) &&
   typeof MediaRecorder !== "undefined";
 
-export function useRecorder(maxMs = 15_000) {
+export function useRecorder(
+  maxMs = 15_000,
+  /** Called with the recording as soon as it stops (event-driven, no effect needed). */
+  onRecorded?: (blob: Blob) => void,
+) {
   const supported = useSyncExternalStore(noop, recordingSupported, () => true);
   const [recorderState, setState] = useState<RecorderState>("idle");
   const state: RecorderState = supported ? recorderState : "unsupported";
@@ -26,6 +30,11 @@ export function useRecorder(maxMs = 15_000) {
   const timer = useRef<number | null>(null);
   const startedAt = useRef(0);
   const [durationMs, setDurationMs] = useState(0);
+  const onRecordedRef = useRef(onRecorded);
+
+  useEffect(() => {
+    onRecordedRef.current = onRecorded;
+  });
 
   useEffect(() => {
     return () => {
@@ -62,6 +71,7 @@ export function useRecorder(maxMs = 15_000) {
         setAudioUrl(URL.createObjectURL(recorded));
         setDurationMs(Date.now() - startedAt.current);
         setState("recorded");
+        onRecordedRef.current?.(recorded);
       };
       recorder.current = media;
       startedAt.current = Date.now();

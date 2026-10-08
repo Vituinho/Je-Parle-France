@@ -49,13 +49,19 @@ function friendly(error: unknown): string | null {
 export async function sendMessageAction(input: unknown): Promise<SendResult> {
   const { user } = await requireLearner();
   const parsed = z
-    .object({ conversationId: z.string().min(1).max(64), text: z.string().max(2000) })
+    .object({
+      conversationId: z.string().min(1).max(64),
+      text: z.string().max(2000),
+      spoken: z.boolean().optional(),
+    })
     .safeParse(input);
   if (!parsed.success) return { ok: false, error: "Mensagem inválida." };
   try {
     return {
       ok: true,
-      turn: await sendLearnerMessage(user.id, parsed.data.conversationId, parsed.data.text),
+      turn: await sendLearnerMessage(user.id, parsed.data.conversationId, parsed.data.text, {
+        spoken: parsed.data.spoken,
+      }),
     };
   } catch (error) {
     const message = friendly(error);

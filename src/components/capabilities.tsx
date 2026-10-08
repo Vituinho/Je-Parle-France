@@ -7,11 +7,14 @@ export interface ClientCapabilities {
   serverTts: boolean;
   /** Pronunciation assessment through /api/speech/assess. */
   pronunciation: boolean;
+  /** Speech-to-text through /api/speech/transcribe (spoken tutor turns). */
+  speechRecognition: boolean;
 }
 
 const CapabilitiesContext = createContext<ClientCapabilities>({
   serverTts: false,
   pronunciation: false,
+  speechRecognition: false,
 });
 
 export function CapabilitiesProvider({

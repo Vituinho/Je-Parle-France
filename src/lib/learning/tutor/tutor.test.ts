@@ -3,7 +3,10 @@ import { detectErrors } from "../errors/patterns";
 import {
   buildTutorSystemPrompt,
   clampScores,
+  markSpoken,
   mergeCorrections,
+  SPOKEN_MARKER,
+  stripSpokenMarker,
   visibleCorrections,
   type TutorContext,
   type TutorCorrection,
@@ -76,7 +79,20 @@ describe("tutor system prompt", () => {
     expect(quiet).toContain("France");
   });
 
+  it("tells the model to ignore spelling and punctuation in spoken turns", () => {
+    expect(buildTutorSystemPrompt(context)).toContain(`${SPOKEN_MARKER} was spoken`);
+  });
+
   it("is stable for the same context (cache-friendly)", () => {
     expect(buildTutorSystemPrompt(context)).toBe(buildTutorSystemPrompt(context));
+  });
+});
+
+describe("spoken turns", () => {
+  it("marks and unmarks transcribed messages", () => {
+    const marked = markSpoken("je besoin d'un compte");
+    expect(marked.startsWith(SPOKEN_MARKER)).toBe(true);
+    expect(stripSpokenMarker(marked)).toBe("je besoin d'un compte");
+    expect(stripSpokenMarker("Bonjour !")).toBe("Bonjour !");
   });
 });

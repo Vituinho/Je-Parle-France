@@ -2,11 +2,13 @@
 
 import { ArrowLeft, SendHorizontal } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, useTransition } from "react";
 import { endConversationAction, sendMessageAction } from "@/app/(app)/tutor/actions";
 import { AudioButton, VoiceNotice } from "@/components/activities/audio-button";
 import { AccentBar } from "@/components/activities/renderers/text";
 import { Inline } from "@/components/activities/rich-text";
+import { useFrenchSpeech } from "@/components/activities/speech";
+import { useCapabilities } from "@/components/capabilities";
 import { Fr } from "@/components/fr";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,6 +19,7 @@ import {
 } from "@/lib/learning/tutor/tutor";
 import { cn } from "@/lib/utils";
 import { TutorReport } from "./tutor-report";
+import { VoiceInput } from "./voice-input";
 
 export interface ChatTurn {
   id: string;
@@ -26,6 +29,36 @@ export interface ChatTurn {
 }
 
 const MAX_LENGTH = 500;
+
+/** Per-viewer preference: read tutor replies aloud as they arrive. */
+const AUTOPLAY_KEY = "jpf:tutor-autoplay";
+const AUTOPLAY_EVENT = "jpf:tutor-autoplay";
+
+function readAutoplay(): boolean {
+  try {
+    return window.localStorage.getItem(AUTOPLAY_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function subscribeAutoplay(callback: () => void) {
+  window.addEventListener(AUTOPLAY_EVENT, callback);
+  window.addEventListener("storage", callback);
+  return () => {
+    window.removeEventListener(AUTOPLAY_EVENT, callback);
+    window.removeEventListener("storage", callback);
+  };
+}
+
+function writeAutoplay(value: boolean) {
+  try {
+    window.localStorage.setItem(AUTOPLAY_KEY, value ? "1" : "0");
+  } catch {
+    // Storage unavailable (private mode): the toggle simply does not persist.
+  }
+  window.dispatchEvent(new Event(AUTOPLAY_EVENT));
+}
 
 function Corrections({ corrections }: { corrections: TutorCorrection[] }) {
   if (corrections.length === 0) return null;
@@ -82,6 +115,10 @@ export function TutorChat({
   const [turns, setTurns] = useState(initialTurns);
   const [report, setReport] = useState<StoredReport | null>(initialReport);
   const [text, setText] = useState("");
+  const [spoken, setSpoken] = useState(false);
+  const autoplay = useSyncExternalStore(subscribeAutoplay, readAutoplay, () => false);
+  const { speak } = useFrenchSpeech();
+  const { speechRecognition } = useCapabilities();
   const [error, setError] = useState<string | null>(null);
   const [sending, startSending] = useTransition();
   const [ending, startEnding] = useTransition();
@@ -104,13 +141,16 @@ export function TutorChat({
       ...current,
       { id: optimisticId, role: "learner", content: message, corrections: [] },
     ]);
+    const wasSpoken = spoken;
     setText("");
+    setSpoken(false);
     startSending(async () => {
-      const result = await sendMessageAction({ conversationId, text: message });
+      const result = await sendMessageAction({ conversationId, text: message, spoken: wasSpoken });
       if (!result.ok) {
         setError(result.error);
         setTurns((current) => current.filter((turn) => turn.id !== optimisticId));
         setText(message);
+        setSpoken(wasSpoken);
         return;
       }
       setTurns((current) => [
@@ -119,6 +159,7 @@ export function TutorChat({
         { ...result.turn.tutor, role: "tutor", corrections: [] },
       ]);
       input.current?.focus();
+      if (autoplay) void speak([{ text: result.turn.tutor.content, options: { region } }]);
     });
   }
 
@@ -240,14 +281,19 @@ export function TutorChat({
               rows={2}
               value={text}
               maxLength={MAX_LENGTH}
-              onChange={(event) => setText(event.target.value)}
+              onChange={(event) => {
+                setText(event.target.value);
+                if (!event.target.value.trim()) setSpoken(false);
+              }}
               onKeyDown={(event) => {
                 if (event.key === "Enter" && !event.shiftKey) {
                   event.preventDefault();
                   send();
                 }
               }}
-              placeholder="Escreva em francês…"
+              placeholder={
+                speechRecognition ? "Escreva ou fale em francês…" : "Escreva em francês…"
+              }
               aria-label="Sua mensagem em francês"
               spellCheck={false}
               className="border-input bg-card focus-visible:border-primary font-fr min-h-12 flex-1 resize-none rounded-2xl border-[1.5px] px-4 py-3 text-lg outline-none"
@@ -262,9 +308,29 @@ export function TutorChat({
               <SendHorizontal />
             </Button>
           </div>
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <AccentBar target={input} onInsert={setText} disabled={sending} />
+            <VoiceInput
+              locale={region}
+              disabled={sending}
+              onTranscript={(transcript) => {
+                setText((current) =>
+                  current.trim() ? `${current.trim()} ${transcript}` : transcript,
+                );
+                setSpoken(true);
+                input.current?.focus();
+              }}
+            />
           </div>
+          <label className="text-muted-foreground flex w-fit cursor-pointer items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={autoplay}
+              onChange={(event) => writeAutoplay(event.target.checked)}
+              className="accent-primary size-4"
+            />
+            Ouvir as respostas automaticamente
+          </label>
           <p className="text-muted-foreground text-xs">
             Enter envia · Shift+Enter quebra a linha · {text.length}/{MAX_LENGTH}
             {learnerTurns >= 6 && " · Quando quiser, encerre para ver o relatório."}

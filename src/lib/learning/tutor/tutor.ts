@@ -191,6 +191,17 @@ function regionGuidance(context: TutorContext): string {
   return "Use standard international French.";
 }
 
+/**
+ * Spoken turns reach the model with this marker: the text comes from speech
+ * recognition, so spelling, accents and punctuation are not the learner's.
+ */
+export const SPOKEN_MARKER = "[falado]";
+
+export const markSpoken = (text: string) => `${SPOKEN_MARKER} ${text}`;
+
+export const stripSpokenMarker = (text: string) =>
+  text.startsWith(SPOKEN_MARKER) ? text.slice(SPOKEN_MARKER.length).trimStart() : text;
+
 export function buildTutorSystemPrompt(context: TutorContext): string {
   const role = context.scenario
     ? `Role-play: ${context.scenario.aiRole}\nSetting (in Portuguese, for you): ${context.scenario.setting}\nThe learner's goal: ${context.scenario.learnerGoal}\nStay in this role for the whole conversation.`
@@ -226,6 +237,7 @@ export function buildTutorSystemPrompt(context: TutorContext): string {
     '- `wrong` is the exact fragment, `right` is natural French, `explanationPt` is one sentence in Brazilian Portuguese. When the error comes from Portuguese, contrast them: "Em português dizemos…, em francês…".',
     "- `severity` is `important` when the error changes meaning or breaks a core structure (avoir/être, elision, gender of common words, register), otherwise `minor`.",
     "- Do not list style preferences or regional variants as errors. At most 3 corrections. An empty list is fine.",
+    `- A message starting with ${SPOKEN_MARKER} was spoken and transcribed automatically: ignore spelling, accents, punctuation and capitalisation (they come from the transcription). Correct only grammar, vocabulary and register, and never quote the marker.`,
   ]
     .filter(Boolean)
     .join("\n");

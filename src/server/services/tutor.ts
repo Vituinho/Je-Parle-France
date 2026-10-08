@@ -9,6 +9,7 @@ import {
   buildReportSystemPrompt,
   buildTutorSystemPrompt,
   clampScores,
+  markSpoken,
   mergeCorrections,
   transcriptForReport,
   tutorReportSchema,
@@ -151,6 +152,7 @@ export async function sendLearnerMessage(
   userId: string,
   conversationId: string,
   rawText: string,
+  options: { spoken?: boolean } = {},
 ): Promise<TurnResult> {
   const text = rawText.trim();
   if (!text) throw new TutorError("Escreva uma mensagem.");
@@ -175,7 +177,7 @@ export async function sendLearnerMessage(
   const messages: LLMMessage[] = [
     { role: "user", content: "(Início da conversa.)" },
     ...history,
-    { role: "user", content: text },
+    { role: "user", content: options.spoken ? markSpoken(text) : text },
   ];
 
   const llm = getLLM();
@@ -211,6 +213,9 @@ export async function sendLearnerMessage(
       },
     }),
     db.conversationTurn.create({ data: { conversationId, role: "tutor", content: reply } }),
+    ...(options.spoken && conversation.mode !== "voice"
+      ? [db.conversation.update({ where: { id: conversationId }, data: { mode: "voice" } })]
+      : []),
   ]);
   return {
     learner: { id: learnerTurn.id, content: text, corrections: stored.visible },

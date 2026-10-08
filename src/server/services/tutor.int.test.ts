@@ -93,4 +93,23 @@ describe.skipIf(!hasTestDatabase)("tutor service (mock provider)", () => {
     });
     expect(JSON.stringify(stored.corrections)).toContain("j'ai 25 ans");
   });
+
+  it("accepts spoken turns: voice mode, corrections kept, marker never shown", async () => {
+    const user = await learner();
+    const conversation = await startConversation(user.id, { correctionMode: "immediate" });
+    const turn = await sendLearnerMessage(user.id, conversation.id, "je besoin d'un café", {
+      spoken: true,
+    });
+    expect(turn.learner.content).toBe("je besoin d'un café");
+    expect(turn.learner.corrections).toContainEqual(
+      expect.objectContaining({ right: "j'ai besoin" }),
+    );
+    expect(turn.tutor.content).not.toContain("[falado]");
+    const stored = await db.conversation.findUniqueOrThrow({ where: { id: conversation.id } });
+    expect(stored.mode).toBe("voice");
+    const turns = await db.conversationTurn.findMany({
+      where: { conversationId: conversation.id },
+    });
+    expect(turns.every((t) => !t.content.includes("[falado]"))).toBe(true);
+  });
 });

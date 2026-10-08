@@ -28,6 +28,8 @@ export function getCapabilities(): Capabilities {
 export interface PublicCapabilities {
   serverTts: boolean;
   pronunciation: boolean;
+  /** Speech-to-text for spoken tutor turns. */
+  speechRecognition: boolean;
 }
 
 export function publicCapabilities(): PublicCapabilities {
@@ -36,8 +38,9 @@ export function publicCapabilities(): PublicCapabilities {
     return {
       serverTts: capabilities.serverTts,
       pronunciation: capabilities.pronunciationAssessment,
+      speechRecognition: capabilities.speechRecognition,
     };
   } catch {
-    return { serverTts: false, pronunciation: false };
+    return { serverTts: false, pronunciation: false, speechRecognition: false };
   }
 }

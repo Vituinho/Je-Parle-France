@@ -1,4 +1,5 @@
 import { correctText, detectErrors } from "@/lib/learning/errors/patterns";
+import { stripSpokenMarker } from "@/lib/learning/tutor/tutor";
 import type { GenerateObjectParams, GenerateObjectResult, LLMProvider } from "./types";
 
 /**
@@ -21,7 +22,7 @@ export class MockProvider implements LLMProvider {
 
   async generateObject<T>(params: GenerateObjectParams<T>): Promise<GenerateObjectResult<T>> {
     const learnerMessages = params.messages.filter((message) => message.role === "user");
-    const last = learnerMessages.at(-1)?.content ?? "";
+    const last = stripSpokenMarker(learnerMessages.at(-1)?.content ?? "");
     let candidate: unknown;
     if (params.purpose === "tutor_turn") {
       const assistantTurns = params.messages.filter(

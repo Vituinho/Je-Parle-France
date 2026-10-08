@@ -7,7 +7,7 @@ vendor SDK.
 | --- | --- | --- |
 | `LLMProvider` (`lib/ai/llm`) | `AnthropicProvider` (Claude) | `MockProvider` — scripted replies, rule-based corrections, heuristic report, **labelled "simulado"** in the UI |
 | `TextToSpeechProvider` (`lib/ai/speech`) | Azure neural voices (fr-FR Denise/Henri, fr-CA Sylvie/Antoine) | Browser `speechSynthesis` with the best installed French voice; one notice per screen if none |
-| `SpeechToTextProvider` | Azure short-audio REST | Not available — no transcript is ever invented |
+| `SpeechToTextProvider` | Azure short-audio REST (`/api/speech/transcribe`) | Not available — no transcript is ever invented; the mic is not offered |
 | `PronunciationAssessmentProvider` | Azure pronunciation assessment (word granularity) | Self-rating against the model recording |
 
 There is intentionally **no speech mock in the product path**: a fake score would become fake
@@ -27,8 +27,8 @@ AZURE_SPEECH_KEY=...
 AZURE_SPEECH_REGION=canadacentral
 ```
 
-Secrets are read only on the server (`src/lib/env.ts`). The browser learns two booleans
-(`serverTts`, `pronunciation`) through `publicCapabilities()`.
+Secrets are read only on the server (`src/lib/env.ts`). The browser learns three booleans
+(`serverTts`, `pronunciation`, `speechRecognition`) through `publicCapabilities()`.
 
 ## Tutor
 
@@ -56,6 +56,22 @@ Secrets are read only on the server (`src/lib/env.ts`). The browser learns two b
 - **Privacy**: conversations are stored so the learner can reread them and can be deleted; their
   content is not logged.
 
+## Voice conversation
+
+- **Speaking a turn** (when speech recognition is configured): the learner records up to 15 s,
+  `/api/speech/transcribe` returns the transcript, and it goes into the message box. The learner
+  sees exactly what was understood and can fix it before sending — the app never sends a
+  transcript on its own. Audio is processed in memory and discarded; nothing is stored unless the
+  learner sends the message.
+- **Spoken turns are marked** (`[falado]`, see `SPOKEN_MARKER`) when sent to the model, and the
+  system prompt tells it to ignore spelling, accents, punctuation and capitalisation in them: those
+  come from the recogniser, not the learner. The marker is never stored or shown. A conversation
+  with a spoken turn is recorded as `mode: voice`.
+- **Hearing the tutor**: every reply has a play button (Azure neural voice in the scenario's
+  region, or the browser's French voice), and learners can turn on automatic playback; that
+  preference stays in their browser.
+- Quotas: transcription shares the per-learner daily speech quota with pronunciation assessment.
+
 ## Speech
 
 - `/api/tts` (GET, authenticated, ≤ 300 characters, daily quota) synthesises with Azure and keeps an
@@ -70,5 +86,5 @@ Secrets are read only on the server (`src/lib/env.ts`). The browser learns two b
 
 ## Planned
 
-Voice conversation with the tutor (STT → tutor turn → TTS), shadowing with prosody comparison, AI
-feedback on open writing, an OpenAI/Google adapter set, persistent TTS cache in object storage.
+Streaming (full-duplex) voice conversation, shadowing with prosody comparison, AI feedback on open
+writing, an OpenAI/Google adapter set, persistent TTS cache in object storage.
