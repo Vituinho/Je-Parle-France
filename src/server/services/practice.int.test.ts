@@ -100,6 +100,34 @@ describe.skipIf(!hasTestDatabase)("practice service", () => {
     expect(attempt).toMatchObject({ correct: false, score: 0, context: "lesson" });
   });
 
+  it("rejects another learner's session before recording any evidence", async () => {
+    const user = await learner();
+    const other = await learner();
+    const session = await db.dailySession.create({
+      data: { userId: other.id, localDate: "2026-10-08", plannedMinutes: 15, plan: {} },
+    });
+    const activity = lessonActivity("a0-u1-l1", "a0-u1-l1-a1");
+    const params = {
+      userId: user.id,
+      activity,
+      response: oracleResponse(activity, activitySeed(user.id), true),
+      context: "session" as const,
+      sessionId: session.id,
+    };
+    await expect(submitActivity(params)).rejects.toThrow("Sessão não encontrada");
+    expect(await db.activityAttempt.count({ where: { userId: user.id } })).toBe(0);
+    expect(await db.memoryTrace.count({ where: { userId: user.id } })).toBe(0);
+    expect(await db.reviewLog.count({ where: { userId: user.id } })).toBe(0);
+
+    const own = await db.dailySession.create({
+      data: { userId: user.id, localDate: "2026-10-08", plannedMinutes: 15, plan: {} },
+    });
+    expect((await submitActivity({ ...params, sessionId: own.id })).feedback.correct).toBe(true);
+    expect(await db.activityAttempt.findFirst({ where: { userId: user.id } })).toMatchObject({
+      sessionId: own.id,
+    });
+  });
+
   it("tracks lesson progress and keeps the best score on replays", async () => {
     const user = await learner();
     await startLesson(user.id, "a0-u1-l1");

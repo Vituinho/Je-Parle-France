@@ -124,6 +124,13 @@ export async function submitActivity(params: {
   now?: Date;
 }): Promise<SubmitResult> {
   const { userId, activity, context } = params;
+  if (params.sessionId) {
+    const session = await db.dailySession.findFirst({
+      where: { id: params.sessionId, userId },
+      select: { id: true },
+    });
+    if (!session) throw new PracticeError("Sessão não encontrada.");
+  }
   if (activity.type === "teach") throw new PracticeError("Teaching cards are not graded.");
   const now = params.now ?? new Date();
   const seed = activitySeed(userId);
