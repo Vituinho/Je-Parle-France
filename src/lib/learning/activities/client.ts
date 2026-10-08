@@ -271,6 +271,8 @@ export interface ClientFeedback {
   score: number;
   correct: boolean;
   expected?: string;
+  /** Model answers announced with correctness feedback, after server grading only. */
+  modelAnswers?: { text: string; lang: "fr" | "pt" }[];
   diff?: DiffToken[];
   parts?: boolean[];
   note?: Localized;
@@ -301,18 +303,30 @@ export function toClientFeedback(
   switch (activity.type) {
     case "choice":
       feedback.correctOption = displayedIndex(activity, activity.answer, seed);
+      feedback.modelAnswers = [
+        { text: activity.options[activity.answer]!, lang: activity.optionsLang },
+      ];
       break;
     case "minimal_pair":
       feedback.correctOption = activity.answer;
+      feedback.modelAnswers = [{ text: activity.pair[activity.answer].word, lang: "fr" }];
       break;
     case "multi_select":
       feedback.correctOptions = activity.answers.map((i) => displayedIndex(activity, i, seed));
+      feedback.modelAnswers = activity.answers.map((i) => ({
+        text: activity.options[i]!,
+        lang: activity.optionsLang,
+      }));
       break;
     case "reading":
     case "listening":
       feedback.correctAnswers = activity.questions.map((question, q) =>
         displayedIndex(activity, question.answer, seed, `q${q}`),
       );
+      feedback.modelAnswers = activity.questions.map((question) => ({
+        text: question.options[question.answer]!,
+        lang: question.optionsLang,
+      }));
       break;
     case "match": {
       const left = order(activity.pairs.length, seedFor(seed, activity.id, "left"));
@@ -320,6 +334,10 @@ export function toClientFeedback(
       feedback.correctPairs = activity.pairs.map(
         (_, authored) => [left.indexOf(authored), right.indexOf(authored)] as [number, number],
       );
+      feedback.modelAnswers = activity.pairs.flatMap((pair) => [
+        { text: pair.left, lang: activity.leftLang },
+        { text: pair.right, lang: activity.rightLang },
+      ]);
       break;
     }
     default:

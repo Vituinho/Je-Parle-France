@@ -59,6 +59,22 @@ export function FeedbackPanel({
           <span className="text-muted-foreground text-base font-medium">{heading.pt}</span>
         )}
       </p>
+      {!showExpected &&
+        !feedback.correct &&
+        (feedback.modelAnswers?.length || feedback.expected) && (
+          <div className="sr-only">
+            <p>Resposta certa:</p>
+            <ul>
+              {(feedback.modelAnswers ?? [{ text: feedback.expected!, lang: "fr" as const }]).map(
+                (answer, index) => (
+                  <li key={index} lang={answer.lang === "pt" ? "pt-BR" : "fr"}>
+                    {answer.text}
+                  </li>
+                ),
+              )}
+            </ul>
+          </div>
+        )}
       {showExpected && feedback.expected && feedback.verdict !== "correct" && (
         <div className="mt-3 flex items-center gap-3">
           <AudioButton

@@ -31,6 +31,8 @@ test("answers are graded honestly and progress survives logout and login", async
   await choose(page, "Tchau!");
   const feedback = step(page).getByRole("status");
   await expect(feedback).toContainText(/Ainda não\.|Pas tout à fait\./);
+  await expect(feedback).toContainText("Resposta certa:");
+  await expect(feedback).toContainText("Bom dia / Olá!");
   // The right option is announced, not only coloured.
   await expect(
     step(page).getByRole("radio", { name: /Bom dia \/ Olá! \(resposta certa\)/ }),
