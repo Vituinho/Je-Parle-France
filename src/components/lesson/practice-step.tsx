@@ -35,12 +35,15 @@ const SHOWS_ANSWER_INLINE = new Set([
  * Teaching cards only need "Continuar".
  */
 export function PracticeStep({
+  instanceKey,
   activity,
   support,
   onCheck,
   onSeen,
   onContinue,
 }: {
+  /** Unique per rendered step (the same activity can appear twice in a queue). */
+  instanceKey: string;
   activity: ClientActivity;
   support: SupportMode;
   onCheck: CheckFn;
@@ -100,7 +103,7 @@ export function PracticeStep({
 
   return (
     <form
-      data-step={activity.id}
+      data-step={instanceKey}
       data-checked={result ? "true" : "false"}
       className="flex flex-1 flex-col"
       onSubmit={(event) => {

@@ -133,6 +133,7 @@ export function ReviewPlayer({
       <div className="mt-4 flex flex-1 flex-col">
         <PracticeStep
           key={`${item.key}-${position}`}
+          instanceKey={`${item.key}-${position}`}
           activity={item.activity}
           support={support}
           onCheck={({ response, hinted, durationMs }) =>

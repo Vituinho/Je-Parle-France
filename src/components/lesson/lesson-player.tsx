@@ -169,6 +169,7 @@ export function LessonPlayer({
       <div className="mt-4 flex flex-1 flex-col">
         <PracticeStep
           key={`${stepIndex}-${position}`}
+          instanceKey={`${activity.id}-${position}`}
           activity={activity}
           support={support}
           onSeen={async (durationMs) => {
