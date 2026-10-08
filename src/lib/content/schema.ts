@@ -259,6 +259,14 @@ export const openWritingActivitySchema = z.object({
   modelAnswer: text,
   /** Rubric focus points, in Portuguese. */
   focus: z.array(text).min(1),
+  /** Explicit reviewed task requirements; absent rubrics are never AI-graded. */
+  rubric: z
+    .object({
+      version: z.literal(1),
+      expectedLevel: levelSchema,
+      taskRequirements: z.array(text).min(2).max(6),
+    })
+    .optional(),
 });
 
 export const selfAssessActivitySchema = z.object({

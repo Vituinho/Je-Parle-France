@@ -125,5 +125,27 @@ LLM capability does not enable open-writing assessment, whose grader is still un
 
 ## Planned
 
+## Structured writing engine
+
+`lib/learning/writing/assessment.ts` uses seven ordinal criteria (0–4): task completion,
+comprehensibility, grammar, vocabulary, cohesion, orthography and CEFR appropriateness. Every
+nonzero judgment needs an exact excerpt from the original answer. Missing/out-of-range dimensions
+or invented excerpts invalidate the judgment. The original text stays intact. Local word counting
+only limits task completion for an undersized response. Communication and completion account for
+half the aggregate, avoiding disproportionate penalties for ambitious grammar.
+
+The semantic service uses the same real LLM adapter with an explicit versioned, expected-level
+task rubric, maximum 2,000 input characters, 2,200 output tokens, daily quota
+`WRITING_DAILY_ASSESSMENTS` (default 10) and throttling. It never calls the mock for assessment.
+Confidence is capped at 0.65 and assessment quality at 0.5; confidence below 0.5, insufficient text,
+missing provider and invalid/failing output remain ungraded. This is uncalibrated practice evidence,
+not certification. At most three important corrections are selected; model corrections never
+assign course concepts. Only important local detections with a known concept at or below the task
+level can feed memory; quoted examples are excluded. The caller must persist the assessment with
+the answer and must skip evidence when its score is null.
+
+This engine alone does not activate placement tasks. Activation requires a reviewed rubric on each
+authored item and a real configured provider.
+
 Streaming (full-duplex) voice conversation, shadowing with prosody comparison, AI feedback on open
 writing, an OpenAI/Google adapter set, persistent TTS cache in object storage.

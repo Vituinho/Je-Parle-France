@@ -26,6 +26,7 @@ const serverEnvSchema = z
     /** Daily per-learner limits that keep a free product affordable. */
     TUTOR_DAILY_TURNS: z.coerce.number().int().positive().default(80),
     TUTOR_DAILY_REPORTS: z.coerce.number().int().positive().default(10),
+    WRITING_DAILY_ASSESSMENTS: z.coerce.number().int().positive().default(10),
     SPEECH_PROVIDER: z.enum(["azure", "mock"]).default("mock"),
     AZURE_SPEECH_KEY: optionalString,
     AZURE_SPEECH_REGION: optionalString,
