@@ -1,4 +1,5 @@
-import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import * as capabilities from "@/lib/ai/capabilities";
 import { getContent } from "@/lib/content";
 import { levelIndex } from "@/lib/learning/cefr";
 import { db } from "@/server/db";
@@ -46,6 +47,7 @@ async function takeTest(userId: string, attemptId: string, theta: number) {
 
 describe.skipIf(!hasTestDatabase)("placement service", () => {
   beforeEach(resetDatabase);
+  afterEach(() => vi.restoreAllMocks());
   afterAll(() => db.$disconnect());
 
   it("runs a quick placement end to end and stores a detailed report", async () => {
@@ -104,5 +106,61 @@ describe.skipIf(!hasTestDatabase)("placement service", () => {
     await answerPlacement(user.id, attemptId, view.itemId, { kind: "dont_know" });
     const stored = await db.placementResponse.findFirstOrThrow({ where: { attemptId } });
     expect(stored).toMatchObject({ score: 0, scored: true });
+  });
+
+  it("scores speaking only from a matching real assessment, never self-rating or forged fields", async () => {
+    vi.spyOn(capabilities, "getCapabilities").mockReturnValue({
+      speechRecognition: true,
+      pronunciationAssessment: true,
+      serverTts: true,
+      llm: false,
+    });
+    const user = await onboardedUser();
+    const attemptId = await startPlacement(user.id, "skill", ["speaking"]);
+    const view = await loadPlacement(user.id, attemptId);
+    if (view.status !== "in_progress") throw new Error("expected an item");
+    const activity = getContent().placementItems.get(view.itemId)!.activity;
+    if (activity.type !== "speak") throw new Error("expected a spoken item");
+
+    for (const answer of [
+      { kind: "speech" as const, selfRating: 1 as const },
+      { kind: "speech" as const, transcript: activity.text, pronunciation: 100 },
+    ]) {
+      await expect(answerPlacement(user.id, attemptId, view.itemId, answer)).rejects.toThrow(
+        "Grave e avalie",
+      );
+    }
+    const assessment = await db.speechAttempt.create({
+      data: {
+        userId: user.id,
+        provider: "azure",
+        targetText: "Bonjour",
+        transcript: activity.text,
+        scores: { status: "ok", scores: { overall: 40 } },
+      },
+    });
+    await expect(
+      answerPlacement(user.id, attemptId, view.itemId, {
+        kind: "speech",
+        speechAttemptId: assessment.id,
+      }),
+    ).rejects.toThrow("outro texto");
+    expect(await db.placementResponse.count({ where: { attemptId } })).toBe(0);
+
+    await db.speechAttempt.update({
+      where: { id: assessment.id },
+      data: { targetText: activity.text },
+    });
+    await answerPlacement(user.id, attemptId, view.itemId, {
+      kind: "speech",
+      speechAttemptId: assessment.id,
+      transcript: "forged",
+      pronunciation: 100,
+    });
+    // Real overall 40 and perfect transcript recall: 0.5 * 1 + 0.5 * 0.4 = 0.7.
+    expect(await db.placementResponse.findFirstOrThrow({ where: { attemptId } })).toMatchObject({
+      score: 0.7,
+      scored: true,
+    });
   });
 });

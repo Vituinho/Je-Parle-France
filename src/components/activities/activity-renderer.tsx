@@ -28,6 +28,7 @@ export interface ActivityRendererProps {
   locked: boolean;
   feedback?: ClientFeedback;
   support: SupportMode;
+  allowSelfRating?: boolean;
 }
 
 export function ActivityRenderer(props: ActivityRendererProps) {

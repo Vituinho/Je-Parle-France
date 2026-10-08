@@ -42,9 +42,9 @@ export interface SubmitResult {
   changes: MasteryChange[];
 }
 
-async function resolveSpeech(userId: string, response: ActivityResponse) {
+async function resolveSpeech(userId: string, response: ActivityResponse, activity: Activity) {
   try {
-    return await resolveSpeechResponse(userId, response);
+    return await resolveSpeechResponse(userId, response, activity);
   } catch (error) {
     if (error instanceof SpeechEvidenceError) throw new PracticeError(error.message);
     throw error;
@@ -127,7 +127,7 @@ export async function submitActivity(params: {
   if (activity.type === "teach") throw new PracticeError("Teaching cards are not graded.");
   const now = params.now ?? new Date();
   const seed = activitySeed(userId);
-  const response = await resolveSpeech(userId, params.response);
+  const response = await resolveSpeech(userId, params.response, activity);
   let grade;
   try {
     grade = gradeActivity(activity, toAuthoredResponse(activity, response, seed));

@@ -199,6 +199,7 @@ export function SpeakRenderer({
   onDraft,
   locked,
   feedback,
+  allowSelfRating = true,
 }: RendererProps<"speak">) {
   const recorder = useRecorder();
   const { pronunciation } = useCapabilities();
@@ -278,16 +279,26 @@ export function SpeakRenderer({
       )}
       {recorder.state === "denied" && (
         <p className="text-muted-foreground text-sm" role="status">
-          O microfone não foi liberado. Você ainda pode falar em voz alta e se avaliar.
+          {allowSelfRating
+            ? "O microfone não foi liberado. Você ainda pode falar em voz alta e se avaliar."
+            : "O microfone não foi liberado. Libere o acesso ou escolha Não sei para continuar."}
         </p>
       )}
       {recorder.state === "unsupported" && (
         <p className="text-muted-foreground text-sm" role="status">
-          Este navegador não grava áudio. Fale em voz alta e se avalie.
+          {allowSelfRating
+            ? "Este navegador não grava áudio. Fale em voz alta e se avalie."
+            : "Este navegador não grava áudio. Escolha Não sei para continuar."}
         </p>
       )}
 
-      {!assessed && (
+      {!assessed && !allowSelfRating && (
+        <p className="text-muted-foreground text-sm" role="status">
+          Grave sua voz e use Avaliar pronúncia para responder. A autoavaliação fica no bloco
+          próprio do diagnóstico; se não puder gravar, escolha Não sei.
+        </p>
+      )}
+      {!assessed && allowSelfRating && (
         <fieldset className="space-y-2.5">
           <legend className="mb-2 font-semibold">
             {canAssess ? "Ou compare com o modelo e se avalie:" : "Compare com o modelo. Como foi?"}

@@ -57,6 +57,9 @@ Items that need an unavailable capability (`speech` for spoken items, `ai` for o
 never served. Spoken items are scored from the learner's own stored pronunciation assessment
 (transcript recall and the provider's overall score, 50/50), resolved on the server from its id —
 a transcript or score sent by the browser is ignored (`server/services/speech-evidence.ts`).
+The stored assessment must be recent, successful, produced by the real provider and match
+the current exercise's reference text. Self-ratings cannot score a spoken objective item;
+they belong only to the separate can-do block.
 
 ## Report
 

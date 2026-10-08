@@ -1,4 +1,6 @@
 import "server-only";
+import { z } from "zod";
+import type { Activity } from "@/lib/content/schema";
 import type { ActivityResponse } from "@/lib/learning/grading/grade";
 import { db } from "@/server/db";
 
@@ -6,6 +8,10 @@ export class SpeechEvidenceError extends Error {}
 
 /** Assessments older than this are not accepted as evidence. */
 const MAX_AGE_MS = 30 * 60_000;
+const assessmentSchema = z.object({
+  status: z.literal("ok"),
+  scores: z.object({ overall: z.number().min(0).max(100) }),
+});
 
 /**
  * Turns a spoken response into gradable evidence. Transcripts and
@@ -16,6 +22,7 @@ const MAX_AGE_MS = 30 * 60_000;
 export async function resolveSpeechResponse(
   userId: string,
   response: ActivityResponse,
+  activity: Activity,
   now = new Date(),
 ): Promise<ActivityResponse> {
   if (response.kind !== "speech") return response;
@@ -31,11 +38,18 @@ export async function resolveSpeechResponse(
   if (!attempt?.transcript) {
     throw new SpeechEvidenceError("Avaliação de pronúncia não encontrada. Grave de novo.");
   }
-  const overall = (attempt.scores as { scores?: { overall?: number } | null } | null)?.scores
-    ?.overall;
+  // The reference is supplied when recording, so ownership alone is not enough:
+  // a perfect assessment of an easier text must not score this exercise.
+  if (activity.type !== "speak" || attempt.targetText.trim() !== activity.text.trim()) {
+    throw new SpeechEvidenceError("Esta avaliação é de outro texto. Grave o exercício atual.");
+  }
+  const assessment = assessmentSchema.safeParse(attempt.scores);
+  if (attempt.provider !== "azure" || !assessment.success) {
+    throw new SpeechEvidenceError("A gravação não tem uma avaliação válida. Grave de novo.");
+  }
   return {
     kind: "speech",
     transcript: attempt.transcript,
-    pronunciation: typeof overall === "number" ? Math.min(100, Math.max(0, overall)) : undefined,
+    pronunciation: assessment.data.scores.overall,
   };
 }

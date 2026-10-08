@@ -16,6 +16,7 @@ export interface RendererProps<T extends ClientActivity["type"]> {
   locked: boolean;
   feedback?: ClientFeedback;
   support: SupportMode;
+  allowSelfRating?: boolean;
 }
 
 /** The prompt of an activity: French (serif), Portuguese, and/or audio. */

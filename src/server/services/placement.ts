@@ -203,10 +203,13 @@ export async function answerPlacement(
   let score = 0;
   let scored = true;
   if (answer.kind !== "dont_know") {
+    if (item.activity.type === "speak" && (answer.kind !== "speech" || !answer.speechAttemptId)) {
+      throw new PlacementError("Grave e avalie sua voz para responder, ou escolha Não sei.");
+    }
     // Spoken answers are scored from the stored assessment, never from client-sent text.
     let response: ActivityResponse;
     try {
-      response = await resolveSpeechResponse(userId, answer);
+      response = await resolveSpeechResponse(userId, answer, item.activity);
     } catch (error) {
       if (error instanceof SpeechEvidenceError) throw new PlacementError(error.message);
       throw error;

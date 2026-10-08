@@ -120,6 +120,7 @@ export function PlacementRunner({ initialView }: { initialView: InProgress }) {
             onDraft={setDraft}
             locked={pending}
             support="pt-fr"
+            allowSelfRating={false}
           />
         </div>
 

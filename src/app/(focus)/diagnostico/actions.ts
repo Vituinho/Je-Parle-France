@@ -61,7 +61,9 @@ export async function answerPlacementAction(input: unknown): Promise<AnswerResul
     if (!(error instanceof PlacementError)) throw error;
     // The page may be stale (answered in another tab): return the current state.
     try {
-      return { ok: true, view: await loadPlacement(user.id, attemptId) };
+      const view = await loadPlacement(user.id, attemptId);
+      if (view.status === "completed" || view.itemId !== itemId) return { ok: true, view };
+      return { ok: false, error: error.message };
     } catch {
       return { ok: false, error: error.message };
     }
