@@ -1,0 +1,366 @@
+import type { UnitInput } from "@/lib/content/schema";
+import { say, t } from "../../_kit";
+
+export const unitFamille: UnitInput = {
+  id: "a1-u2",
+  level: "A1",
+  title: { pt: "Minha família", fr: "Ma famille" },
+  canDo: {
+    pt: "Apresentar sua família e perguntar sobre a família dos outros, usando os possessivos sem a armadilha do “seu”.",
+    fr: "Présenter sa famille et poser des questions sur celle des autres.",
+  },
+  lessons: [
+    {
+      id: "a1-u2-l1",
+      title: { pt: "A família", fr: "La famille" },
+      objective: {
+        pt: "Nomear as pessoas da família.",
+        fr: "Nommer les membres de la famille.",
+      },
+      minutes: 6,
+      steps: [
+        {
+          id: "a1-u2-l1-t1",
+          type: "teach",
+          title: { pt: "Quem é quem" },
+          body: {
+            pt: "**la famille** — a família\n**les parents** — os pais (pai e mãe)\n**le père / la mère** — o pai / a mãe\n**le frère / la sœur** — o irmão / a irmã\n**le mari / la femme** — o marido / a esposa\n**le fils / la fille** — o filho / a filha\n**les enfants** — os filhos (e também “as crianças”)",
+          },
+          examples: [
+            { fr: "Mes parents habitent à São Paulo.", pt: "Meus pais moram em São Paulo." },
+            { fr: "J'ai un frère et deux sœurs.", pt: "Tenho um irmão e duas irmãs." },
+            { fr: "Nous avons deux enfants.", pt: "Temos dois filhos." },
+          ],
+          notes: [
+            {
+              kind: "brazil",
+              text: {
+                pt: "*Les parents* parece “parentes”, mas é só o pai e a mãe. Tios, primos e avós são *la famille*.",
+              },
+            },
+            {
+              kind: "tip",
+              text: {
+                pt: "*Fils* soa /fis/ (o *l* é mudo). *La femme* quer dizer “a esposa” e também “a mulher”.",
+              },
+            },
+          ],
+          introduces: [
+            "lex:la-famille",
+            "lex:les-parents",
+            "lex:le-pere-la-mere",
+            "lex:le-frere-la-soeur",
+            "lex:le-mari-la-femme",
+            "lex:le-fils-la-fille",
+            "lex:les-enfants",
+          ],
+        },
+        {
+          id: "a1-u2-l1-a1",
+          type: "choice",
+          instruction: say.meaning,
+          prompt: { fr: "Mes parents habitent au Brésil." },
+          options: [
+            "Meu pai e minha mãe moram no Brasil.",
+            "Meus parentes moram no Brasil.",
+            "Meus filhos moram no Brasil.",
+          ],
+          optionsLang: "pt",
+          answer: 0,
+          optionFeedback: [
+            null,
+            { pt: "Falso amigo: *les parents* são o pai e a mãe. Parentes = *la famille*." },
+            { pt: "Filhos são *les enfants*." },
+          ],
+          targets: [t("lex:les-parents", "recognition")],
+        },
+        {
+          id: "a1-u2-l1-a2",
+          type: "match",
+          instruction: say.match,
+          pairs: [
+            { left: "la sœur", right: "a irmã" },
+            { left: "le fils", right: "o filho" },
+            { left: "le mari", right: "o marido" },
+            { left: "la mère", right: "a mãe" },
+            { left: "les enfants", right: "os filhos" },
+          ],
+          targets: [
+            t("lex:le-frere-la-soeur", "recognition"),
+            t("lex:le-fils-la-fille", "recognition"),
+            t("lex:le-mari-la-femme", "recognition"),
+            t("lex:le-pere-la-mere", "recognition"),
+            t("lex:les-enfants", "recognition"),
+          ],
+        },
+        {
+          id: "a1-u2-l1-a3",
+          type: "listening",
+          instruction: say.listen,
+          context: { pt: "Paula mostra uma foto para um colega. *voici* = aqui está, este é." },
+          lines: [
+            {
+              speaker: "Paula",
+              text: "Voici ma famille. Ça, c'est mon mari, Diego. Et voici nos enfants : notre fils Lucas et notre fille Bia.",
+              gender: "f",
+            },
+            { speaker: "Colega", text: "Ils ont quel âge ?", gender: "m" },
+            { speaker: "Paula", text: "Lucas a dix ans et Bia a six ans.", gender: "f" },
+          ],
+          questions: [
+            {
+              prompt: { pt: "Quantos filhos Paula tem?" },
+              options: ["Dois: um filho e uma filha", "Um filho", "Duas filhas"],
+              optionsLang: "pt",
+              answer: 0,
+            },
+            {
+              prompt: { pt: "Quantos anos Bia tem?" },
+              options: ["Seis", "Dez", "Dezesseis"],
+              optionsLang: "pt",
+              answer: 0,
+            },
+          ],
+          targets: [
+            t("lex:le-mari-la-femme", "listening"),
+            t("lex:le-fils-la-fille", "listening"),
+            t("lex:les-enfants", "listening", 0.5),
+          ],
+        },
+        {
+          id: "a1-u2-l1-a4",
+          type: "type",
+          instruction: say.write,
+          prompt: { pt: "Tenho um irmão e uma irmã." },
+          accept: ["J'ai un frère et une sœur.", "J'ai un frère et une soeur."],
+          targets: [t("lex:le-frere-la-soeur", "recall")],
+        },
+        {
+          id: "a1-u2-l1-a5",
+          type: "fill",
+          instruction: say.complete,
+          sentence: "Mes ___ habitent à Rio : mon père et ma mère.",
+          blanks: [{ accept: ["parents"] }],
+          wordBank: ["parents", "enfants", "sœurs"],
+          translation: "Meus pais moram no Rio: meu pai e minha mãe.",
+          targets: [t("lex:les-parents", "recall")],
+        },
+        {
+          id: "a1-u2-l1-a6",
+          type: "speak",
+          mode: "repeat",
+          instruction: say.repeat,
+          text: "J'ai deux enfants : un fils et une fille.",
+          translation: "Tenho dois filhos: um menino e uma menina.",
+          targets: [t("lex:les-enfants", "speaking"), t("lex:le-fils-la-fille", "speaking")],
+        },
+      ],
+    },
+    {
+      id: "a1-u2-l2",
+      title: { pt: "Mon, ma, mes", fr: "Mon, ma, mes" },
+      objective: {
+        pt: "Usar os possessivos de acordo com o gênero e o número da coisa possuída.",
+        fr: "Accorder les possessifs avec ce qu'on possède.",
+      },
+      minutes: 7,
+      steps: [
+        {
+          id: "a1-u2-l2-t1",
+          type: "teach",
+          title: { pt: "Meu, minha, meus" },
+          body: {
+            pt: "O possessivo concorda com a **coisa possuída**:\n\n**mon** frère · **ma** sœur · **mes** parents\n**ton** fils · **ta** fille · **tes** enfants\n**son** mari · **sa** femme · **ses** enfants\n\nAntes de vogal, o feminino também usa **mon / ton / son**: *mon amie*, *ton école*, *son adresse*.",
+          },
+          examples: [
+            { fr: "C'est mon amie Julie.", pt: "Esta é minha amiga Julie." },
+            { fr: "Ta sœur est médecin ?", pt: "Tua irmã é médica?" },
+            { fr: "Marc habite avec sa femme.", pt: "Marc mora com a esposa (dele)." },
+          ],
+          notes: [
+            {
+              kind: "tip",
+              text: {
+                pt: "*Sa voiture* pode ser o carro dele **ou** dela: o que conta é que *voiture* é feminino.",
+              },
+            },
+          ],
+          introduces: ["gram:possessifs"],
+        },
+        {
+          id: "a1-u2-l2-a1",
+          type: "choice",
+          instruction: say.complete,
+          prompt: { fr: "C'est ___ amie Sophie." },
+          options: ["mon", "ma", "mes"],
+          answer: 0,
+          optionFeedback: [
+            null,
+            { pt: "Antes de vogal, *ma* vira *mon*: *mon amie*." },
+            { pt: "*mes* é plural." },
+          ],
+          targets: [t("gram:possessifs", "recognition")],
+        },
+        {
+          id: "a1-u2-l2-a2",
+          type: "choice",
+          instruction: say.meaning,
+          prompt: { fr: "Pedro habite avec sa mère." },
+          options: [
+            "Pedro mora com a mãe dele.",
+            "Pedro mora com a sua mãe (de você).",
+            "Pedro mora com a minha mãe.",
+          ],
+          optionsLang: "pt",
+          answer: 0,
+          optionFeedback: [
+            null,
+            { pt: "*Sa* é “dele / dela”. “Sua (de você)” seria *votre* ou *ta*." },
+            { pt: "“Minha” seria *ma*." },
+          ],
+          targets: [t("gram:possessifs", "recognition")],
+        },
+        {
+          id: "a1-u2-l2-a3",
+          type: "fill",
+          instruction: say.complete,
+          sentence: "Voici ___ père, ___ mère et ___ frères.",
+          blanks: [{ accept: ["mon"] }, { accept: ["ma"] }, { accept: ["mes"] }],
+          translation: "Aqui estão meu pai, minha mãe e meus irmãos.",
+          targets: [t("gram:possessifs", "writing")],
+        },
+        {
+          id: "a1-u2-l2-a4",
+          type: "error_correction",
+          instruction: say.fix,
+          sentence: "C'est ma amie Camille.",
+          accept: ["C'est mon amie Camille."],
+          explanation: { pt: "Antes de vogal: *mon amie*." },
+          targets: [t("gram:possessifs", "writing")],
+        },
+        {
+          id: "a1-u2-l2-a5",
+          type: "order",
+          instruction: say.order,
+          tokens: ["Ta", "sœur", "habite", "avec", "ses", "enfants ?"],
+          translation: "Tua irmã mora com os filhos dela?",
+          targets: [t("gram:possessifs", "writing", 0.7)],
+        },
+        {
+          id: "a1-u2-l2-a6",
+          type: "speak",
+          mode: "repeat",
+          instruction: say.repeat,
+          text: "C'est mon amie Julie et sa fille.",
+          translation: "Esta é minha amiga Julie e a filha dela.",
+          targets: [t("gram:possessifs", "speaking")],
+        },
+      ],
+    },
+    {
+      id: "a1-u2-l3",
+      title: { pt: "Votre famille", fr: "Votre famille" },
+      objective: {
+        pt: "Perguntar pela família dos outros com votre, ton e leur — e evitar o “seu” brasileiro.",
+        fr: "Parler de la famille des autres avec votre, ton et leur.",
+      },
+      minutes: 7,
+      steps: [
+        {
+          id: "a1-u2-l3-t1",
+          type: "teach",
+          title: { pt: "O “seu” brasileiro" },
+          body: {
+            pt: "Quando falamos “seu” no Brasil, quase sempre queremos dizer “de você”. Em francês, isso é:\n\n**votre / vos** — com *vous*: *votre nom*, *vos enfants*\n**ton / ta / tes** — com *tu*: *ton nom*, *tes enfants*\n\n*Son / sa / ses* é só “dele / dela”. E para “deles / delas”: **leur / leurs**. “Nosso” é **notre / nos**.",
+          },
+          examples: [
+            { fr: "Quel est votre nom ?", pt: "Qual é o seu nome?" },
+            { fr: "Vos enfants ont quel âge ?", pt: "Quantos anos têm os seus filhos?" },
+            { fr: "Ils adorent leur fille.", pt: "Eles adoram a filha (deles)." },
+            { fr: "Notre maison est petite.", pt: "Nossa casa é pequena." },
+          ],
+          introduces: ["gram:possessifs"],
+        },
+        {
+          id: "a1-u2-l3-a1",
+          type: "choice",
+          instruction: { pt: "Como perguntar a um desconhecido “Qual é o seu nome?”" },
+          prompt: { pt: "Você fala com um atendente que você trata por *vous*." },
+          options: ["Quel est votre nom ?", "Quel est son nom ?", "Quel est ton nom ?"],
+          answer: 0,
+          optionFeedback: [
+            null,
+            { pt: "*Son nom* é o nome **dele / dela**, de outra pessoa." },
+            { pt: "*Ton* é informal, para quem você trata por *tu*." },
+          ],
+          targets: [t("gram:possessifs", "recognition")],
+        },
+        {
+          id: "a1-u2-l3-a2",
+          type: "reading",
+          instruction: { pt: "Leia e responda.", fr: "Lisez et répondez." },
+          passage: {
+            title: "Ma famille à Montréal",
+            text: "Je m'appelle Renata. J'habite à Montréal avec mon mari et nos deux filles. Mes parents habitent à Belo Horizonte. Mon frère est ingénieur à Toronto ; sa femme est française. Leurs enfants parlent trois langues !",
+          },
+          questions: [
+            {
+              prompt: { pt: "Com quem Renata mora?" },
+              options: ["Com o marido e as duas filhas", "Com os pais", "Com o irmão"],
+              optionsLang: "pt",
+              answer: 0,
+            },
+            {
+              prompt: { pt: "De quem são os filhos que falam três línguas?" },
+              options: [
+                "Do irmão de Renata e da esposa dele",
+                "De Renata e do marido",
+                "Dos pais de Renata",
+              ],
+              optionsLang: "pt",
+              answer: 0,
+            },
+          ],
+          targets: [t("gram:possessifs", "recognition"), t("lex:la-famille", "recognition", 0.5)],
+        },
+        {
+          id: "a1-u2-l3-a3",
+          type: "fill",
+          instruction: say.complete,
+          sentence: "Madame, ___ enfants sont à l'école ?",
+          blanks: [{ accept: ["vos"] }],
+          wordBank: ["vos", "ses", "leurs"],
+          translation: "Senhora, os seus filhos estão na escola?",
+          targets: [t("gram:possessifs", "writing")],
+        },
+        {
+          id: "a1-u2-l3-a4",
+          type: "type",
+          instruction: say.write,
+          prompt: { pt: "Qual é o seu nome? (formal)" },
+          accept: ["Quel est votre nom ?"],
+          targets: [t("gram:possessifs", "writing")],
+        },
+        {
+          id: "a1-u2-l3-a5",
+          type: "speak",
+          mode: "respond",
+          instruction: say.answer,
+          prompt: {
+            fr: "Vous avez des enfants ?",
+            audio: { text: "Vous avez des enfants ?", gender: "f" },
+          },
+          text: "Oui, j'ai deux enfants.",
+          accept: [
+            "Oui, j'ai deux enfants.",
+            "Oui, j'ai un enfant.",
+            "Non, je n'ai pas d'enfants.",
+            "Oui, j'ai trois enfants.",
+          ],
+          translation: "Sim, tenho dois filhos. (ou a sua resposta)",
+          targets: [t("lex:les-enfants", "speaking"), t("gram:avoir-present", "speaking", 0.5)],
+        },
+      ],
+    },
+  ],
+};
