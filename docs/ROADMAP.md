@@ -20,7 +20,7 @@ Status vocabulary: **complete** · **mocked** (real interface + adapter, dev moc
 | Deterministic graders | complete | French-aware text comparison, red-pen diffs |
 | A0 curriculum | complete | Module A0.1: 4 units, 14 lessons (greetings, tu/vous, sounds, numbers, café) |
 | A1 core curriculum | complete | Modules A1.1 and A1.2: 10 units, 30 lessons (être/avoir, family, -er verbs/negation/time, city/articles, questions/futur proche, partitive/shopping, health, weather, routine/reflexive verbs, vouloir/pouvoir/faire/prendre), 4 tutor missions; grammar ids aligned with the placement bank |
-| A2 core curriculum | complete | Module A2.1: 5 units, 14 lessons (passé composé with avoir and être, imparfait, y and en, adjectives and comparisons), 2 tutor missions; placement gaps for these topics now lead to lessons. A2.2 planned |
+| A2 core curriculum | complete | Modules A2.1 and A2.2: 10 units, 24 lessons (passé composé with avoir and être, imparfait, y and en, comparisons; passé composé vs imparfait, object pronouns, futur simple, il faut/devoir, qui/que/où), 3 tutor missions; placement gaps for these topics lead to lessons |
 | Lesson player + activity engine | complete | 15 activity types, server-side grading, missed items re-queued once, honest summary; browser TTS with a single notice when no French voice |
 | Daily session planner | complete | Duration-aware composition, backlog handling, cognitive-load caps, destination tracks, skill rotation |
 | Dashboard | complete | One primary action, mastery-based progress per skill, weekly goal with rest days, weekly numbers |

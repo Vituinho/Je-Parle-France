@@ -4,6 +4,11 @@ import { unitPasseEtre } from "./unit-2-passe-etre";
 import { unitImparfait } from "./unit-3-imparfait";
 import { unitYEn } from "./unit-4-y-en";
 import { unitComparer } from "./unit-5-comparer";
+import { unitRecit } from "./unit-6-recit";
+import { unitPronoms } from "./unit-7-pronoms";
+import { unitFutur } from "./unit-8-futur";
+import { unitObligation } from "./unit-9-obligation";
+import { unitRelatifs } from "./unit-10-relatifs";
 
 export const a2Modules: ModuleInput[] = [
   {
@@ -15,5 +20,15 @@ export const a2Modules: ModuleInput[] = [
       fr: "Le passé, les pronoms y et en, décrire et comparer.",
     },
     units: [unitPasseAvoir, unitPasseEtre, unitImparfait, unitYEn, unitComparer],
+  },
+  {
+    id: "a2-m2",
+    level: "A2",
+    title: { pt: "Histórias, pronomes e planos", fr: "Récits, pronoms et projets" },
+    description: {
+      pt: "Passé composé e imparfait juntos, pronomes objeto, o futuro, a obrigação e os relativos.",
+      fr: "Passé composé et imparfait, pronoms compléments, futur, obligation et relatifs.",
+    },
+    units: [unitRecit, unitPronoms, unitFutur, unitObligation, unitRelatifs],
   },
 ];

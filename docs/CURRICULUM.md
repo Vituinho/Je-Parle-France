@@ -72,6 +72,11 @@ waiting until the learner has met it.
 | core | A2 | Antes e agora — the *imparfait* (= Portuguese -ava/-ia) for description and habits, *avant / maintenant* | 3 | — |
 | core | A2 | Y e en — the two pronouns Portuguese lacks: *j'y vais*, *j'en ai deux*, *on y va !* | 2 | — |
 | core | A2 | Descrever e comparar — adjective agreement and position, *plus / moins / aussi… que*, *meilleur* vs *mieux* | 3 | Lá e aqui |
+| core | A2 | Contar uma história — *passé composé* and *imparfait* together (setting vs events), *soudain*, *pendant que* | 2 | — |
+| core | A2 | Je l'ai vu! — object pronouns *le/la/les* (the Brazilian “vi ele”) and *lui/leur* with *à*-verbs | 2 | — |
+| core | A2 | Planos para o futuro — *futur simple*, and *quand* + future where Portuguese uses the future subjunctive | 2 | Seus planos |
+| core | A2 | É preciso, tem que, deveria — *il faut*, *il ne faut pas* ≠ “não precisa”, *devoir*, *tu devrais* | 2 | — |
+| core | A2 | Qui, que, où — splitting the Portuguese “que”, *le jour où* (“em que”) | 2 | — |
 | canada | A0 | Bem-vindo ao Québec — Bonjour-Hi, *bienvenue*, *c'est correct*; *déjeuner/dîner/souper*, *fin de semaine*, *dépanneur* | 2 | Num café em Montréal |
 | canada | A1 | Chegar e se instalar — border questions, bank account, renting in Montréal | 3 | Abrir uma conta no banco |
 | canada | A2 | Trabalho e saúde no Québec — job ads, *entrevue*, NAS, *une job*; RAMQ card, *clinique sans rendez-vous*, CLSC | 3 | Entrevista de emprego em Montréal |
@@ -79,7 +84,7 @@ waiting until the learner has met it.
 | france | A1 | Se instalar na França — métro, préfecture and documents, renting | 3 | No guichê da préfecture |
 | france | A2 | Trabalho, saúde e auxílios — France Travail, *entretien d'embauche*, CDI/CDD; *médecin traitant*, *mutuelle*, CAF | 3 | Entrevista de emprego em Paris |
 
-Totals: 243 concepts, 74 lessons, 541 activities, 15 scenarios (`npm run content:check` prints the
+Totals: 255 concepts, 84 lessons, 602 activities, 16 scenarios (`npm run content:check` prints the
 current numbers).
 
 ### What makes the tracks genuinely different
@@ -106,9 +111,9 @@ links whenever the file is touched; the content test requires https and a `check
 
 ## Growth plan
 
-1. **Core A1–A2** — done: A1.1, A1.2 and A2.1 (15 units, 44 lessons). Next for A2: *passé composé*
-   vs *imparfait* in the same story, object pronouns (*le, la, lui, leur*), the future tense, *il faut*
-   and obligation, work and housing in more depth.
+1. **Core A1–A2** — done: A1.1, A1.2, A2.1 and A2.2 (20 units, 54 lessons). Next: B1 — the conditional
+   and hypotheses (*si* + imparfait), the subjunctive after *il faut que*, reported speech,
+   argumenting and nuancing, more listening at natural speed.
 2. **Tracks A1–A2** — Canada: health card and clinic (*carte d'assurance maladie*, *CLSC*), job
    search and interview, winter, public transport (STM), Québec informal speech in
    *recognition-only* activities (*chu*, *pantoute*, *icitte*). France: health and *médecin

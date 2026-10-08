@@ -4,6 +4,7 @@ import { a0Concepts } from "./concepts/a0";
 import { a1Concepts } from "./concepts/a1";
 import { a12Concepts } from "./concepts/a1-2";
 import { a2Concepts } from "./concepts/a2";
+import { a22Concepts } from "./concepts/a2-2";
 import { canadaConcepts } from "./concepts/canada";
 import { franceConcepts } from "./concepts/france";
 import { a0Modules } from "./curriculum/a0";
@@ -24,6 +25,7 @@ export const course: CourseInput = {
     ...a1Concepts,
     ...a12Concepts,
     ...a2Concepts,
+    ...a22Concepts,
     ...canadaConcepts,
     ...franceConcepts,
   ],

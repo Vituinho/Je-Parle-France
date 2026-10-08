@@ -200,6 +200,24 @@ export const scenarios: ScenarioInput[] = [
     keyConcepts: ["lex:un-entretien-d-embauche", "lex:un-cdi-cdd", "lex:un-cv"],
   },
   {
+    id: "scn-projets",
+    track: "core",
+    minLevel: "A2",
+    title: { pt: "Seus planos", fr: "Vos projets" },
+    setting: {
+      pt: "Num encontro de recém-chegados, alguém pergunta o que você planeja para os próximos anos.",
+      fr: "À une rencontre de nouveaux arrivants, quelqu'un vous demande vos projets.",
+    },
+    aiRole:
+      "Tu es une personne bénévole dans une association d'accueil des nouveaux arrivants. Tu demandes à l'apprenant ses projets : travail, études, logement, famille, langue. Tu utilises le futur simple et « quand » (« Qu'est-ce que vous ferez quand vous parlerez bien français ? »), tu donnes des conseils simples avec « il faut » et « vous devriez ». Tu vouvoies, ton chaleureux.",
+    learnerGoal: {
+      pt: "Contar seus planos com o futuro simples e “quand”, e entender conselhos com il faut e vous devriez.",
+      fr: "Parler de vos projets avec le futur et comprendre des conseils.",
+    },
+    openingLine: "Bienvenue ! Alors, quels sont vos projets pour les prochaines années ?",
+    keyConcepts: ["gram:futur-simple", "gram:il-faut-devoir", "lex:l-annee-prochaine"],
+  },
+  {
     id: "scn-cafe-paris",
     track: "france",
     region: "fr-FR",
