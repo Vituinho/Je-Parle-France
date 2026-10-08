@@ -11,7 +11,30 @@ export async function signUp(page: Page, learner = newLearner()) {
   await page.getByLabel("Como quer ser chamado?").fill(learner.name);
   await page.getByLabel("E-mail").fill(learner.email);
   await page.getByLabel("Senha").fill(learner.password);
-  await page.getByRole("button", { name: "Criar conta" }).click();
+  const submit = async () => {
+    const [response] = await Promise.all([
+      page.waitForResponse(
+        (response) =>
+          response.url().endsWith("/api/auth/sign-up/email") &&
+          response.request().method() === "POST",
+      ),
+      page.getByRole("button", { name: "Criar conta" }).click(),
+    ]);
+    return response;
+  };
+  let response = await submit();
+  if (response.status() === 429) {
+    // Production auth limits stay enabled. Honour the server's requested wait
+    // rather than treating a deliberate throttle as a broken sign-up flow.
+    const seconds = Number(
+      response.headers()["x-retry-after"] ?? response.headers()["retry-after"] ?? 60,
+    );
+    await page.waitForTimeout(
+      (Number.isFinite(seconds) ? Math.max(1, Math.min(60, seconds)) : 60) * 1000,
+    );
+    response = await submit();
+  }
+  expect(response.ok(), `Sign-up returned HTTP ${response.status()}`).toBe(true);
   await expect(page).toHaveURL(/\/comecar$/);
   return learner;
 }
