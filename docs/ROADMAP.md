@@ -27,7 +27,7 @@ Status vocabulary: **complete** · **mocked** (real interface + adapter, dev moc
 | Pronunciation lab | complete | 4 A0 targets; perception drills; production with Azure word-level assessment or self-rating |
 | AI tutor (text) | complete | Claude adapter (structured outputs, refusal fallbacks) + labelled mock; scenarios, 4 correction modes, report, corrections → review; daily quotas |
 | AI tutor (voice) | planned | |
-| Vocabulary & grammar library | planned | |
+| Vocabulary & grammar library | complete | Meu caderno (/caderno): words met, mastery per dimension, next review, search/filters, tutor corrections. Grammar library (/gramatica) with Brazilian notes, common mistakes and a practice drill. Content depth grows with the curriculum |
 | Vivre au Canada / Vivre en France | planned | |
 | Admin content explorer | planned | |
 | Learning analytics, streaks, achievements | planned | |

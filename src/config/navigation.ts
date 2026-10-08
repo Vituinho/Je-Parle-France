@@ -1,5 +1,12 @@
 import type { LucideIcon } from "lucide-react";
-import { AudioLines, CalendarCheck, MessagesSquare, RotateCcw } from "lucide-react";
+import {
+  AudioLines,
+  BookMarked,
+  BookOpenText,
+  CalendarCheck,
+  MessagesSquare,
+  RotateCcw,
+} from "lucide-react";
 
 export interface NavItem {
   href: string;
@@ -18,4 +25,7 @@ export const primaryNav: NavItem[] = [
   { href: "/revisar", label: "Revisão", icon: RotateCcw, mobile: true },
   { href: "/tutor", label: "Tutor", icon: MessagesSquare, mobile: true },
   { href: "/pronuncia", label: "Pronúncia", icon: AudioLines, mobile: true },
+  { href: "/caderno", label: "Caderno", icon: BookMarked, mobile: true },
+  // On mobile, grammar is reached from the notebook.
+  { href: "/gramatica", label: "Gramática", icon: BookOpenText, mobile: false },
 ];
