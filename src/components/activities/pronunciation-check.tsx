@@ -10,12 +10,20 @@ import { toWav16k } from "./wav";
 interface AssessmentResponse {
   status: "ok" | "no_speech" | "not_understood" | "error";
   transcript: string | null;
-  scores: { accuracy: number; fluency: number; completeness: number; overall: number } | null;
+  scores: {
+    accuracy: number;
+    fluency: number;
+    completeness: number;
+    prosody: number | null;
+    overall: number;
+  } | null;
   words: {
     word: string;
     accuracy: number | null;
     error: "none" | "omission" | "insertion" | "mispronunciation";
   }[];
+  /** What the provider can measure for this accent; the copy never claims more. */
+  features?: { phonemeNames: boolean; prosody: boolean };
   attemptId?: string;
   error?: string;
 }
@@ -35,8 +43,8 @@ function wordClass(word: AssessmentResponse["words"][number]) {
 
 /**
  * Sends a recording for pronunciation assessment. Results are shown at word
- * level only — the provider does not score individual French phonemes, so
- * we do not pretend to.
+ * level: for French the provider scores phonemes without naming them, so it
+ * cannot say which sound to fix, and we do not pretend it can.
  */
 export function PronunciationCheck({
   recording,
@@ -105,6 +113,15 @@ export function PronunciationCheck({
             <span className="text-2xl tabular-nums">{Math.round(result.scores.overall)}</span>
             <span className="text-muted-foreground font-normal"> / 100</span>
           </p>
+          {result.features?.prosody && result.scores.prosody !== null && (
+            <p className="text-sm">
+              Entonação e ritmo:{" "}
+              <span className="font-semibold tabular-nums">
+                {Math.round(result.scores.prosody)}
+              </span>
+              <span className="text-muted-foreground"> / 100</span>
+            </p>
+          )}
           <Fr as="p" className="text-xl leading-relaxed">
             {result.words.map((word, index) => (
               <span key={`${word.word}-${index}`}>
@@ -120,8 +137,11 @@ export function PronunciationCheck({
           </Fr>
           <p className="text-muted-foreground text-xs leading-relaxed">
             Sublinhado em vermelho: palavra que precisa de atenção · marca-texto: quase lá ·
-            riscado: palavra que não apareceu. A avaliação é por palavra; o provedor não pontua sons
-            individuais do francês.
+            riscado: palavra que não apareceu. A avaliação é por palavra
+            {result.features?.phonemeNames
+              ? "."
+              : ": para o francês, o serviço não identifica qual som saiu diferente."}
+            {!result.features?.prosody && " Entonação e ritmo não são avaliados."}
           </p>
         </div>
       )}

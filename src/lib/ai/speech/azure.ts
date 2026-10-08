@@ -2,6 +2,7 @@ import "server-only";
 import {
   SpeechProviderError,
   type PronunciationAssessmentProvider,
+  type PronunciationFeatures,
   type PronunciationResult,
   type RecognitionStatus,
   type SpeechLocale,
@@ -15,10 +16,36 @@ import {
 
 /**
  * Azure AI Speech adapter over the REST APIs (no SDK, no client secrets):
- * neural TTS for fr-FR / fr-CA, short-audio recognition, and pronunciation
- * assessment at word granularity (phoneme-level results are not offered for
- * French, so they are never requested or shown).
+ * neural TTS for fr-FR / fr-CA, short-audio recognition, and scripted
+ * pronunciation assessment at word granularity.
  */
+
+/**
+ * What Azure pronunciation assessment offers for French, per the official
+ * documentation (how-to-pronunciation-assessment, "Supported features per
+ * locale"; checked 2026-10-08). Both locales support scripted assessment with
+ * accuracy, fluency, completeness, word scores and miscues. Phoneme accuracy
+ * scores exist, but phoneme names, syllable groups and spoken-phoneme
+ * alternatives are en-US only, and so is prosody. Update this table — not
+ * the UI — when Microsoft extends a feature.
+ */
+const FRENCH_FEATURES: PronunciationFeatures = {
+  overall: true,
+  accuracy: true,
+  fluency: true,
+  completeness: true,
+  wordAccuracy: true,
+  phonemeAccuracy: true,
+  phonemeNames: false,
+  spokenPhonemeAlternatives: false,
+  syllables: false,
+  prosody: false,
+};
+
+export const AZURE_PRONUNCIATION_FEATURES: Record<SpeechLocale, PronunciationFeatures> = {
+  "fr-FR": FRENCH_FEATURES,
+  "fr-CA": FRENCH_FEATURES,
+};
 const VOICES: Record<SpeechLocale, Record<"f" | "m", string>> = {
   "fr-FR": { f: "fr-FR-DeniseNeural", m: "fr-FR-HenriNeural" },
   "fr-CA": { f: "fr-CA-SylvieNeural", m: "fr-CA-AntoineNeural" },
@@ -43,6 +70,7 @@ interface AzureNBest {
   AccuracyScore?: number;
   FluencyScore?: number;
   CompletenessScore?: number;
+  ProsodyScore?: number;
   PronScore?: number;
   Words?: AzureWord[];
 }
@@ -123,6 +151,10 @@ export class AzureSpeechProvider
     return (await response.json()) as AzureRecognition;
   }
 
+  features(locale: SpeechLocale): PronunciationFeatures {
+    return AZURE_PRONUNCIATION_FEATURES[locale];
+  }
+
   async transcribe(wav: ArrayBuffer, locale: SpeechLocale): Promise<TranscriptionResult> {
     const result = await this.recognize(wav, locale);
     const status = statusOf(result.RecognitionStatus);
@@ -138,12 +170,17 @@ export class AzureSpeechProvider
     referenceText: string,
     locale: SpeechLocale,
   ): Promise<PronunciationResult> {
+    const features = this.features(locale);
     const result = await this.recognize(wav, locale, {
       ReferenceText: referenceText,
       GradingSystem: "HundredMark",
+      // Phoneme scores without phoneme names cannot tell the learner which
+      // sound to fix, so word level is the finest granularity requested.
       Granularity: "Word",
       Dimension: "Comprehensive",
       EnableMiscue: "True",
+      // Prosody is a paid add-on: request it only where the locale has it.
+      ...(features.prosody ? { EnableProsodyAssessment: "True" } : {}),
     });
     const status = statusOf(result.RecognitionStatus);
     const best = result.NBest?.[0];
@@ -158,6 +195,7 @@ export class AzureSpeechProvider
         accuracy: best.AccuracyScore ?? 0,
         fluency: best.FluencyScore ?? 0,
         completeness: best.CompletenessScore ?? 0,
+        prosody: features.prosody ? (best.ProsodyScore ?? null) : null,
         overall: best.PronScore ?? 0,
       },
       words: (best.Words ?? []).map((word) => ({

@@ -38,7 +38,7 @@ describe("Azure speech adapter", () => {
       status: "ok",
       transcript: "Bonjour.",
       granularity: "word",
-      scores: { accuracy: 82, fluency: 90, completeness: 100, overall: 87.5 },
+      scores: { accuracy: 82, fluency: 90, completeness: 100, prosody: null, overall: 87.5 },
       words: [{ word: "bonjour", accuracy: 82, error: "mispronunciation" }],
     });
     const [url, init] = fetchMock.mock.calls[0] as unknown as [
@@ -55,6 +55,31 @@ describe("Azure speech adapter", () => {
       Granularity: "Word",
       GradingSystem: "HundredMark",
     });
+    // Prosody is en-US only (and billed as an add-on): never requested for French.
+    expect(params).not.toHaveProperty("EnableProsodyAssessment");
+  });
+
+  it("declares per-locale capabilities instead of assuming parity", () => {
+    for (const locale of ["fr-FR", "fr-CA"] as const) {
+      expect(provider.features(locale)).toMatchObject({
+        overall: true,
+        wordAccuracy: true,
+        phonemeAccuracy: true,
+        phonemeNames: false,
+        spokenPhonemeAlternatives: false,
+        syllables: false,
+        prosody: false,
+      });
+    }
+  });
+
+  it("ignores a prosody score the locale does not support", async () => {
+    stubFetch({
+      RecognitionStatus: "Success",
+      NBest: [{ Display: "Oui.", AccuracyScore: 90, PronScore: 90, ProsodyScore: 70, Words: [] }],
+    });
+    const result = await provider.assess(wav, "Oui.", "fr-FR");
+    expect(result.scores?.prosody).toBeNull();
   });
 
   it("reports silence instead of inventing a transcript", async () => {

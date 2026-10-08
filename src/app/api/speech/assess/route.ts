@@ -64,7 +64,11 @@ export async function POST(request: Request) {
         } as unknown as Prisma.InputJsonValue,
       },
     });
-    return Response.json({ ...result, attemptId: attempt.id });
+    return Response.json({
+      ...result,
+      features: speech.pronunciation.features(fields.data.locale),
+      attemptId: attempt.id,
+    });
   } catch (error) {
     if (error instanceof QuotaError)
       return Response.json({ error: error.message }, { status: 429 });
