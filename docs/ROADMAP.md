@@ -29,7 +29,7 @@ Status vocabulary: **complete** · **mocked** (real interface + adapter, dev moc
 | Account, preferences & privacy | complete | /conta: study preferences, support language, tutor corrections, time zone, password, LGPD export (JSON) and deletion (selected data or whole account, password re-check) |
 | AI tutor (voice) | planned | |
 | Vocabulary & grammar library | complete | Meu caderno (/caderno): words met, mastery per dimension, next review, search/filters, tutor corrections. Grammar library (/gramatica) with Brazilian notes, common mistakes and a practice drill. Content depth grows with the curriculum |
-| Vivre au Canada / Vivre en France | planned | |
+| Vivre au Canada / Vivre en France | complete | Two self-contained tracks (A0–A1, 5 lessons each, 61 concepts): Québec usage with fr-CA voices, arrival, bank, housing; boulangerie, meals, métro, préfecture, renting. Course map (/curso), mission scenarios, prerequisite-gated scheduling. More units per level as the core grows |
 | Admin content explorer | planned | |
 | Learning analytics, streaks, achievements | planned | |
 | E2E critical flow | planned | |

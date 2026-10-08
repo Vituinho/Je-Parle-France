@@ -157,6 +157,17 @@ function ProgressPanel({ data }: { data: Dashboard }) {
       <p className="text-muted-foreground mt-4 text-sm">
         Medido pelo que você domina em cada habilidade, não pelas lições que já viu.
       </p>
+      <p className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm font-medium">
+        <Link href="/curso" className="text-primary underline-offset-4 hover:underline">
+          Ver o curso completo
+        </Link>
+        <Link href="/caderno" className="text-primary underline-offset-4 hover:underline">
+          Meu caderno
+        </Link>
+        <Link href="/gramatica" className="text-primary underline-offset-4 hover:underline">
+          Gramática
+        </Link>
+      </p>
     </section>
   );
 }

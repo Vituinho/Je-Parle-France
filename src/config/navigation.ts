@@ -4,6 +4,7 @@ import {
   BookMarked,
   BookOpenText,
   CalendarCheck,
+  Map as MapIcon,
   MessagesSquare,
   RotateCcw,
 } from "lucide-react";
@@ -22,6 +23,8 @@ export interface NavItem {
  */
 export const primaryNav: NavItem[] = [
   { href: "/hoje", label: "Hoje", icon: CalendarCheck, mobile: true },
+  // On mobile, the course map is linked from the dashboard.
+  { href: "/curso", label: "Curso", icon: MapIcon, mobile: false },
   { href: "/revisar", label: "Revisão", icon: RotateCcw, mobile: true },
   { href: "/tutor", label: "Tutor", icon: MessagesSquare, mobile: true },
   { href: "/pronuncia", label: "Pronúncia", icon: AudioLines, mobile: true },
