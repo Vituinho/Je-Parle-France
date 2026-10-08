@@ -74,10 +74,12 @@ waiting until the learner has met it.
 | core | A2 | Descrever e comparar — adjective agreement and position, *plus / moins / aussi… que*, *meilleur* vs *mieux* | 3 | Lá e aqui |
 | canada | A0 | Bem-vindo ao Québec — Bonjour-Hi, *bienvenue*, *c'est correct*; *déjeuner/dîner/souper*, *fin de semaine*, *dépanneur* | 2 | Num café em Montréal |
 | canada | A1 | Chegar e se instalar — border questions, bank account, renting in Montréal | 3 | Abrir uma conta no banco |
+| canada | A2 | Trabalho e saúde no Québec — job ads, *entrevue*, NAS, *une job*; RAMQ card, *clinique sans rendez-vous*, CLSC | 3 | Entrevista de emprego em Montréal |
 | france | A0 | O dia a dia na França — boulangerie, meal names and hours | 2 | Na boulangerie |
 | france | A1 | Se instalar na França — métro, préfecture and documents, renting | 3 | No guichê da préfecture |
+| france | A2 | Trabalho, saúde e auxílios — France Travail, *entretien d'embauche*, CDI/CDD; *médecin traitant*, *mutuelle*, CAF | 3 | Entrevista de emprego em Paris |
 
-Totals: 229 concepts, 68 lessons, 508 activities, 13 scenarios (`npm run content:check` prints the
+Totals: 243 concepts, 74 lessons, 541 activities, 15 scenarios (`npm run content:check` prints the
 current numbers).
 
 ### What makes the tracks genuinely different

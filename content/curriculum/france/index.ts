@@ -1,6 +1,7 @@
 import type { ModuleInput } from "@/lib/content/schema";
 import { unitQuotidien } from "./unit-1-quotidien";
 import { unitSInstallerFrance } from "./unit-2-s-installer";
+import { unitTravailSanteFr } from "./unit-3-travail-sante";
 
 /** "Vivre en France": everyday life and the situations of settling in. */
 export const franceModules: ModuleInput[] = [
@@ -25,5 +26,19 @@ export const franceModules: ModuleInput[] = [
       fr: "Le métro, les démarches à la préfecture et la location d'un logement.",
     },
     units: [unitSInstallerFrance],
+  },
+  {
+    id: "fr-m2",
+    level: "A2",
+    track: "france",
+    title: {
+      pt: "Vivre en France — trabalhar e se cuidar",
+      fr: "Vivre en France — travailler et se soigner",
+    },
+    description: {
+      pt: "Procurar emprego, o contrato, o médico de família, a mutuelle e a CAF.",
+      fr: "Chercher un emploi, le contrat, le médecin traitant, la mutuelle et la CAF.",
+    },
+    units: [unitTravailSanteFr],
   },
 ];

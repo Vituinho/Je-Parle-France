@@ -1,6 +1,7 @@
 import type { ModuleInput } from "@/lib/content/schema";
 import { unitQuebec } from "./unit-1-quebec";
 import { unitSInstaller } from "./unit-2-s-installer";
+import { unitTravailSanteQc } from "./unit-3-travail-sante";
 
 /** "Vivre au Canada": Québec French and the situations of settling in. */
 export const canadaModules: ModuleInput[] = [
@@ -28,5 +29,19 @@ export const canadaModules: ModuleInput[] = [
       fr: "La frontière à l'aéroport, la banque et le logement à Montréal.",
     },
     units: [unitSInstaller],
+  },
+  {
+    id: "ca-m2",
+    level: "A2",
+    track: "canada",
+    title: {
+      pt: "Vivre au Canada — trabalhar e se cuidar",
+      fr: "Vivre au Canada — travailler et se soigner",
+    },
+    description: {
+      pt: "Procurar emprego, a entrevista e o sistema de saúde do Québec.",
+      fr: "Chercher un emploi, l'entrevue et le système de santé au Québec.",
+    },
+    units: [unitTravailSanteQc],
   },
 ];

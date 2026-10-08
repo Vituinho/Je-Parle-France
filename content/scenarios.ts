@@ -162,6 +162,44 @@ export const scenarios: ScenarioInput[] = [
     ],
   },
   {
+    id: "scn-entrevue-montreal",
+    track: "canada",
+    region: "fr-CA",
+    minLevel: "A2",
+    title: { pt: "Entrevista de emprego em Montréal", fr: "Une entrevue d'embauche à Montréal" },
+    setting: {
+      pt: "Você está numa entrevista para uma vaga de atendimento numa empresa de Montréal.",
+      fr: "Vous passez une entrevue pour un poste au service à la clientèle à Montréal.",
+    },
+    aiRole:
+      "Tu es gestionnaire dans une entreprise de Montréal et tu fais passer une entrevue d'embauche courte et bienveillante. Tu demandes : « Parlez-vous de vous », l'expérience au Brésil, les disponibilités (temps plein ou partiel, fins de semaine), quand la personne peut commencer, et si elle a des questions. Tu vouvoies, tu parles clairement, avec des expressions québécoises légères.",
+    learnerGoal: {
+      pt: "Apresentar-se, contar sua experiência no passé composé e dizer sua disponibilidade.",
+      fr: "Vous présenter, parler de votre expérience et de vos disponibilités.",
+    },
+    openingLine: "Bonjour, bienvenue ! Merci d'être venu à l'entrevue. Parlez-moi un peu de vous.",
+    keyConcepts: ["lex:une-entrevue", "lex:temps-plein-partiel", "lex:un-cv"],
+  },
+  {
+    id: "scn-entretien-paris",
+    track: "france",
+    region: "fr-FR",
+    minLevel: "A2",
+    title: { pt: "Entrevista de emprego em Paris", fr: "Un entretien d'embauche à Paris" },
+    setting: {
+      pt: "Você tem uma entrevista para um CDD numa empresa em Paris.",
+      fr: "Vous passez un entretien d'embauche pour un CDD dans une entreprise parisienne.",
+    },
+    aiRole:
+      "Tu es responsable des ressources humaines dans une entreprise à Paris. Tu fais passer un entretien d'embauche pour un CDD de six mois. Tu demandes une présentation, l'expérience professionnelle, pourquoi la personne veut ce poste et quand elle peut commencer. Tu expliques brièvement le contrat (CDD, possibilité de CDI ensuite). Tu vouvoies, ton professionnel mais bienveillant, phrases claires.",
+    learnerGoal: {
+      pt: "Apresentar-se, falar da sua experiência e fazer perguntas sobre o contrato.",
+      fr: "Vous présenter, parler de votre expérience et poser des questions sur le contrat.",
+    },
+    openingLine: "Bonjour, asseyez-vous. Alors, présentez-vous en quelques mots.",
+    keyConcepts: ["lex:un-entretien-d-embauche", "lex:un-cdi-cdd", "lex:un-cv"],
+  },
+  {
     id: "scn-cafe-paris",
     track: "france",
     region: "fr-FR",
