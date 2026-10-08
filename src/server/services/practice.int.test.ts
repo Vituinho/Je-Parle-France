@@ -140,6 +140,23 @@ describe.skipIf(!hasTestDatabase)("practice service", () => {
     expect(progress).toMatchObject({ status: "completed", score: 0.9, runs: 2 });
   });
 
+  it("opens a new lesson concurrently without duplicating or resetting progress", async () => {
+    const user = await learner();
+    const opened = await Promise.all(
+      Array.from({ length: 10 }, () => startLesson(user.id, "a0-u1-l1")),
+    );
+    expect(opened).toHaveLength(10);
+    expect(
+      opened.every((progress) => progress.userId === user.id && progress.lessonId === "a0-u1-l1"),
+    ).toBe(true);
+    expect(await db.lessonProgress.count({ where: { userId: user.id } })).toBe(1);
+    await db.lessonProgress.update({
+      where: { userId_lessonId: { userId: user.id, lessonId: "a0-u1-l1" } },
+      data: { stepIndex: 3 },
+    });
+    expect(await startLesson(user.id, "a0-u1-l1")).toMatchObject({ stepIndex: 3, runs: 1 });
+  });
+
   it("grades speaking from a stored assessment and ignores client transcripts", async () => {
     const user = await learner();
     const speak = lessonActivity("a0-u1-l1", "a0-u1-l1-a6");

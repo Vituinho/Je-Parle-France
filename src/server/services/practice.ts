@@ -270,7 +270,13 @@ export async function startLesson(userId: string, lessonId: string) {
     where: { userId_lessonId: { userId, lessonId } },
   });
   if (!existing) {
-    return db.lessonProgress.create({ data: { userId, lessonId } });
+    // Navigation and prefetch may open the same lesson concurrently. A native
+    // upsert prevents duplicate creation without resetting another request's cursor.
+    return db.lessonProgress.upsert({
+      where: { userId_lessonId: { userId, lessonId } },
+      create: { userId, lessonId },
+      update: { lessonId },
+    });
   }
   if (existing.status === "completed") {
     // Replaying a finished lesson starts a new run but keeps the completion record.
