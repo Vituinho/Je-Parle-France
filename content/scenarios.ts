@@ -24,6 +24,31 @@ export const scenarios: ScenarioInput[] = [
     keyConcepts: ["lex:je-m-appelle", "lex:je-viens-du-bresil", "lex:ca-va", "lex:enchante"],
   },
   {
+    id: "scn-directions",
+    track: "core",
+    minLevel: "A1",
+    title: { pt: "Pedir informação na rua", fr: "Demander son chemin" },
+    setting: {
+      pt: "Você acabou de se mudar e procura uma farmácia, um banco e a estação. Uma pessoa na rua ajuda.",
+      fr: "Vous venez d'arriver dans le quartier et cherchez une pharmacie, une banque et la gare.",
+    },
+    aiRole:
+      "Tu es une personne sympathique du quartier. L'apprenant cherche des lieux (pharmacie, banque, gare, épicerie, parc). Tu expliques simplement où ils sont avec « près de », « à côté de », « en face de », « tout droit », « à gauche », « à droite ». Tu vouvoies et tu parles lentement.",
+    learnerGoal: {
+      pt: "Perguntar se tem um lugar perto, entender onde fica e agradecer.",
+      fr: "Demander s'il y a un lieu près d'ici, comprendre où il se trouve et remercier.",
+    },
+    openingLine: "Bonjour ! Vous cherchez quelque chose ?",
+    keyConcepts: [
+      "gram:il-y-a",
+      "gram:contractions-a-de",
+      "lex:ou-est",
+      "lex:pres-de",
+      "lex:a-cote-de",
+      "lex:en-face-de",
+    ],
+  },
+  {
     id: "scn-cafe-paris",
     track: "france",
     region: "fr-FR",
