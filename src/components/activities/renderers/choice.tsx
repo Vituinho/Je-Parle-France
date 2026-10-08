@@ -4,7 +4,7 @@ import { Fr } from "@/components/fr";
 import type { ClientQuestion } from "@/lib/learning/activities/client";
 import { cn } from "@/lib/utils";
 import { AudioButton } from "../audio-button";
-import { OptionRow, optionState, PromptView, type RendererProps } from "./shared";
+import { OptionRow, optionState, OptionStateText, PromptView, type RendererProps } from "./shared";
 
 export function ChoiceRenderer({
   activity,
@@ -138,6 +138,7 @@ export function MinimalPairRenderer({
               {locked && word.pt && (
                 <span className="text-muted-foreground text-sm">{word.pt}</span>
               )}
+              <OptionStateText state={state} />
             </label>
           );
         })}

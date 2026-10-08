@@ -118,9 +118,25 @@ export function OptionRow({
           {label}
         </span>
         {detail}
+        <OptionStateText state={state} />
       </span>
     </label>
   );
+}
+
+const STATE_TEXT: Partial<Record<OptionState, string>> = {
+  correct: "sua resposta, certa",
+  wrong: "sua resposta, errada",
+  missed: "resposta certa",
+};
+
+/**
+ * After checking, colour and icons show which option was right; this says
+ * the same to screen readers, which would otherwise hear only "Ainda não."
+ */
+export function OptionStateText({ state }: { state: OptionState }) {
+  const text = STATE_TEXT[state];
+  return text ? <span className="sr-only"> ({text})</span> : null;
 }
 
 export function optionState(params: {
