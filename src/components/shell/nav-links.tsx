@@ -2,15 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Suspense } from "react";
 import { primaryNav } from "@/config/navigation";
 import { cn } from "@/lib/utils";
 
-function isActive(pathname: string, href: string) {
+function isActive(pathname: string | null, href: string) {
+  if (!pathname) return false;
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function SidebarNav() {
-  const pathname = usePathname();
+function SidebarLinks({ pathname }: { pathname: string | null }) {
   return (
     <ul className="space-y-1">
       {primaryNav.map((item) => {
@@ -37,8 +38,7 @@ export function SidebarNav() {
   );
 }
 
-export function BottomNav() {
-  const pathname = usePathname();
+function BottomLinks({ pathname }: { pathname: string | null }) {
   const items = primaryNav.filter((item) => item.mobile);
   return (
     <ul className="grid" style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}>
@@ -61,5 +61,34 @@ export function BottomNav() {
         );
       })}
     </ul>
+  );
+}
+
+function ActiveSidebarLinks() {
+  return <SidebarLinks pathname={usePathname()} />;
+}
+
+function ActiveBottomLinks() {
+  return <BottomLinks pathname={usePathname()} />;
+}
+
+/*
+ * With Cache Components, usePathname suspends on routes with dynamic params
+ * that are only known at request time. The Suspense fallback renders the same
+ * links without the active state, so the layout still prerenders.
+ */
+export function SidebarNav() {
+  return (
+    <Suspense fallback={<SidebarLinks pathname={null} />}>
+      <ActiveSidebarLinks />
+    </Suspense>
+  );
+}
+
+export function BottomNav() {
+  return (
+    <Suspense fallback={<BottomLinks pathname={null} />}>
+      <ActiveBottomLinks />
+    </Suspense>
   );
 }
