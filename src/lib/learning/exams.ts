@@ -149,7 +149,12 @@ export function readiness(
     // The learner's own judgement: shown as such, never as a probability.
     return { band: "self_assessed", estimate: readTheta(skill.theta).level, probability: null };
   }
-  if (!skill.assessed || skill.method === "self_report" || skill.method === "not_assessed") {
+  if (
+    !skill.assessed ||
+    skill.method === "self_report" ||
+    skill.method === "not_assessed" ||
+    skill.method === "ai_assessment"
+  ) {
     return { band: "unmeasured", estimate: null, probability: null };
   }
   const threshold = levelIndex(target);

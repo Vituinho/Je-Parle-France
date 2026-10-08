@@ -21,6 +21,9 @@ describe("readiness", () => {
 
   it("never guesses for skills that were not measured", () => {
     expect(
+      readiness({ theta: 4.5, sd: 0.3, assessed: true, method: "ai_assessment" }, "B2").probability,
+    ).toBeNull();
+    expect(
       readiness({ theta: 4.5, sd: 0.3, assessed: false, method: "self_report" }, "B2"),
     ).toEqual({
       band: "unmeasured",

@@ -8,6 +8,8 @@ export function itemParams(item: PlacementItem): ItemParams {
   const difficulty = levelMidpoint(item.level) + item.offset;
   const activity = item.activity;
   switch (activity.type) {
+    case "open_writing":
+      return { difficulty, discrimination: DEFAULT_DISCRIMINATION, guess: 0, weight: 0.5 };
     case "self_assess":
       return { difficulty, discrimination: 0.9, guess: 0, weight: 0.5 };
     case "choice":
@@ -46,10 +48,19 @@ export function toBankItem(item: PlacementItem): BankItem {
     calibration: item.calibration,
     selfAssessment: item.activity.type === "self_assess",
     perception: item.activity.type === "minimal_pair",
+    aiAssessed: item.activity.type === "open_writing",
     requires: itemRequirements(item),
   };
 }
 
 export function buildBank(items: Iterable<PlacementItem>): Map<string, BankItem> {
-  return new Map([...items].map((item) => [item.id, toBankItem(item)]));
+  return new Map(
+    [...items]
+      .filter(
+        (item) =>
+          item.activity.type !== "open_writing" ||
+          item.activity.rubric?.expectedLevel === item.level,
+      )
+      .map((item) => [item.id, toBankItem(item)]),
+  );
 }

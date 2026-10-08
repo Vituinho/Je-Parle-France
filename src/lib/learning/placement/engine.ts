@@ -30,6 +30,7 @@ export interface BankItem {
   selfAssessment: boolean;
   /** Recognition of a sound, not evidence of producing it. */
   perception?: boolean;
+  aiAssessed?: boolean;
   /** External capabilities needed to score the item. */
   requires: readonly Capability[];
 }
@@ -55,6 +56,8 @@ export interface ResponseRecord {
   score: number;
   /** False when the response could not be scored (e.g. speech service failed). */
   scored: boolean;
+  /** Reliability multiplier; AI confidence is weaker than deterministic grading. */
+  weight?: number;
 }
 
 export interface EngineState {
@@ -155,7 +158,10 @@ function observationsOf(
     const item = bank.get(response.itemId);
     if (!item || !response.scored) continue;
     observations.push({
-      item: item.params,
+      item: {
+        ...item.params,
+        weight: item.params.weight * Math.max(0, Math.min(1, response.weight ?? 1)),
+      },
       score: response.score,
       skill: item.skill,
       selfAssessment: item.selfAssessment,
@@ -283,6 +289,27 @@ export function nextStep(state: EngineState, bank: ReadonlyMap<string, BankItem>
     const enough =
       skillResponses.length >= plan.maxPerSkill ||
       (estimate.n >= plan.minPerSkill && estimate.sd <= plan.targetSd);
+    // One reviewed production task near the estimate complements short deterministic items.
+    // It keeps its weaker likelihood weight and never extends the block beyond its cap.
+    const production =
+      skill === "writing" &&
+      skillResponses.length >= 2 &&
+      skillResponses.length < plan.maxPerSkill &&
+      !skillResponses.some((r) => bank.get(r.itemId)?.aiAssessed)
+        ? available.filter(
+            (item) =>
+              item.skill === skill &&
+              item.aiAssessed &&
+              Math.abs(item.params.difficulty - estimate.mean) <= 0.9,
+          )
+        : [];
+    const productionItem = pickInformative(production, estimate.mean, random);
+    if (productionItem)
+      return {
+        item: productionItem,
+        phase: { kind: "skill", skill },
+        block: { index: blockIndex, total: blocks.length },
+      };
     if (!enough) {
       const candidates = available.filter((item) => item.skill === skill && !item.selfAssessment);
       const item = pickInformative(candidates, estimate.mean, random);

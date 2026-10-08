@@ -101,6 +101,7 @@ enum EstimateSource {
 /// pronunciation) is measured evidence; the rest is what the learner said.
 enum EstimateMethod {
   objective
+  ai_assessment
   perception
   self_assessment
   self_report

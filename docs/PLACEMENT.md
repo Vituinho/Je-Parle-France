@@ -1,5 +1,23 @@
 # Placement
 
+## Reviewed open-writing tasks
+
+The existing A2 weekend narrative and B1 colleague message have explicit version-1 rubrics whose
+expected level matches their placement metadata. Only such items enter the bank. They require a
+real configured LLM (`LLM_PROVIDER=anthropic`); the mock never enables assessment. After two short
+writing items, at most one production task within 0.9 scale units of the estimate can complement
+the block, without exceeding its item cap. Its likelihood weight is 0.5 multiplied by the validated
+judgment's capped confidence (at most 0.65). Empty/insufficient, invalid or failed judgments are
+stored unscored and do not influence the posterior. The original answer, rubric dimensions,
+corrections, confidence, limitations and model are preserved in the response and report.
+
+The report labels estimates containing semantic judgments as `ai_assessment`, and shows the
+learner's text, selected corrections and limitations. Only important deterministic errors mapped
+to known concepts at or below the expected level create writing review traces. AI-only corrections
+never change course mastery. Exam readiness does not convert this uncalibrated AI judgment into
+a measured probability. Without a real provider the existing deterministic writing items remain
+available. Live rubric calibration against human ratings remains pending.
+
 Code: `src/lib/learning/placement/` (pure, unit-tested) · item bank: `content/placement/`.
 
 ## Goals
@@ -53,8 +71,8 @@ Exposure control: one of the top-3 items is chosen with a PRNG seeded by
 `attemptId:responseCount`, so the sequence is reproducible and responses are the single source
 of truth (the engine can always recompute the next item and every estimate).
 
-Items that need an unavailable capability are never served. Open writing is not selected:
-the tutor LLM is implemented, but a placement writing grader is not. Writing uses constrained
+Items that need an unavailable capability are never served. Reviewed open writing is selected only
+with a real provider and a matching explicit rubric. Otherwise writing uses constrained
 answers. Minimal-pair assessment requires server audio: only an opaque, authenticated URL for
 the current item reaches the client (`/api/placement/audio`), never the correct played word.
 Without the speech provider pronunciation is reported as not assessed; browser synthesis
@@ -116,7 +134,8 @@ Known weaknesses, in priority order:
   cell and the C1 estimate rests on few responses; pronunciation has 1 B2 item and none at C1
   (perception drills discriminate poorly above B1 — this is a deliberate cap, reported as such).
 - **Few speaking and writing items are objectively scored.** Without a speech provider, speaking
-  is self-assessed and pronunciation is not assessed; open-writing grading is not implemented.
+  is self-assessed and pronunciation is not assessed; open-writing judgments require a real provider
+  and remain uncalibrated with limited confidence.
   Most writing items are short typed
   answers (form, not composition).
 - **Regional content.** 6 items are Québec-specific and none France-specific; the rest are

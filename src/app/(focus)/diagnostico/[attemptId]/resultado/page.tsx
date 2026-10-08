@@ -25,6 +25,7 @@ const CONFIDENCE: Record<Confidence, string> = {
 
 const METHOD: Record<AssessmentMethod, string | null> = {
   objective: null,
+  ai_assessment: "inclui avaliação de escrita por IA, com confiança limitada",
   perception: "medida pela percepção dos sons",
   self_assessment: "autoavaliação",
   not_assessed: "não avaliada neste diagnóstico",
@@ -110,6 +111,48 @@ async function Report({ params }: { params: Promise<{ attemptId: string }> }) {
           })}
         </ul>
       </section>
+
+      {report.writing && report.writing.length > 0 && (
+        <section aria-labelledby="writing-feedback" className="mt-12">
+          <h2 id="writing-feedback" className="text-xl font-bold">
+            Seus textos
+          </h2>
+          <p className="text-muted-foreground mt-1 text-sm">
+            Avaliação por rubrica de escrita; a confiança é limitada a esta amostra.
+          </p>
+          {report.writing.map((assessment, index) => (
+            <article key={index} className="border-border mt-5 rounded-xl border p-5">
+              <p className="font-semibold">
+                Texto {index + 1} · tarefa {assessment.expectedLevel}
+              </p>
+              <blockquote lang="fr" className="mt-3 whitespace-pre-wrap">
+                {assessment.original}
+              </blockquote>
+              <p className="mt-4">{assessment.feedbackPt}</p>
+              {assessment.score === null && (
+                <p className="mt-2 font-medium">
+                  Este texto ficou sem nota e não alterou sua estimativa.
+                </p>
+              )}
+              {assessment.issues.length > 0 && (
+                <ul className="mt-3 space-y-2">
+                  {assessment.issues.map((issue, i) => (
+                    <li key={i}>
+                      <span lang="fr">
+                        {issue.wrong} → {issue.right}
+                      </span>
+                      <p className="text-muted-foreground text-sm">{issue.explanationPt}</p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <p className="text-muted-foreground mt-3 text-sm">
+                {assessment.limitations.join(" ")}
+              </p>
+            </article>
+          ))}
+        </section>
+      )}
 
       {(report.strengths.length > 0 || report.weaknesses.length > 0) && (
         <section className="mt-12 grid gap-8 sm:grid-cols-2">

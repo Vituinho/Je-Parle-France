@@ -1,6 +1,8 @@
 import "server-only";
 import type { Prisma } from "@/generated/prisma/client";
 import { getCapabilities } from "@/lib/ai/capabilities";
+import { getLLM } from "@/lib/ai/llm";
+import type { WritingAssessment } from "@/lib/learning/writing/assessment";
 import { conceptDimensions, getContent, type ContentIndex } from "@/lib/content";
 import type { PlacementItem } from "@/lib/content/schema";
 import {
@@ -33,8 +35,30 @@ import type { Skill } from "@/lib/learning/skills";
 import { db } from "@/server/db";
 import { loadTraces, saveReviewLogs, saveTraces } from "@/server/repositories/memory";
 import { resolveSpeechResponse, SpeechEvidenceError } from "./speech-evidence";
+import { evaluateWriting } from "./writing";
+import { LLMUnavailableError } from "@/lib/ai/llm/types";
+import { QuotaError } from "@/server/quota";
 
 export class PlacementError extends Error {}
+
+function writingWeight(answer: Prisma.JsonValue | null): number {
+  if (
+    answer &&
+    typeof answer === "object" &&
+    !Array.isArray(answer) &&
+    "writingAssessment" in answer
+  ) {
+    const assessment = answer.writingAssessment;
+    if (
+      assessment &&
+      typeof assessment === "object" &&
+      !Array.isArray(assessment) &&
+      typeof assessment.confidence === "number"
+    )
+      return Math.min(0.65, Math.max(0, assessment.confidence));
+  }
+  return 1;
+}
 
 let bankCache:
   | { index: ContentIndex; bank: Map<string, BankItem>; reportItems: Map<string, ReportItem> }
@@ -63,7 +87,10 @@ function engineState(
 ): EngineState {
   const plan = attempt.plan as unknown as PlacementPlan;
   return {
-    plan: { ...plan, capabilities: { ...plan.capabilities, ai: false } },
+    plan: {
+      ...plan,
+      capabilities: { ...plan.capabilities, ai: plan.capabilities.ai && !getLLM().simulated },
+    },
     responses,
     seed: attempt.id,
   };
@@ -79,6 +106,7 @@ async function loadAttempt(userId: string, attemptId: string) {
     itemId: response.itemId,
     score: response.score,
     scored: response.scored,
+    weight: writingWeight(response.answer),
   }));
   return { attempt, responses };
 }
@@ -111,10 +139,9 @@ export async function startPlacement(
   const plan = createPlan({
     mode,
     prior,
-    // The tutor's LLM is not an open-writing grader. Do not select ungradable items.
     capabilities: {
       speech: capabilities.pronunciationAssessment && capabilities.serverTts,
-      ai: false,
+      ai: capabilities.llm && !getLLM().simulated,
     },
     onlySkills,
   });
@@ -215,6 +242,7 @@ export async function answerPlacement(
   const item = index.placementItems.get(itemId) as PlacementItem;
   let score = 0;
   let scored = true;
+  let writing: WritingAssessment | undefined;
   if (answer.kind !== "dont_know") {
     if (item.activity.type === "speak" && (answer.kind !== "speech" || !answer.speechAttemptId)) {
       throw new PlacementError("Grave e avalie sua voz para responder, ou escolha Não sei.");
@@ -228,28 +256,80 @@ export async function answerPlacement(
       throw error;
     }
     try {
-      score = gradeActivity(
-        item.activity,
-        toAuthoredResponse(item.activity, response, attemptId),
-      ).score;
+      if (item.activity.type === "open_writing") {
+        if (response.kind !== "text") throw new GradingError("Invalid writing response.");
+        try {
+          writing = await evaluateWriting(userId, item.activity, response.text);
+        } catch (error) {
+          if (error instanceof LLMUnavailableError || error instanceof QuotaError)
+            throw new PlacementError(error.message);
+          throw error;
+        }
+        scored = writing.score !== null;
+        score = writing.score ?? 0;
+      } else
+        score = gradeActivity(
+          item.activity,
+          toAuthoredResponse(item.activity, response, attemptId),
+        ).score;
     } catch (error) {
       if (!(error instanceof GradingError)) throw error;
       scored = false;
     }
   }
-  await db.placementResponse.create({
-    data: {
-      attemptId,
-      itemId,
-      skill: item.skill,
-      score,
-      scored,
-      answer: answer as unknown as Prisma.InputJsonValue,
-      durationMs: durationMs && durationMs > 0 ? Math.min(durationMs, 30 * 60 * 1000) : null,
-    },
+  await db.$transaction(async (tx) => {
+    await tx.placementResponse.create({
+      data: {
+        attemptId,
+        itemId,
+        skill: item.skill,
+        score,
+        scored,
+        answer: (writing
+          ? { response: answer, writingAssessment: writing }
+          : answer) as unknown as Prisma.InputJsonValue,
+        durationMs: durationMs && durationMs > 0 ? Math.min(durationMs, 30 * 60 * 1000) : null,
+      },
+    });
+    if (writing?.score !== null && writing?.score !== undefined) {
+      const ids = [
+        ...new Set(
+          writing.issues.flatMap((issue) =>
+            issue.deterministic && issue.confidence >= 0.9 ? issue.concepts : [],
+          ),
+        ),
+      ];
+      const traces = await loadTraces(tx, userId, ids);
+      const entries = ids.map((conceptId) =>
+        applyReview({
+          trace: traces.find((t) => t.conceptId === conceptId && t.dimension === "writing") ?? null,
+          conceptId,
+          dimension: "writing",
+          outcome: { score: 0, correct: false, verdict: "wrong" },
+          now: new Date(),
+          source: "placement_gap",
+        }),
+      );
+      await saveTraces(
+        tx,
+        userId,
+        entries.map((e) => e.trace),
+      );
+      await saveReviewLogs(
+        tx,
+        userId,
+        entries.flatMap((e) => (e.log ? [e.log] : [])),
+      );
+    }
   });
 
-  const after = nextStep(engineState(attempt, [...responses, { itemId, score, scored }]), bank);
+  const after = nextStep(
+    engineState(attempt, [
+      ...responses,
+      { itemId, score, scored, weight: writing?.confidence ?? 1 },
+    ]),
+    bank,
+  );
   if (!after) {
     await completePlacement(userId, attemptId);
     return { done: true };
@@ -276,6 +356,11 @@ export async function completePlacement(
     items: reportItems,
     content: index,
   });
+  const writingAnswers = attempt.responses.flatMap((response) => {
+    const answer = response.answer as unknown as { writingAssessment?: WritingAssessment } | null;
+    return answer?.writingAssessment ? [answer.writingAssessment] : [];
+  });
+  if (writingAnswers.length) report.writing = writingAnswers;
   const now = new Date();
   const partial = state.plan.mode === "skill";
   const retaken = new Set<Skill>([...state.plan.skills, ...state.plan.selfAssessSkills]);

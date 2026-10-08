@@ -4,9 +4,11 @@ import { describeTheta, levelIndex, readTheta, shortLevelLabel, type CefrLevel }
 import { SKILLS, SKILL_LABELS, type Skill } from "../skills";
 import type { BankItem, Estimates, PlacementMode, PlacementPlan, ResponseRecord } from "./engine";
 import { probability } from "./model";
+import type { WritingAssessment } from "../writing/assessment";
 
 export type Confidence = "high" | "medium" | "low";
-export type AssessmentMethod = "objective" | "self_assessment" | "perception" | "not_assessed";
+export type AssessmentMethod =
+  "objective" | "ai_assessment" | "self_assessment" | "perception" | "not_assessed";
 
 export interface SkillResult {
   skill: Skill;
@@ -48,6 +50,7 @@ export interface PlacementReport {
   weaknesses: Finding[];
   gaps: Gap[];
   recommendation: Recommendation;
+  writing?: WritingAssessment[];
 }
 
 /** Item metadata the report needs (from content). */
@@ -73,6 +76,8 @@ function methodFor(
   const estimate = estimates.skills[skill];
   if (estimate.n === 0) return "not_assessed";
   if (estimate.selfAssessedOnly) return "self_assessment";
+  if (items.some((item) => item.bank.skill === skill && item.bank.aiAssessed))
+    return "ai_assessment";
   if (skill === "pronunciation") {
     const answered = items.filter((item) => item.bank.skill === "pronunciation");
     // Secure server audio does not turn a perception drill into production evidence.

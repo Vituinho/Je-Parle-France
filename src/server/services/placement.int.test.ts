@@ -1,5 +1,12 @@
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as capabilities from "@/lib/ai/capabilities";
+import * as llm from "@/lib/ai/llm";
+import * as writingService from "./writing";
+import {
+  assessWriting,
+  WRITING_CRITERIA,
+  type WritingJudgment,
+} from "@/lib/learning/writing/assessment";
 import { getContent } from "@/lib/content";
 import { levelIndex } from "@/lib/learning/cefr";
 import { db } from "@/server/db";
@@ -165,6 +172,88 @@ describe.skipIf(!hasTestDatabase)("placement service", () => {
         (s) => s.skill === "pronunciation",
       )?.method,
     ).toBe("perception");
+  });
+
+  it("persists reviewed writing judgment, maps only reliable errors to review, and honestly labels AI evidence", async () => {
+    vi.spyOn(capabilities, "getCapabilities").mockReturnValue({
+      speechRecognition: false,
+      pronunciationAssessment: false,
+      serverTts: false,
+      llm: true,
+    });
+    vi.spyOn(llm, "getLLM").mockReturnValue({
+      id: "anthropic",
+      simulated: false,
+      generateObject: vi.fn(),
+    });
+    vi.spyOn(writingService, "evaluateWriting").mockImplementation(
+      async (_user, activity, original) =>
+        assessWriting({
+          original,
+          activity,
+          model: "fixture",
+          concepts: getContent().concepts,
+          judgment: {
+            criteria: Object.fromEntries(
+              WRITING_CRITERIA.map((c) => [c, { band: 3, evidence: ["Bonjour"] }]),
+            ) as WritingJudgment["criteria"],
+            confidence: 0.9,
+            feedbackPt: "Relato claro. Revise avoir.",
+            limitations: [],
+            issues: [],
+          },
+        }),
+    );
+    const user = await onboardedUser();
+    await db.skillEstimate.update({
+      where: { userId_skill: { userId: user.id, skill: "writing" } },
+      data: { theta: 2.5, sd: 0.5 },
+    });
+    const attemptId = await startPlacement(user.id, "skill", ["writing"]);
+    let written = false;
+    for (let guard = 0; guard < 12; guard++) {
+      const view = await loadPlacement(user.id, attemptId);
+      if (view.status === "completed") break;
+      const item = getContent().placementItems.get(view.itemId)!;
+      if (item.activity.type === "open_writing") {
+        await answerPlacement(user.id, attemptId, view.itemId, {
+          kind: "text",
+          text: "Bonjour, je suis 25 ans. Samedi, je suis allé au parc avec mes amis. Nous avons parlé de notre travail et nous avons mangé ensemble. Dimanche, j'ai appelé ma famille et j'ai lu un livre.",
+        });
+        written = true;
+      } else
+        await answerPlacement(
+          user.id,
+          attemptId,
+          view.itemId,
+          oracleResponse(item.activity, attemptId, true),
+        );
+    }
+    expect(written).toBe(true);
+    const report = (await getPlacementReport(user.id, attemptId))!.report;
+    expect(report.skills.find((s) => s.skill === "writing")?.method).toBe("ai_assessment");
+    expect(report.writing?.[0]).toMatchObject({
+      confidence: 0.65,
+      original: expect.stringContaining("je suis 25 ans"),
+    });
+    expect(
+      await db.memoryTrace.findUnique({
+        where: {
+          userId_conceptId_dimension: {
+            userId: user.id,
+            conceptId: "gram:age-avoir",
+            dimension: "writing",
+          },
+        },
+      }),
+    ).toMatchObject({ lastScore: 0 });
+    expect(
+      (
+        await db.skillEstimate.findUniqueOrThrow({
+          where: { userId_skill: { userId: user.id, skill: "writing" } },
+        })
+      ).method,
+    ).toBe("ai_assessment");
   });
 
   it("scores speaking only from a matching real assessment, never self-rating or forged fields", async () => {

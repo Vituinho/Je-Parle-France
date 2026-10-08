@@ -121,9 +121,8 @@ Reference: [Anthropic structured outputs](https://platform.claude.com/docs/en/bu
 
 Placement perception audio uses `/api/placement/audio` with attempt/item identifiers only;
 the correct played word stays server-side. It requires a real speech provider. The tutor's
-LLM capability does not enable open-writing assessment, whose grader is still unimplemented.
-
-## Planned
+LLM capability enables only reviewed open-writing tasks with a matching expected-level rubric;
+the mock never enables assessment. See [PLACEMENT.md](PLACEMENT.md).
 
 ## Structured writing engine
 
@@ -144,8 +143,11 @@ assign course concepts. Only important local detections with a known concept at 
 level can feed memory; quoted examples are excluded. The caller must persist the assessment with
 the answer and must skip evidence when its score is null.
 
-This engine alone does not activate placement tasks. Activation requires a reviewed rubric on each
-authored item and a real configured provider.
+Placement activation is limited to the existing reviewed A2 and B1 tasks, with original answers
+and evaluations persisted in placement responses and shown in the final report. Invalid or
+low-confidence results remain unscored. Practice tasks without rubrics stay deterministic.
+
+## Planned
 
 Streaming (full-duplex) voice conversation, shadowing with prosody comparison, AI feedback on open
-writing, an OpenAI/Google adapter set, persistent TTS cache in object storage.
+an OpenAI/Google adapter set, persistent TTS cache in object storage.

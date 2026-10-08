@@ -259,6 +259,15 @@ export const writingItems: PlacementItemInput[] = [
       modelAnswer:
         "Samedi, je me suis levé tard. L'après-midi, je suis allé au parc avec des amis et nous avons joué au foot. Le soir, nous avons mangé une pizza. Dimanche, je suis resté à la maison : j'ai lu un livre et j'ai appelé ma famille au Brésil.",
       focus: ["Passé composé com avoir e être", "Marcadores de tempo", "Clareza da sequência"],
+      rubric: {
+        version: 1,
+        expectedLevel: "A2",
+        taskRequirements: [
+          "Relatar atividades pessoais do último fim de semana",
+          "Organizar os acontecimentos em uma sequência compreensível",
+          "Usar frases simples sobre o passado; aceitar tentativas de estruturas mais avançadas",
+        ],
+      },
     },
   },
   {
@@ -283,6 +292,16 @@ export const writingItems: PlacementItemInput[] = [
         "Proposta concreta",
         "Futuro e condicional de cortesia",
       ],
+      rubric: {
+        version: 1,
+        expectedLevel: "B1",
+        taskRequirements: [
+          "Avisar um colega que não poderá ir à reunião de amanhã",
+          "Apresentar uma justificativa compreensível",
+          "Propor outra data concreta",
+          "Usar registro adequado a um colega; aceitar variantes regionais",
+        ],
+      },
     },
   },
 ];
