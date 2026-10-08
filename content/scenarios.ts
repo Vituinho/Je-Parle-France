@@ -49,6 +49,30 @@ export const scenarios: ScenarioInput[] = [
     ],
   },
   {
+    id: "scn-weekend-plans",
+    track: "core",
+    minLevel: "A1",
+    title: { pt: "Planos para o fim de semana", fr: "Des projets pour le week-end" },
+    setting: {
+      pt: "Um colega de trabalho quer saber o que você vai fazer no fim de semana e propõe um programa.",
+      fr: "Un collègue vous demande ce que vous faites ce week-end et propose une sortie.",
+    },
+    aiRole:
+      "Tu es un collègue sympathique. Tu demandes à l'apprenant ce qu'il va faire ce week-end (futur proche : « tu vas… ? »), tu poses des questions avec où, quand, avec qui, pourquoi, et tu proposes une activité simple (cinéma, parc, restaurant, marché). Tu tutoies, phrases courtes.",
+    learnerGoal: {
+      pt: "Contar seus planos com “je vais…”, fazer perguntas e combinar dia e hora.",
+      fr: "Dire vos projets avec « je vais… », poser des questions et fixer un jour et une heure.",
+    },
+    openingLine: "Salut ! Qu'est-ce que tu vas faire ce week-end ?",
+    keyConcepts: [
+      "gram:futur-proche",
+      "gram:aller-present",
+      "gram:questions",
+      "lex:quand",
+      "lex:il-est-heures",
+    ],
+  },
+  {
     id: "scn-cafe-paris",
     track: "france",
     region: "fr-FR",

@@ -61,12 +61,13 @@ waiting until the learner has met it.
 | core | A1 | Minha família — family words (*les parents* ≠ parentes), possessives, the Brazilian “seu” → *votre/ton* | 3 | — |
 | core | A1 | Meu dia — regular *-er* verbs (silent *-ent*), *ne… pas* and *pas de*, days of the week, telling the time | 3 | — |
 | core | A1 | Na cidade — definite articles and gender traps, *au/du* like “ao/do”, *il y a* (existence) vs *il a* (possession), places and *près de / à côté de / en face de* | 3 | Pedir informação na rua |
+| core | A1 | Perguntas e planos — intonation and *est-ce que* questions, question words, *aller*, the near future (= “vou + verbo”) | 3 | Planos para o fim de semana |
 | canada | A0 | Bem-vindo ao Québec — Bonjour-Hi, *bienvenue*, *c'est correct*; *déjeuner/dîner/souper*, *fin de semaine*, *dépanneur* | 2 | Num café em Montréal |
 | canada | A1 | Chegar e se instalar — border questions, bank account, renting in Montréal | 3 | Abrir uma conta no banco |
 | france | A0 | O dia a dia na França — boulangerie, meal names and hours | 2 | Na boulangerie |
 | france | A1 | Se instalar na França — métro, préfecture and documents, renting | 3 | No guichê da préfecture |
 
-Totals: 154 concepts, 36 lessons, 299 activities, 8 scenarios (`npm run content:check` prints the
+Totals: 165 concepts, 39 lessons, 322 activities, 9 scenarios (`npm run content:check` prints the
 current numbers).
 
 ### What makes the tracks genuinely different
@@ -84,10 +85,9 @@ current numbers).
 
 ## Growth plan
 
-1. **Core A1** (in progress) — done: *être*, *avoir*, professions; family and possessives; *-er*
-   verbs, negation, days and time; articles, *au/du*, *il y a* and the city. Next:
-   questions, *aller* and the near future. Placement start points move with it: A1 learners now
-   start in A1 instead of only getting reviews and tracks.
+1. **Core A1** — module A1.1 done (5 units, 15 lessons). Next for A1: food and shopping
+   (partitive *du / de la*), the body and health, the weather and seasons, *-ir* and *-re* verbs,
+   reflexive verbs for the daily routine. A1 learners already start in A1 after the placement.
 2. **Tracks A1–A2** — Canada: health card and clinic (*carte d'assurance maladie*, *CLSC*), job
    search and interview, winter, public transport (STM), Québec informal speech in
    *recognition-only* activities (*chu*, *pantoute*, *icitte*). France: health and *médecin

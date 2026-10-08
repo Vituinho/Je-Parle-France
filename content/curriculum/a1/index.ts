@@ -3,6 +3,7 @@ import { unitEtreAvoir } from "./unit-1-etre-avoir";
 import { unitFamille } from "./unit-2-famille";
 import { unitJournee } from "./unit-3-journee";
 import { unitVille } from "./unit-4-ville";
+import { unitProjets } from "./unit-5-projets";
 
 export const a1Modules: ModuleInput[] = [
   {
@@ -13,6 +14,6 @@ export const a1Modules: ModuleInput[] = [
       pt: "Os verbos e estruturas de base para falar de você, da sua rotina e da cidade.",
       fr: "Les verbes et structures de base pour parler de soi, de son quotidien et de la ville.",
     },
-    units: [unitEtreAvoir, unitFamille, unitJournee, unitVille],
+    units: [unitEtreAvoir, unitFamille, unitJournee, unitVille, unitProjets],
   },
 ];

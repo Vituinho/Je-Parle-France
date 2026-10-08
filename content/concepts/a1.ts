@@ -938,4 +938,215 @@ export const a1Concepts: ConceptInput[] = [
     ],
     tags: ["cidade", "localização"],
   },
+  // ─── Unit 5: questions, aller, near future ───
+  {
+    id: "gram:questions",
+    kind: "grammar",
+    level: "A1",
+    title: { pt: "Fazer perguntas", fr: "Poser des questions" },
+    summary: {
+      pt: "Três jeitos: pela entonação (*Tu parles français ?*), com *est-ce que* (*Est-ce que tu parles français ?*) e, no formal, invertendo (*Parlez-vous français ?*).",
+    },
+    explanation: {
+      pt: [
+        "**Entonação** — a frase normal, com a voz subindo no fim: *Tu habites ici ?* É o mais comum na conversa, igual ao português.",
+        "**Est-ce que** + frase — funciona em qualquer situação: *Est-ce que vous avez une chambre ?* Com palavra interrogativa: *Où est-ce que tu habites ?*",
+        "**Inversão** — verbo e pronome trocam de lugar, com hífen: *Parlez-vous anglais ?* É mais formal e escrito; reconheça, mas não precisa usar ainda.",
+        "Palavras interrogativas: **où** (onde) · **quand** (quando) · **comment** (como) · **combien** (quanto) · **pourquoi** (por quê) — resposta com **parce que** (porque) · **qui** (quem).",
+      ],
+    },
+    brazilianNote:
+      "A pergunta por entonação funciona como em português: *Tu as faim ?* Na fala informal, a palavra interrogativa pode ir para o fim: *Tu habites où ?* (Você mora onde?).",
+    examples: [
+      { fr: "Est-ce que tu parles anglais ?", pt: "Você fala inglês?" },
+      { fr: "Où est-ce que vous habitez ?", pt: "Onde o senhor mora?" },
+      {
+        fr: "Pourquoi tu apprends le français ? — Parce que je vais habiter à Montréal.",
+        pt: "Por que você aprende francês? — Porque vou morar em Montréal.",
+      },
+    ],
+    commonMistakes: [
+      {
+        wrong: "Est-ce que tu habites où ?",
+        right: "Où est-ce que tu habites ?",
+        why: "Com *est-ce que*, a palavra interrogativa vem antes: *où est-ce que*.",
+      },
+    ],
+    prerequisites: ["gram:verbes-er-present"],
+    tags: ["perguntas"],
+  },
+  {
+    id: "gram:aller-present",
+    kind: "grammar",
+    level: "A1",
+    title: { pt: "O verbo aller (ir) no presente", fr: "Le verbe aller au présent" },
+    summary: {
+      pt: "*Aller* é irregular: *je vais, tu vas, il va, nous allons, vous allez, ils vont*. Com lugares: *je vais au parc, à la banque*.",
+    },
+    explanation: {
+      pt: [
+        "**aller** = ir. Só *nous* e *vous* lembram o infinitivo:\n\n*je vais* · *tu vas* · *il / elle / on va*\n*nous allons* · *vous allez* · *ils / elles vont*",
+        "Com lugares, use *à* e as contrações: *je vais **au** cinéma*, *à la gare*, *à l'école*, *aux États-Unis*. Para cidades: *à Paris*; para países femininos: *en France*; masculinos: *au Canada*, *au Brésil*.",
+        "*Ça va ?* — que você já conhece — é o mesmo verbo: “vai bem?”.",
+      ],
+    },
+    brazilianNote:
+      "Atenção a *ils vont* (/il vɔ̃/, “eles vão”) e *ils ont* (/il.z‿ɔ̃/, “eles têm”): diferem só pelo som do começo.",
+    examples: [
+      { fr: "Je vais à la banque.", pt: "Vou ao banco." },
+      { fr: "Vous allez au Canada ?", pt: "O senhor vai ao Canadá?" },
+      { fr: "Ils vont en France en juillet.", pt: "Eles vão à França em julho." },
+    ],
+    commonMistakes: [
+      { wrong: "Nous vont au parc.", right: "Nous allons au parc.", why: "Com *nous*: *allons*." },
+      { wrong: "Je vais à le cinéma.", right: "Je vais au cinéma.", why: "*à + le* = *au*." },
+    ],
+    prerequisites: ["gram:contractions-a-de"],
+    tags: ["verbos", "presente"],
+  },
+  {
+    id: "gram:futur-proche",
+    kind: "grammar",
+    level: "A1",
+    title: { pt: "O futuro próximo: je vais + infinitivo", fr: "Le futur proche" },
+    summary: {
+      pt: "Igualzinho ao português: *je vais travailler* = vou trabalhar. *Aller* no presente + verbo no infinitivo.",
+    },
+    explanation: {
+      pt: [
+        "**aller** (presente) + **infinitivo**: *je vais partir*, *tu vas aimer*, *nous allons manger*.",
+        "Na negação, *ne… pas* abraça o *aller*: *je **ne** vais **pas** travailler demain*.",
+        "É o futuro mais usado na conversa, em francês e em português.",
+      ],
+    },
+    brazilianNote:
+      "Aqui o português ajuda muito: “vou trabalhar” → *je vais travailler*. Só não esqueça que o segundo verbo fica no infinitivo (*-er*, *-ir*, *-re*).",
+    examples: [
+      { fr: "Demain, je vais travailler.", pt: "Amanhã vou trabalhar." },
+      {
+        fr: "Ce soir, on va manger au restaurant.",
+        pt: "Hoje à noite a gente vai jantar no restaurante.",
+      },
+      { fr: "Je ne vais pas partir cette semaine.", pt: "Não vou viajar esta semana." },
+    ],
+    commonMistakes: [
+      {
+        wrong: "Je vais travaille demain.",
+        right: "Je vais travailler demain.",
+        why: "Depois de *aller*, o verbo fica no infinitivo.",
+      },
+      {
+        wrong: "Je vais ne pas travailler.",
+        right: "Je ne vais pas travailler.",
+        why: "A negação abraça o *aller*.",
+      },
+    ],
+    prerequisites: ["gram:aller-present"],
+    tags: ["futuro"],
+  },
+  {
+    id: "lex:ou",
+    kind: "lexical",
+    level: "A1",
+    french: "où",
+    pos: "adverb",
+    ipa: "/u/",
+    meaning: "onde",
+    examples: [{ fr: "Où est-ce que tu travailles ?", pt: "Onde você trabalha?" }],
+    notes: [
+      {
+        kind: "tip",
+        text: { pt: "Com acento grave, *où* é “onde”. Sem acento, *ou* é “ou”." },
+      },
+    ],
+    tags: ["perguntas"],
+  },
+  {
+    id: "lex:quand",
+    kind: "lexical",
+    level: "A1",
+    french: "quand",
+    pos: "adverb",
+    ipa: "/kɑ̃/",
+    meaning: "quando",
+    examples: [{ fr: "Tu pars quand ?", pt: "Você viaja quando?" }],
+    tags: ["perguntas", "tempo"],
+  },
+  {
+    id: "lex:comment",
+    kind: "lexical",
+    level: "A1",
+    french: "comment",
+    pos: "adverb",
+    ipa: "/kɔ.mɑ̃/",
+    meaning: "como",
+    examples: [
+      { fr: "Comment est-ce qu'on va à la gare ?", pt: "Como a gente vai até a estação?" },
+    ],
+    tags: ["perguntas"],
+  },
+  {
+    id: "lex:pourquoi-parce-que",
+    kind: "lexical",
+    level: "A1",
+    french: "pourquoi ? — parce que…",
+    pos: "expression",
+    ipa: "/puʁ.kwa/, /paʁs kə/",
+    meaning: "por quê? — porque…",
+    forms: ["pourquoi", "parce que", "pourquoi ? parce que"],
+    examples: [
+      {
+        fr: "Pourquoi tu es fatigué ? — Parce que je travaille beaucoup.",
+        pt: "Por que você está cansado? — Porque trabalho muito.",
+      },
+    ],
+    tags: ["perguntas"],
+  },
+  {
+    id: "lex:qui",
+    kind: "lexical",
+    level: "A1",
+    french: "qui",
+    pos: "pronoun",
+    ipa: "/ki/",
+    meaning: "quem",
+    examples: [{ fr: "Qui est-ce ? — C'est ma sœur.", pt: "Quem é? — É minha irmã." }],
+    tags: ["perguntas"],
+  },
+  {
+    id: "lex:demain",
+    kind: "lexical",
+    level: "A1",
+    french: "demain",
+    pos: "adverb",
+    ipa: "/də.mɛ̃/",
+    meaning: "amanhã",
+    examples: [{ fr: "À demain !", pt: "Até amanhã!" }],
+    tags: ["tempo"],
+  },
+  {
+    id: "lex:ce-soir",
+    kind: "lexical",
+    level: "A1",
+    french: "ce soir",
+    pos: "expression",
+    ipa: "/sə swaʁ/",
+    meaning: "hoje à noite",
+    examples: [{ fr: "Ce soir, on va au cinéma.", pt: "Hoje à noite a gente vai ao cinema." }],
+    tags: ["tempo"],
+  },
+  {
+    id: "lex:la-semaine-prochaine",
+    kind: "lexical",
+    level: "A1",
+    french: "la semaine prochaine",
+    pos: "expression",
+    ipa: "/la sə.mɛn pʁɔ.ʃɛn/",
+    meaning: "a semana que vem",
+    forms: ["la semaine prochaine", "semaine prochaine"],
+    examples: [
+      { fr: "Je vais commencer la semaine prochaine.", pt: "Vou começar semana que vem." },
+    ],
+    tags: ["tempo"],
+  },
 ];
