@@ -27,6 +27,11 @@ const serverEnvSchema = z
     ),
     LLM_PROVIDER: z.enum(["anthropic", "mock"]).default("mock"),
     ANTHROPIC_API_KEY: optionalString,
+    /** Claude model for the tutor. Defaults to the current Opus; set a cheaper model to reduce cost. */
+    LLM_MODEL: z.preprocess(emptyToUndefined, z.string().default("claude-opus-5-5")),
+    /** Daily per-learner limits that keep a free product affordable. */
+    TUTOR_DAILY_TURNS: z.coerce.number().int().positive().default(80),
+    TUTOR_DAILY_REPORTS: z.coerce.number().int().positive().default(10),
     SPEECH_PROVIDER: z.enum(["azure", "mock"]).default("mock"),
     AZURE_SPEECH_KEY: optionalString,
     AZURE_SPEECH_REGION: optionalString,
