@@ -269,6 +269,7 @@ export async function submitActivity(params: {
           level: level ?? null,
           hinted: params.hinted ?? false,
           selfRated: grade.selfRated || grade.verdict === "recorded" || false,
+          createdAt: now,
           response: (writing
             ? { answer: params.response, writingAssessment: writing }
             : params.response) as unknown as Prisma.InputJsonValue,

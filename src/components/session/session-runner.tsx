@@ -2,7 +2,7 @@
 
 import { X } from "lucide-react";
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import {
   completeBlockAction,
   extraSessionAction,
@@ -18,6 +18,7 @@ import type { ClientActivity } from "@/lib/learning/activities/client";
 import type { SupportMode } from "@/lib/learning/language-support";
 import type { PreparedReviewItem } from "@/server/services/review";
 import type { LearningSegment } from "@/lib/learning/planner/planner";
+import { sendSessionTransition } from "@/components/lesson/use-active-study-time";
 
 export type BlockPayload = { title: string; reason: string; seconds: number } & (
   | { kind: "review" | "focus"; items: PreparedReviewItem[]; authored?: boolean }
@@ -76,6 +77,22 @@ export function SessionRunner({
     segments.findIndex((s) => cursor < s.end),
   );
   const atBreak = cursor > 0 && !finished && segments.some((s) => s.end === cursor);
+  useEffect(() => {
+    const pause = () => {
+      if (document.hidden) void sendSessionTransition(sessionId, "pause");
+      else if (playing) void sendSessionTransition(sessionId, "start");
+    };
+    const exit = () => {
+      void sendSessionTransition(sessionId, "pause");
+    };
+    document.addEventListener("visibilitychange", pause);
+    window.addEventListener("pagehide", exit);
+    return () => {
+      document.removeEventListener("visibilitychange", pause);
+      window.removeEventListener("pagehide", exit);
+    };
+    if (playing) void sendSessionTransition(sessionId, "start");
+  }, [sessionId, playing]);
 
   function blockDone() {
     startTransition(async () => {
@@ -227,7 +244,14 @@ export function SessionRunner({
             </section>
           )}
           <Button asChild variant="outline" className="mt-5 h-11 rounded-xl">
-            <Link href="/hoje">Pausar e continuar mais tarde</Link>
+            <Link
+              href="/hoje"
+              onClick={() => {
+                void sendSessionTransition(sessionId, "pause");
+              }}
+            >
+              Pausar e continuar mais tarde
+            </Link>
           </Button>
           {block?.kind === "conversation" ? (
             <div className="border-border bg-card mt-6 rounded-2xl border p-5">
@@ -235,7 +259,12 @@ export function SessionRunner({
               <p className="text-muted-foreground mt-1">{block.reason}</p>
               <div className="mt-4 flex flex-wrap gap-3">
                 <Button asChild className="h-11 rounded-xl px-5">
-                  <Link href={`/tutor?cenario=${block.scenarioId}&sessao=${sessionId}`}>
+                  <Link
+                    href={`/tutor?cenario=${block.scenarioId}&sessao=${sessionId}`}
+                    onClick={() => {
+                      void sendSessionTransition(sessionId, "start");
+                    }}
+                  >
                     Abrir conversa
                   </Link>
                 </Button>

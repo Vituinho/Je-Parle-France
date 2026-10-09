@@ -13,6 +13,7 @@ import type { PreparedReviewItem } from "@/server/services/review";
 import type { ActivityResponse } from "@/lib/learning/grading/grade";
 import type { ReviewCheckResult } from "@/app/(focus)/revisar/actions";
 import { PracticeStep } from "./practice-step";
+import { sendSessionTransition } from "./use-active-study-time";
 
 export interface ReviewSummary {
   answered: number;
@@ -116,7 +117,12 @@ export function ReviewPlayer({
     <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-5 pt-5 pb-2 sm:px-8">
       <header className="flex items-center gap-4">
         <Button asChild variant="ghost" size="icon-lg" aria-label="Sair da revisão">
-          <Link href={exitHref}>
+          <Link
+            href={exitHref}
+            onClick={() => {
+              if (sessionId) void sendSessionTransition(sessionId, "pause");
+            }}
+          >
             <X />
           </Link>
         </Button>
@@ -141,6 +147,7 @@ export function ReviewPlayer({
       <p className="text-muted-foreground mt-6 text-sm">{title}</p>
       <div className="mt-4 flex flex-1 flex-col">
         <PracticeStep
+          sessionId={sessionId}
           key={`${item.key}-${position}`}
           instanceKey={`${item.key}-${position}`}
           activity={item.activity}

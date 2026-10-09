@@ -18,6 +18,7 @@ import type { SupportMode } from "@/lib/learning/language-support";
 import type { MasteryChange, SubmitResult } from "@/server/services/practice";
 import { LessonSummary } from "./lesson-summary";
 import { PracticeStep } from "./practice-step";
+import { sendSessionTransition } from "./use-active-study-time";
 
 export interface LessonPlayerProps {
   lessonId: string;
@@ -147,7 +148,12 @@ export function LessonPlayer({
           size="icon-lg"
           aria-label="Sair da lição (o progresso fica salvo)"
         >
-          <Link href={exitHref}>
+          <Link
+            href={exitHref}
+            onClick={() => {
+              if (sessionId) void sendSessionTransition(sessionId, "pause");
+            }}
+          >
             <X />
           </Link>
         </Button>
@@ -168,6 +174,7 @@ export function LessonPlayer({
       </p>
       <div className="mt-4 flex flex-1 flex-col">
         <PracticeStep
+          sessionId={sessionId}
           key={`${stepIndex}-${position}`}
           instanceKey={`${activity.id}-${position}`}
           activity={activity}

@@ -11,6 +11,7 @@ import type { ActivityResponse } from "@/lib/learning/grading/grade";
 import type { SupportMode } from "@/lib/learning/language-support";
 import type { SubmitResult } from "@/server/services/practice";
 import { FeedbackPanel } from "./feedback-panel";
+import { useActiveStudyTime } from "./use-active-study-time";
 
 export type CheckFn = (input: {
   response: ActivityResponse;
@@ -41,6 +42,7 @@ export function PracticeStep({
   onCheck,
   onSeen,
   onContinue,
+  sessionId,
 }: {
   /** Unique per rendered step (the same activity can appear twice in a queue). */
   instanceKey: string;
@@ -49,17 +51,17 @@ export function PracticeStep({
   onCheck: CheckFn;
   onSeen?: (durationMs: number) => Promise<void>;
   onContinue: (result: SubmitResult | null) => void;
+  sessionId?: string;
 }) {
   const [draft, setDraft] = useState<Draft>(() => emptyDraft(activity));
   const [result, setResult] = useState<SubmitResult | null>(null);
   const [hinted, setHinted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
-  const startedAt = useRef(0);
+  const active = useActiveStudyTime(activity.id, sessionId);
   const top = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    startedAt.current = Date.now();
     top.current?.focus({ preventScroll: false });
   }, []);
 
@@ -71,25 +73,35 @@ export function PracticeStep({
   function primary() {
     if (pending) return;
     if (teach) {
-      const elapsed = Date.now() - startedAt.current;
+      const elapsed = active.read();
+      active.setEnabled(false);
       startTransition(async () => {
+        await active.flush();
         await onSeen?.(elapsed);
         onContinue(null);
       });
       return;
     }
     if (result) {
-      onContinue(result);
+      active.setEnabled(false);
+      startTransition(async () => {
+        await active.flush();
+        onContinue(result);
+      });
       return;
     }
     if (!isAnswerable(activity, draft)) return;
     setError(null);
+    const durationMs = active.read();
+    active.setEnabled(false);
     startTransition(async () => {
+      await active.flush();
       const response = await onCheck({
         response: toResponse(activity, draft),
         hinted,
-        durationMs: Date.now() - startedAt.current,
+        durationMs,
       });
+      active.setEnabled(true);
       if (!response.ok) {
         setError(response.error);
         return;

@@ -25,6 +25,7 @@ import { loadTraces } from "@/server/repositories/memory";
 import { getLearnerLevel, today } from "./learner";
 import { lockLearner } from "./skill-estimation";
 import { localDate } from "@/lib/learning/time";
+import { recordLearningEvent } from "./learning-events";
 
 export class SessionError extends Error {}
 
@@ -332,6 +333,15 @@ export async function completeBlock(userId: string, sessionId: string, blockInde
           completedAt: done ? now : null,
         },
       });
+      await recordLearningEvent(
+        tx,
+        userId,
+        {
+          type: "block_completed",
+          payload: { blockIndex, expectedSeconds: plan.blocks[blockIndex]!.seconds },
+        },
+        { sessionId, dedupeKey: `block:${sessionId}:${blockIndex}:done`, now },
+      );
       if (done) {
         await tx.dailyActivity.upsert({
           where: { userId_localDate: { userId, localDate: session.localDate } },
@@ -342,6 +352,8 @@ export async function completeBlock(userId: string, sessionId: string, blockInde
           data: {
             userId,
             type: "session_completed",
+            sessionId,
+            dedupeKey: `session:${sessionId}:done`,
             payload: { sessionId, minutes: session.plannedMinutes, blocks: plan.blocks.length },
           },
         });
