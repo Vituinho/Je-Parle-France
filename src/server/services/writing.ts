@@ -13,6 +13,7 @@ import {
 } from "@/lib/learning/writing/assessment";
 import { consumeQuota, addUsageUnits, throttle } from "@/server/quota";
 import { localDate } from "@/lib/learning/time";
+import { observeProvider } from "./provider-telemetry";
 
 /** Provider orchestration only. Caller persists this with its original answer in the same transaction. */
 export async function evaluateWriting(
@@ -45,14 +46,20 @@ export async function evaluateWriting(
   await consumeQuota(userId, "writing", date, serverEnv().WRITING_DAILY_ASSESSMENTS);
   const prompt = writingPrompt(activity, original);
   try {
-    const result = await llm.generateObject({
-      system: prompt.system,
-      messages: [{ role: "user", content: prompt.input }],
-      schema: writingJudgmentSchema,
-      purpose: "writing_feedback",
-      effort: "medium",
-      maxTokens: 2200,
-    });
+    const result = await observeProvider(
+      userId,
+      { provider: llm.id, operation: "writing_feedback", simulated: llm.simulated },
+      () =>
+        llm.generateObject({
+          system: prompt.system,
+          messages: [{ role: "user", content: prompt.input }],
+          schema: writingJudgmentSchema,
+          purpose: "writing_feedback",
+          effort: "medium",
+          maxTokens: 2200,
+        }),
+      (result) => result.usage,
+    );
     await addUsageUnits(
       userId,
       "writing",

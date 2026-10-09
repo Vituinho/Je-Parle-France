@@ -1,7 +1,7 @@
 import { SpeechProviderError } from "./types";
 
 /** Validate the actual container, not a caller-supplied MIME type. No audio is retained. */
-export function validateSpeechWav(buffer: ArrayBuffer): void {
+export function validateSpeechWav(buffer: ArrayBuffer): number {
   const fail = () => {
     throw new SpeechProviderError(
       "Use WAV PCM 16-bit mono at 16 kHz, up to 30 seconds.",
@@ -15,6 +15,7 @@ export function validateSpeechWav(buffer: ArrayBuffer): void {
     fail();
   let format = false;
   let data = false;
+  let durationMs = 0;
   let offset = 12;
   while (offset + 8 <= buffer.byteLength) {
     const name = tag(offset);
@@ -36,8 +37,10 @@ export function validateSpeechWav(buffer: ArrayBuffer): void {
       // Scripted pronunciation assessment beyond 30 s needs the continuous API.
       if (data || !format || size === 0 || size % 2 !== 0 || size > 30 * 32_000) fail();
       data = true;
+      durationMs = Math.round(size / 32);
     }
     offset = start + size + (size % 2);
   }
   if (!format || !data || offset !== buffer.byteLength) fail();
+  return durationMs;
 }

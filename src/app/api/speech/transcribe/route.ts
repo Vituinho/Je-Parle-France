@@ -4,6 +4,7 @@ import { validateSpeechWav } from "@/lib/ai/speech/audio";
 import { localDate } from "@/lib/learning/time";
 import { consumeQuota, QuotaError, throttle } from "@/server/quota";
 import { getCurrentUser } from "@/server/session";
+import { observeProvider } from "@/server/services/provider-telemetry";
 
 const MAX_BYTES = 1_200_000; // Container cap; PCM duration is validated <=30 s (recorder caps at 15 s).
 
@@ -41,9 +42,20 @@ export async function POST(request: Request) {
 
   try {
     const wav = await audio.arrayBuffer();
-    validateSpeechWav(wav);
+    const durationMs = validateSpeechWav(wav);
     await consumeQuota(user.id, "speech", localDate(new Date(), "UTC"), 300);
-    const result = await speech.stt.transcribe(wav, fields.data.locale);
+    const result = await observeProvider(
+      user.id,
+      {
+        provider: "azure",
+        operation: "stt",
+        simulated: false,
+        audioMs: durationMs,
+        locale: fields.data.locale,
+      },
+      () => speech.stt.transcribe(wav, fields.data.locale),
+      (result) => (result.status === "error" ? { status: "failed", reason: "unavailable" } : {}),
+    );
     return Response.json(result);
   } catch (error) {
     if (error instanceof QuotaError)

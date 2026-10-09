@@ -9,7 +9,7 @@ describe("short speech WAV validation", () => {
   });
   it("accepts the browser recorder's actual format", async () => {
     const awaited = await encodeWav(new Float32Array(1600), 16_000).arrayBuffer();
-    expect(() => validateSpeechWav(awaited)).not.toThrow();
+    expect(validateSpeechWav(awaited)).toBe(100);
   });
   it.each([8000, 44100])("rejects an incorrect sample rate %s", async (rate) => {
     const wav = await encodeWav(new Float32Array(1600), rate).arrayBuffer();

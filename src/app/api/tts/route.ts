@@ -4,6 +4,7 @@ import { hashString } from "@/lib/learning/random";
 import { localDate } from "@/lib/learning/time";
 import { consumeQuota, QuotaError } from "@/server/quota";
 import { getCurrentUser } from "@/server/session";
+import { observeProvider } from "@/server/services/provider-telemetry";
 
 const querySchema = z.object({
   text: z.string().trim().min(1).max(300),
@@ -34,7 +35,17 @@ export async function GET(request: Request) {
       if (error instanceof QuotaError) return new Response(error.message, { status: 429 });
       throw error;
     }
-    entry = await speech.tts.synthesize(parsed.data);
+    entry = await observeProvider(
+      user.id,
+      {
+        provider: "azure",
+        operation: "tts",
+        simulated: false,
+        locale: parsed.data.locale,
+        textCharacters: parsed.data.text.length,
+      },
+      () => speech.tts.synthesize(parsed.data),
+    );
     if (cache.size >= MAX_ENTRIES) cache.delete(cache.keys().next().value as number);
     cache.set(key, entry);
   }

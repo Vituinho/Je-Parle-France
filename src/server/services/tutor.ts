@@ -1,4 +1,5 @@
 import "server-only";
+import { observeProvider } from "./provider-telemetry";
 import type { Prisma } from "@/generated/prisma/client";
 import { getLLM, LLMUnavailableError, type LLMMessage } from "@/lib/ai/llm";
 import { getContent } from "@/lib/content";
@@ -219,14 +220,20 @@ export async function sendLearnerMessage(
   ];
 
   const llm = getLLM();
-  const result = await llm.generateObject({
-    system: buildTutorSystemPrompt(context),
-    messages,
-    schema: tutorTurnSchema,
-    purpose: "tutor_turn",
-    effort: "low",
-    maxTokens: 2000,
-  });
+  const result = await observeProvider(
+    userId,
+    { provider: llm.id, operation: "tutor_turn", simulated: llm.simulated },
+    () =>
+      llm.generateObject({
+        system: buildTutorSystemPrompt(context),
+        messages,
+        schema: tutorTurnSchema,
+        purpose: "tutor_turn",
+        effort: "low",
+        maxTokens: 2000,
+      }),
+    (result) => result.usage,
+  );
   await addUsageUnits(
     userId,
     "tutor-turn",
@@ -317,22 +324,28 @@ export async function endConversation(
     const level = await getLearnerLevel(userId);
     const llm = getLLM();
     try {
-      const result = await llm.generateObject({
-        system: buildReportSystemPrompt({ level: level.level, theta: level.theta }),
-        messages: [
-          {
-            role: "user",
-            content: transcriptForReport(
-              conversation.turns.map((turn) => ({ role: turn.role, content: turn.content })),
-              allCorrections,
-            ),
-          },
-        ],
-        schema: tutorReportSchema,
-        purpose: "tutor_report",
-        effort: "medium",
-        maxTokens: 4000,
-      });
+      const result = await observeProvider(
+        userId,
+        { provider: llm.id, operation: "tutor_report", simulated: llm.simulated },
+        () =>
+          llm.generateObject({
+            system: buildReportSystemPrompt({ level: level.level, theta: level.theta }),
+            messages: [
+              {
+                role: "user",
+                content: transcriptForReport(
+                  conversation.turns.map((turn) => ({ role: turn.role, content: turn.content })),
+                  allCorrections,
+                ),
+              },
+            ],
+            schema: tutorReportSchema,
+            purpose: "tutor_report",
+            effort: "medium",
+            maxTokens: 4000,
+          }),
+        (result) => result.usage,
+      );
       await addUsageUnits(
         userId,
         "tutor-report",

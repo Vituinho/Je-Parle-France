@@ -6,6 +6,7 @@ import { localDate } from "@/lib/learning/time";
 import { db } from "@/server/db";
 import { consumeQuota, QuotaError, throttle } from "@/server/quota";
 import { getCurrentUser } from "@/server/session";
+import { observeProvider } from "@/server/services/provider-telemetry";
 
 const MAX_BYTES = 1_200_000; // Container cap; PCM duration is validated <=30 s (recorder caps at 15 s).
 
@@ -51,12 +52,19 @@ export async function POST(request: Request) {
 
   try {
     const wav = await audio.arrayBuffer();
-    validateSpeechWav(wav);
+    const durationMs = validateSpeechWav(wav);
     await consumeQuota(user.id, "speech", localDate(new Date(), "UTC"), 300);
-    const result = await speech.pronunciation.assess(
-      wav,
-      fields.data.referenceText,
-      fields.data.locale,
+    const result = await observeProvider(
+      user.id,
+      {
+        provider: "azure",
+        operation: "pronunciation",
+        simulated: false,
+        audioMs: durationMs,
+        locale: fields.data.locale,
+      },
+      () => speech.pronunciation.assess(wav, fields.data.referenceText, fields.data.locale),
+      (result) => (result.status === "error" ? { status: "failed", reason: "unavailable" } : {}),
     );
     const attempt = await db.speechAttempt.create({
       data: {
@@ -64,6 +72,7 @@ export async function POST(request: Request) {
         targetText: fields.data.referenceText,
         activityId: fields.data.activityId ?? null,
         provider: speech.pronunciation.id,
+        durationMs,
         transcript: result.transcript,
         scores: {
           status: result.status,

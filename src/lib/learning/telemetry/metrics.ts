@@ -266,6 +266,7 @@ export function learningMetrics(input: TelemetryInput) {
       inputTokens: number;
       outputTokens: number;
       audioMs: number;
+      textCharacters: number;
       unknownUnits: number;
     }
   >();
@@ -304,6 +305,7 @@ export function learningMetrics(input: TelemetryInput) {
         inputTokens: 0,
         outputTokens: 0,
         audioMs: 0,
+        textCharacters: 0,
         unknownUnits: 0,
       };
       v.requests++;
@@ -311,7 +313,10 @@ export function learningMetrics(input: TelemetryInput) {
       v.inputTokens += p.inputTokens ?? 0;
       v.outputTokens += p.outputTokens ?? 0;
       v.audioMs += p.audioMs ?? 0;
-      v.unknownUnits += Number(p.inputTokens === null && p.audioMs === null);
+      v.textCharacters += p.textCharacters ?? 0;
+      v.unknownUnits += Number(
+        p.inputTokens === null && p.audioMs === null && p.textCharacters === undefined,
+      );
       provider.set(key, v);
     }
   }

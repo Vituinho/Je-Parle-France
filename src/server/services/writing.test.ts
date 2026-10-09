@@ -2,6 +2,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { openWritingActivitySchema } from "@/lib/content/schema";
 import { WRITING_CRITERIA } from "@/lib/learning/writing/assessment";
 import { LLMUnavailableError } from "@/lib/ai/llm/types";
+vi.mock("./provider-telemetry", () => ({
+  observeProvider: <T>(_user: string, _metadata: unknown, call: () => Promise<T>) => call(),
+}));
 const mocks = vi.hoisted(() => ({
   generateObject: vi.fn(),
   consumeQuota: vi.fn(),

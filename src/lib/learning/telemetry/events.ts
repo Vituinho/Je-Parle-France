@@ -107,6 +107,8 @@ export const learningEventSchema = z.discriminatedUnion("type", [
       inputTokens: z.number().int().nonnegative().nullable(),
       outputTokens: z.number().int().nonnegative().nullable(),
       audioMs: z.number().int().min(0).max(60000).nullable(),
+      locale: z.enum(["fr-FR", "fr-CA"]).optional(),
+      textCharacters: z.number().int().min(0).max(300).optional(),
     }),
   ),
 ]);
