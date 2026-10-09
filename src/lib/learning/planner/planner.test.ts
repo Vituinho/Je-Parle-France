@@ -13,6 +13,26 @@ import {
 
 const NOW = new Date("2026-10-10T12:00:00Z");
 
+it("consumes sufficient telemetry advice deterministically without changing the chosen plan budget or tasks", () => {
+  const baseline = planSession(input({ dailyMinutes: 90 }));
+  const advice = {
+    kind: "split" as const,
+    confidence: "medium" as const,
+    message: "Divida em dois períodos.",
+    sessions: 10,
+    days: 8,
+  };
+  const params = input({ dailyMinutes: 90, telemetryAdvice: [advice] });
+  const result = planSession(params);
+  expect(result).toEqual(planSession(params));
+  expect(result.studyAdvice).toEqual([advice]);
+  expect(result.blocks).toEqual(baseline.blocks);
+  expect(result.minutes).toBe(baseline.minutes);
+  expect(planSession(input({ telemetryAdvice: [{ ...advice, sessions: 3 }] })).studyAdvice).toEqual(
+    [],
+  );
+});
+
 it("applies a beginner's newly taught words in multiple modes with a natural break and bounded repetition", () => {
   const plan = planSession(
     input({

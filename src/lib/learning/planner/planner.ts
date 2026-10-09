@@ -3,6 +3,7 @@ import { retrievability, type MemoryTraceState } from "../memory/memory";
 import type { ConceptKind, Dimension, Skill } from "../skills";
 import { studyPace, type StudyPace } from "../study-pace";
 import { hashString } from "../random";
+import type { StudyAdvice } from "../telemetry/metrics";
 
 /**
  * Daily Session Engine. Answers "what is the most useful thing to study today,
@@ -58,6 +59,8 @@ export interface SessionPlan {
   newConceptLimit?: number;
   newConceptIds?: string[];
   segments?: LearningSegment[];
+  /** Explainable advice only. Never changes the learner's chosen budget or grading. */
+  studyAdvice?: StudyAdvice[];
 }
 
 export interface LearningSegment {
@@ -113,6 +116,7 @@ export interface PlannerInput {
   capabilities: { conversation: boolean };
   /** Scenario available for the learner's level and destination, if any. */
   scenarioId?: string;
+  telemetryAdvice?: readonly StudyAdvice[];
 }
 
 // ─── Costs ─────────────────────────────────────────────────────────────────
@@ -566,6 +570,7 @@ export function planSession(input: PlannerInput): SessionPlan {
     newConceptLimit: dailyNewConceptLimit(input, backlog),
     newConceptIds: [...introduced],
     segments: learningSegments(boundedBlocks, minutes),
+    studyAdvice: input.telemetryAdvice?.filter((a) => a.sessions >= 10 && a.days >= 8).slice(0, 2),
   };
 }
 

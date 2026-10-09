@@ -26,6 +26,7 @@ import { getLearnerLevel, today } from "./learner";
 import { lockLearner } from "./skill-estimation";
 import { localDate } from "@/lib/learning/time";
 import { recordLearningEvent } from "./learning-events";
+import { planningAdvice } from "./learning-telemetry";
 
 export class SessionError extends Error {}
 
@@ -233,6 +234,7 @@ export async function buildPlan(
     recentBlocks: await recentBlocks(userId, date, client),
     capabilities: { conversation: getCapabilities().llm },
     scenarioId: pickScenario(index, profile, level.level, date),
+    telemetryAdvice: await planningAdvice(userId, profile.timezone, now, client),
   });
 }
 

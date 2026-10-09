@@ -25,6 +25,27 @@ export const learningEventSchema = z.discriminatedUnion("type", [
   event("session_resumed", lifecycle),
   event("block_started", lifecycle),
   event(
+    "skill_estimate_changed",
+    z.strictObject({
+      skill: z.enum(SKILLS),
+      before: z.enum(["A0", "A1", "A2", "B1", "B2", "C1", "C2"]),
+      after: z.enum(["A0", "A1", "A2", "B1", "B2", "C1", "C2"]),
+      thetaBefore: z.number().min(0).max(6),
+      thetaAfter: z.number().min(0).max(6),
+      reason: z.enum(["calibration", "collecting", "strengthening", "promoted", "demoted"]),
+      evidenceCount: z.number().int().nonnegative(),
+      evidenceDays: z.number().int().nonnegative(),
+      method: z.enum([
+        "objective",
+        "ai_assessment",
+        "perception",
+        "self_assessment",
+        "self_report",
+        "not_assessed",
+      ]),
+    }),
+  ),
+  event(
     "block_completed",
     z.strictObject({ blockIndex: block, expectedSeconds: z.number().int().nonnegative() }),
   ),

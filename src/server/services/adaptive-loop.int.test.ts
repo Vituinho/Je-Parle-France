@@ -131,9 +131,15 @@ describe.skipIf(!hasTestDatabase)("adaptive learning loop", () => {
     expect(evolved.skills.listening.theta).toBeGreaterThan(initial.skills.listening.theta);
     expect(evolved.skills.speaking.theta).toBe(initial.skills.speaking.theta);
     expect(evolved.skills.reading.theta).toBe(initial.skills.reading.theta);
+    const estimateEvents = await db.studyEvent.findMany({
+      where: { userId: user.id, type: "skill_estimate_changed" },
+    });
     expect(
-      await db.studyEvent.count({ where: { userId: user.id, type: "skill_estimate_changed" } }),
-    ).toBe(1);
+      estimateEvents.filter((e) => {
+        const p = e.payload as { before: string; after: string };
+        return p.before !== p.after;
+      }),
+    ).toHaveLength(1);
     expect(
       await db.memoryTrace.count({
         where: { userId: user.id, dimension: "listening", reps: { gt: 2 } },

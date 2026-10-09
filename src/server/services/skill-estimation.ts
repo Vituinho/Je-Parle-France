@@ -11,6 +11,7 @@ import {
   type SkillEvidence,
 } from "@/lib/learning/skill-estimation/estimate";
 import type { Skill } from "@/lib/learning/skills";
+import { recordLearningEvent } from "./learning-events";
 
 /** Serialize learner-state updates, including practice and placement recalibration. */
 export async function lockLearner(tx: Prisma.TransactionClient, userId: string) {
@@ -113,21 +114,26 @@ export async function recordSkillEvidence(
         lastEvidenceAt: measured[0]?.occurredAt ?? row.lastEvidenceAt,
       },
     });
-    if (estimate.band !== previous.band)
-      await tx.studyEvent.create({
-        data: {
-          userId,
+    if (estimate.band !== previous.band || Math.abs(estimate.mean - previous.mean) >= 0.001)
+      await recordLearningEvent(
+        tx,
+        userId,
+        {
           type: "skill_estimate_changed",
           payload: {
             skill,
             before: previous.band,
             after: estimate.band,
+            thetaBefore: previous.mean,
+            thetaAfter: estimate.mean,
+            method,
             reason: estimate.reason,
             evidenceCount: estimate.evidenceCount,
             evidenceDays: estimate.evidenceDays,
           },
         },
-      });
+        { now },
+      );
   }
 }
 

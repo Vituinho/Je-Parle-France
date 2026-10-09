@@ -10,6 +10,7 @@ import { activitySeed, submitActivity } from "./practice";
 import { getLearnerLevel } from "./learner";
 import { calibrateSkill, lockLearner, recordSkillEvidence } from "./skill-estimation";
 import { exportUserData, deletePrivateData } from "./account";
+import { learningEventSchema } from "@/lib/learning/telemetry/events";
 const START = new Date("2026-10-01T12:00:00Z");
 async function learner() {
   const user = await createTestUser();
@@ -157,9 +158,15 @@ describe.skipIf(!hasTestDatabase)("continuous skill persistence", () => {
       evidenceCount: 0,
     });
     expect(await db.skillEvidence.count({ where: { userId: user.id } })).toBe(24);
-    expect(
-      await db.studyEvent.count({ where: { userId: user.id, type: "skill_estimate_changed" } }),
-    ).toBe(1);
+    const events = await db.studyEvent.findMany({
+      where: { userId: user.id, type: "skill_estimate_changed" },
+    });
+    const changes = events
+      .map((e) => learningEventSchema.parse({ type: e.type, payload: e.payload }))
+      .filter((e) => e.type === "skill_estimate_changed");
+    expect(changes.length).toBeGreaterThan(1);
+    expect(changes.filter((e) => e.payload.before !== e.payload.after)).toHaveLength(1);
+    expect(changes.every((e) => e.payload.thetaAfter > e.payload.thetaBefore)).toBe(true);
   });
   it("deleting speech assessments also removes derived speech evidence, and account deletion cascades", async () => {
     const user = await learner();
