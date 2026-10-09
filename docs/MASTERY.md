@@ -1,5 +1,14 @@
 # Mastery model
 
+## Skill estimates and concept memory
+
+Concept mastery remains FSRS evidence per dimension; course completion never becomes proficiency.
+Continuous skill estimates are separate, conservative posteriors updated in the same transaction
+as practice memory. Comprehension informs its own skill; fragments carry less quality, and hints
+reduce confidence. Self-report and simulated speech cannot raise measured production estimates.
+Only important, deterministic, known-concept writing issues feed memory; semantic AI judgments
+alone do not create concept errors. See `SKILL-ESTIMATION.md` and `AI.md`.
+
 Code: `src/lib/learning/memory/memory.ts` · ADR-002 in `ARCHITECTURE.md`.
 
 Completing a lesson is **not** learning it. Knowledge is tracked per **concept × dimension**:

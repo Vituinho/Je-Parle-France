@@ -1,5 +1,12 @@
 # Pedagogy
 
+Continuous estimation requires varied tasks across days near the next CEFR band, with explicit
+confidence and quality gates. One success or failure never promotes or demotes. The dashboard
+explains stable estimates and uncertainty; completion percentages describe course progress only.
+Semantic writing prioritizes meaning and task completion, selects at most three important issues,
+and does not turn advanced experimentation into automatic mastery penalties. See
+`SKILL-ESTIMATION.md` for the implemented rules.
+
 This document describes how Je Parle Français teaches. Engineering decisions (mastery model,
 planner, graders) implement these principles; when the two disagree, fix one of them.
 

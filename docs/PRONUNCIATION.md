@@ -1,5 +1,11 @@
 # Pronunciation
 
+Continuous production estimates accept only learner-owned, persisted, non-simulated speech
+assessments. Reusing the same assessment cannot create fresh skill evidence. Minimal pairs feed
+listening; scripted readings do not establish broad speaking ability. A perception placement score
+is labelled separately and never becomes a production prior. Deleting private speech assessments
+also deletes derived skill evidence. See `SKILL-ESTIMATION.md` for stability and confidence gates.
+
 ## Approach
 
 Perception before production. Research on second-language phonology (e.g. high-variability

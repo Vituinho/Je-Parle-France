@@ -1,5 +1,11 @@
 # Placement
 
+Completed placement establishes a retained per-skill calibration for continuous estimation.
+Ongoing practice updates latent estimates with a separate stable-band gate. Retakes recalibrate
+only reported skills and preserve historical evidence, which is not counted again in the new
+posterior. Pronunciation perception remains labelled as perception; production requires real
+provider assessments. See `SKILL-ESTIMATION.md`.
+
 ## Reviewed open-writing tasks
 
 The existing A2 weekend narrative and B1 colleague message have explicit version-1 rubrics whose

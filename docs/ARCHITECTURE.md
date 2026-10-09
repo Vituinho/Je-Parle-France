@@ -30,6 +30,12 @@ Dependency direction: `app → server → lib`, `components → lib`. `lib/learn
 
 ## Key decisions
 
+Continuous skill estimation lives in `lib/learning/skill-estimation`, reusing placement likelihoods.
+The server service persists bounded evidence metadata and stable display bands. Practice updates
+memory, attempts and skill estimates atomically under a learner row lock; placement retakes preserve
+the ledger and establish a new calibration. Dashboard readers distinguish objective, perception,
+AI and unmeasured estimates. See `SKILL-ESTIMATION.md` for gates and limitations.
+
 ### ADR-001 — Content is versioned data in the repository
 
 **Decision.** Course content (levels, modules, units, lessons, activities, concepts, vocabulary,

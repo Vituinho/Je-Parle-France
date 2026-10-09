@@ -1,5 +1,27 @@
 # Continuous skill estimation
 
+## Application integration
+
+`SkillEvidence` stores metadata only: no answer text or audio. Practice saves evidence, FSRS,
+review logs and the activity attempt in one transaction, serialized per learner. A unique
+learner/skill/key prevents repeat submissions from counting twice. The estimator reads at most
+500 observations since the retained calibration; older rows remain available for export/history.
+Placement retakes reset the calibration and display gate, preserving previous evidence.
+
+Comprehension tasks inform their own skill. Grammar and vocabulary fragments have reduced quality;
+constrained writing is weak evidence. Minimal pairs inform listening, never pronunciation production.
+Speaking/pronunciation require a persisted, learner-owned, non-simulated speech assessment.
+Scripted speech does not satisfy broad speaking promotion. Reviewed semantic writing carries AI
+confidence/quality. Tutor and authentic sources are supported by the engine but are not connected
+to ongoing estimation yet.
+
+The existing Hoje and Progresso pages show stable bands, confidence and explanations. Unmeasured
+production says “a confirmar”; perception is labelled separately. Practice confidence is at most
+medium, and evidence older than 90 days lowers displayed confidence without demoting a band.
+The overall level uses stable receptive/knowledge bands. Exam readiness excludes AI-only and
+unmeasured estimates. Account export includes evidence; deleting speech assessments removes their
+derived evidence and resets affected practice estimates to their retained calibration.
+
 ## Statistical engine
 
 `src/lib/learning/skill-estimation/estimate.ts` is pure TypeScript. It reuses the placement

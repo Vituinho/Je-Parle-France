@@ -3,6 +3,7 @@ import { getContent } from "@/lib/content";
 import { SKILLS } from "@/lib/learning/skills";
 import { experiencePrior, type OnboardingInput } from "@/lib/learning/onboarding";
 import { db } from "@/server/db";
+import { levelIndex, readTheta } from "@/lib/learning/cefr";
 
 /**
  * Saves the onboarding answers, seeds self-reported skill estimates (marked as
@@ -42,6 +43,11 @@ export async function completeOnboarding(userId: string, input: OnboardingInput)
           source: "self_report",
           assessed: false,
           method: "self_report",
+          calibrationTheta: prior.mean,
+          calibrationSd: prior.sd,
+          calibratedAt: profile.onboardedAt,
+          calibrationMethod: "self_report",
+          displayBand: levelIndex(readTheta(prior.mean).level),
         },
         // Never overwrite a real assessment with a self-report.
         update: {},

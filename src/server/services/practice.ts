@@ -22,6 +22,11 @@ import { localDate } from "@/lib/learning/time";
 import { db } from "@/server/db";
 import { loadTraces, saveReviewLogs, saveTraces, traceKey } from "@/server/repositories/memory";
 import { resolveSpeechResponse, SpeechEvidenceError } from "./speech-evidence";
+import { activityEvidence } from "@/lib/learning/skill-estimation/activity-evidence";
+import { lockLearner, recordSkillEvidence } from "./skill-estimation";
+import { evaluateWriting } from "./writing";
+import type { WritingAssessment } from "@/lib/learning/writing/assessment";
+import { compareLevels } from "@/lib/learning/cefr";
 
 export class PracticeError extends Error {}
 
@@ -136,8 +141,24 @@ export async function submitActivity(params: {
   const seed = activitySeed(userId);
   const response = await resolveSpeech(userId, params.response, activity);
   let grade;
+  let writing: WritingAssessment | undefined;
   try {
-    grade = gradeActivity(activity, toAuthoredResponse(activity, response, seed));
+    if (activity.type === "open_writing") {
+      if (response.kind !== "text") throw new GradingError("Expected text.");
+      writing = await evaluateWriting(userId, activity, response.text);
+      if (writing.score === null) throw new PracticeError(writing.limitations.join(" "));
+      grade = {
+        score: writing.score,
+        correct: writing.score >= 0.8,
+        verdict:
+          writing.score >= 0.8
+            ? ("correct" as const)
+            : writing.score >= 0.5
+              ? ("almost" as const)
+              : ("wrong" as const),
+        note: { pt: writing.feedbackPt },
+      };
+    } else grade = gradeActivity(activity, toAuthoredResponse(activity, response, seed));
   } catch (error) {
     if (error instanceof GradingError)
       throw new PracticeError("Resposta inválida para esta atividade.");
@@ -145,81 +166,119 @@ export async function submitActivity(params: {
   }
   const feedback = toClientFeedback(activity, grade, seed);
 
-  const conceptIds = [...new Set(activity.targets.map((target) => target.concept))];
-  const existing = await loadTraces(db, userId, conceptIds);
-  const byKey = new Map(
-    existing.map((trace) => [traceKey(trace.conceptId, trace.dimension), trace]),
-  );
-  const source: TraceSource =
-    context === "review" ? "review" : context === "lab" ? "practice" : "lesson";
-
-  const updated: MemoryTraceState[] = [];
-  const logs: (ReviewLogRecord & { activityId: string })[] = [];
-  const changes: MasteryChange[] = [];
-  for (const target of activity.targets) {
-    const key = traceKey(target.concept, target.dimension);
-    const before = byKey.get(key) ?? null;
-    const { trace, log } = applyReview({
-      trace: before,
-      conceptId: target.concept,
-      dimension: target.dimension,
-      outcome: {
-        score: grade.score,
-        correct: grade.correct,
-        verdict: grade.verdict,
-        selfRated: grade.selfRated,
+  const content = getContent();
+  const lessonId = params.lessonId ?? content.activities.get(activity.id)?.lessonId;
+  const level =
+    activity.type === "open_writing"
+      ? activity.rubric?.expectedLevel
+      : ((lessonId ? content.lessons.get(lessonId)?.unit.level : undefined) ??
+        activity.targets
+          .map((t) => content.concepts.get(t.concept)?.level)
+          .filter((l): l is NonNullable<typeof l> => !!l)
+          .sort(compareLevels)
+          .at(-1));
+  const evidence = level
+    ? activityEvidence({
+        activity,
+        grade,
+        response,
+        now,
+        level,
+        context,
         hinted: params.hinted,
-      },
-      weight: target.weight,
-      now,
-      source,
-    });
-    byKey.set(key, trace);
-    updated.push(trace);
-    if (log) logs.push({ ...log, activityId: activity.id });
-    const beforeState = masteryOf(before, now);
-    const afterState = masteryOf(trace, now);
-    if (beforeState !== afterState) {
-      changes.push({
-        conceptId: target.concept,
-        dimension: target.dimension,
-        before: beforeState,
-        after: afterState,
-      });
-    }
-  }
-
+        concepts: content.concepts,
+        speechProof:
+          params.response.kind === "speech" ? params.response.speechAttemptId : undefined,
+        writing,
+      })
+    : [];
+  const targets = writing
+    ? [
+        ...new Set(
+          writing.issues.flatMap((i) => (i.deterministic && i.confidence >= 0.9 ? i.concepts : [])),
+        ),
+      ].map((concept) => ({ concept, dimension: "writing" as const, weight: 1 }))
+    : activity.targets;
   const seconds = Math.min(Math.round((params.durationMs ?? 0) / 1000), MAX_CREDIT_SECONDS);
   const buckets = timeBuckets(activity, seconds);
   const date = localDate(now, await timezoneOf(userId));
+  return db.$transaction(
+    async (tx) => {
+      await lockLearner(tx, userId);
+      const conceptIds = [...new Set(targets.map((target) => target.concept))];
+      const existing = await loadTraces(tx, userId, conceptIds);
+      const byKey = new Map(
+        existing.map((trace) => [traceKey(trace.conceptId, trace.dimension), trace]),
+      );
+      const source: TraceSource =
+        context === "review" ? "review" : context === "lab" ? "practice" : "lesson";
 
-  await db.$transaction(async (tx) => {
-    await saveTraces(tx, userId, updated);
-    await saveReviewLogs(tx, userId, logs);
-    await tx.activityAttempt.create({
-      data: {
-        userId,
-        activityId: activity.id,
-        lessonId: params.lessonId ?? null,
-        sessionId: params.sessionId ?? null,
-        context,
-        type: activity.type,
-        score: grade.score,
-        correct: grade.correct,
-        durationMs: params.durationMs ?? null,
-        response: params.response as unknown as Prisma.InputJsonValue,
-      },
-    });
-    await bumpDailyActivity(tx, userId, date, {
-      seconds,
-      activities: 1,
-      reviews: context === "review" ? 1 : 0,
-      listening: buckets.listening,
-      speaking: buckets.speaking,
-    });
-  });
+      const updated: MemoryTraceState[] = [];
+      const logs: (ReviewLogRecord & { activityId: string })[] = [];
+      const changes: MasteryChange[] = [];
+      for (const target of targets) {
+        const key = traceKey(target.concept, target.dimension);
+        const before = byKey.get(key) ?? null;
+        const { trace, log } = applyReview({
+          trace: before,
+          conceptId: target.concept,
+          dimension: target.dimension,
+          outcome: {
+            score: writing ? 0 : grade.score,
+            correct: writing ? false : grade.correct,
+            verdict: writing ? "wrong" : grade.verdict,
+            selfRated: grade.selfRated,
+            hinted: params.hinted,
+          },
+          weight: target.weight,
+          now,
+          source,
+        });
+        byKey.set(key, trace);
+        updated.push(trace);
+        if (log) logs.push({ ...log, activityId: activity.id });
+        const beforeState = masteryOf(before, now);
+        const afterState = masteryOf(trace, now);
+        if (beforeState !== afterState) {
+          changes.push({
+            conceptId: target.concept,
+            dimension: target.dimension,
+            before: beforeState,
+            after: afterState,
+          });
+        }
+      }
 
-  return { feedback, changes };
+      await saveTraces(tx, userId, updated);
+      await saveReviewLogs(tx, userId, logs);
+      await tx.activityAttempt.create({
+        data: {
+          userId,
+          activityId: activity.id,
+          lessonId: params.lessonId ?? null,
+          sessionId: params.sessionId ?? null,
+          context,
+          type: activity.type,
+          score: grade.score,
+          correct: grade.correct,
+          durationMs: params.durationMs ?? null,
+          response: (writing
+            ? { answer: params.response, writingAssessment: writing }
+            : params.response) as unknown as Prisma.InputJsonValue,
+        },
+      });
+      await bumpDailyActivity(tx, userId, date, {
+        seconds,
+        activities: 1,
+        reviews: context === "review" ? 1 : 0,
+        listening: buckets.listening,
+        speaking: buckets.speaking,
+      });
+      await recordSkillEvidence(tx, userId, evidence, now);
+      return { feedback, changes };
+    },
+    { timeout: 20_000 },
+  );
 }
 
 /** A teaching card was read: concepts become "introduced" on every tracked dimension. */

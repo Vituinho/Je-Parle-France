@@ -142,12 +142,16 @@ export interface Readiness {
  * are shown as such, and self-reported or untested skills are "unmeasured".
  */
 export function readiness(
-  skill: { theta: number; sd: number; assessed: boolean; method: string },
+  skill: { theta: number; sd: number; assessed: boolean; method: string; level?: CefrLevel },
   target: CefrLevel,
 ): Readiness {
   if (skill.method === "self_assessment") {
     // The learner's own judgement: shown as such, never as a probability.
-    return { band: "self_assessed", estimate: readTheta(skill.theta).level, probability: null };
+    return {
+      band: "self_assessed",
+      estimate: skill.level ?? readTheta(skill.theta).level,
+      probability: null,
+    };
   }
   if (
     !skill.assessed ||
@@ -160,5 +164,5 @@ export function readiness(
   const threshold = levelIndex(target);
   const probability = 1 - normalCdf((threshold - skill.theta) / Math.max(skill.sd, 0.05));
   const band: ReadinessBand = probability >= 0.6 ? "likely" : probability >= 0.2 ? "close" : "far";
-  return { band, estimate: readTheta(skill.theta).level, probability };
+  return { band, estimate: skill.level ?? readTheta(skill.theta).level, probability };
 }

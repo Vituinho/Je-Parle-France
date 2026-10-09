@@ -6,6 +6,8 @@ import { AchievementList } from "@/components/progress/achievement-list";
 import { ActivityChart } from "@/components/progress/activity-chart";
 import { MasteryBars } from "@/components/progress/mastery-bars";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SkillEstimates } from "@/components/progress/skill-estimates";
+import { getLearnerLevel } from "@/server/services/learner";
 import { getProgressReport } from "@/server/services/progress";
 import { requireLearner } from "@/server/session";
 
@@ -14,6 +16,7 @@ export const metadata: Metadata = { title: "Progresso" };
 async function Progress() {
   const { user, profile } = await requireLearner();
   const report = await getProgressReport(user.id, profile);
+  const level = await getLearnerLevel(user.id);
   const earned = report.achievements.filter((achievement) => achievement.earned).length;
   const stats = [
     { label: "dias de estudo", value: report.totals.activeDays },
@@ -44,6 +47,7 @@ async function Progress() {
         </p>
       </header>
 
+      <SkillEstimates skills={level.skills} />
       <section aria-labelledby="totals">
         <h2 id="totals" className="sr-only">
           Números gerais

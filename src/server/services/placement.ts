@@ -38,6 +38,7 @@ import { resolveSpeechResponse, SpeechEvidenceError } from "./speech-evidence";
 import { evaluateWriting } from "./writing";
 import { LLMUnavailableError } from "@/lib/ai/llm/types";
 import { QuotaError } from "@/server/quota";
+import { calibrateSkill, lockLearner } from "./skill-estimation";
 
 export class PlacementError extends Error {}
 
@@ -386,71 +387,98 @@ export async function completePlacement(
     ];
   });
 
-  await db.$transaction(async (tx) => {
-    await tx.placementAttempt.update({
-      where: { id: attemptId },
-      data: {
-        status: "completed",
-        completedAt: now,
-        currentItemId: null,
-        report: report as unknown as Prisma.InputJsonValue,
-      },
-    });
-    for (const result of report.skills) {
-      if (partial && !retaken.has(result.skill)) continue;
-      const assessed = result.method !== "not_assessed";
-      await tx.skillEstimate.upsert({
-        where: { userId_skill: { userId, skill: result.skill } },
-        create: {
-          userId,
-          skill: result.skill,
-          theta: result.theta,
-          sd: result.sd,
-          source: "placement",
-          assessed,
-          method: result.method,
-        },
-        update: {
-          theta: result.theta,
-          sd: result.sd,
-          source: "placement",
-          assessed,
-          method: result.method,
-        },
-      });
-    }
-    if (!partial) {
-      await tx.learnerProfile.update({
-        where: { userId },
+  await db.$transaction(
+    async (tx) => {
+      await lockLearner(tx, userId);
+      await tx.placementAttempt.update({
+        where: { id: attemptId },
         data: {
-          placementStatus: "completed",
-          startLessonId: report.recommendation.lessonId ?? index.paths.core[0]?.lesson.id ?? null,
+          status: "completed",
+          completedAt: now,
+          currentItemId: null,
+          report: report as unknown as Prisma.InputJsonValue,
         },
       });
-    }
-    await saveTraces(
-      tx,
-      userId,
-      gapTraces.map((entry) => entry.trace),
-    );
-    await saveReviewLogs(
-      tx,
-      userId,
-      gapTraces.flatMap((entry) => (entry.log ? [entry.log] : [])),
-    );
-    await tx.studyEvent.create({
-      data: {
+      for (const result of report.skills) {
+        if (partial && !retaken.has(result.skill)) continue;
+        const assessed = result.method !== "not_assessed";
+        await calibrateSkill(
+          tx,
+          userId,
+          result.skill,
+          { mean: result.theta, sd: result.sd, at: now, method: result.method },
+          assessed,
+        );
+      }
+      // Keep placement metadata for audit/export without counting it twice after calibration.
+      for (const response of attempt.responses) {
+        const item = index.placementItems.get(response.itemId);
+        const bankItem = bank.get(response.itemId);
+        if (!item || !bankItem || !response.scored || item.activity.type === "self_assess")
+          continue;
+        const writing = (
+          response.answer as unknown as { writingAssessment?: WritingAssessment } | null
+        )?.writingAssessment;
+        await tx.skillEvidence.createMany({
+          data: [
+            {
+              userId,
+              skill: item.skill,
+              key: `placement:${attemptId}:${item.id}`,
+              taskId: item.id,
+              difficulty: bankItem.params.difficulty,
+              score: response.score,
+              confidence: writing?.confidence ?? 1,
+              quality: writing?.quality ?? 1,
+              guess: bankItem.params.guess,
+              occurredAt: response.createdAt,
+              concepts: item.concepts,
+              source: "placement",
+              assessment: writing
+                ? "ai"
+                : item.activity.type === "speak"
+                  ? "provider"
+                  : "deterministic",
+              substantial: !bankItem.perception,
+            },
+          ],
+          skipDuplicates: true,
+        });
+      }
+      if (!partial) {
+        await tx.learnerProfile.update({
+          where: { userId },
+          data: {
+            placementStatus: "completed",
+            startLessonId: report.recommendation.lessonId ?? index.paths.core[0]?.lesson.id ?? null,
+          },
+        });
+      }
+      await saveTraces(
+        tx,
         userId,
-        type: "placement_completed",
-        payload: {
-          mode: state.plan.mode,
-          overall: report.overall.short,
-          items: responses.length,
-          gaps: gapConcepts.length,
+        gapTraces.map((entry) => entry.trace),
+      );
+      await saveReviewLogs(
+        tx,
+        userId,
+        gapTraces.flatMap((entry) => (entry.log ? [entry.log] : [])),
+      );
+      await tx.studyEvent.create({
+        data: {
+          userId,
+          type: "placement_completed",
+          payload: {
+            mode: state.plan.mode,
+            overall: report.overall.short,
+            items: responses.length,
+            gaps: gapConcepts.length,
+          },
         },
-      },
-    });
-  });
+      });
+    },
+    { timeout: 20_000 },
+  );
   return report;
 }
 

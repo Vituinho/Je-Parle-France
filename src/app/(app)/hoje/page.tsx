@@ -7,6 +7,7 @@ import { AuthenticCard } from "@/components/authentic/authentic-card";
 import { LineProgress } from "@/components/line-progress";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SkillEstimates } from "@/components/progress/skill-estimates";
 import { getContent } from "@/lib/content";
 import { dailyAuthentic, regionsFor } from "@/lib/learning/authentic";
 import { SKILL_LABELS, SKILLS } from "@/lib/learning/skills";
@@ -162,6 +163,7 @@ function ProgressPanel({ data, examGoal }: { data: Dashboard; examGoal: boolean 
       <p className="text-muted-foreground mt-4 text-sm">
         Medido pelo que você domina em cada habilidade, não pelas lições que já viu.
       </p>
+      <SkillEstimates skills={data.level.skills} />
       <p className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm font-medium">
         <Link href="/progresso" className="text-primary underline-offset-4 hover:underline">
           Ver seu progresso

@@ -183,6 +183,7 @@ model User {
   accounts          Account[]
   profile           LearnerProfile?
   skillEstimates    SkillEstimate[]
+  skillEvidence     SkillEvidence[]
   placementAttempts PlacementAttempt[]
   memoryTraces      MemoryTrace[]
   reviewLogs        ReviewLog[]
@@ -279,19 +280,54 @@ model LearnerProfile {
 
 /// Per-skill ability on the continuous CEFR scale (A0 = 0…1, A1 = 1…2, …).
 model SkillEstimate {
-  userId    String
-  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  skill     Skill
-  theta     Float
+  userId            String
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skill             Skill
+  theta             Float
   /// Posterior standard deviation — lower is more certain.
-  sd        Float
-  source    EstimateSource
-  assessed  Boolean        @default(true)
-  method    EstimateMethod @default(objective)
-  updatedAt DateTime       @updatedAt
+  sd                Float
+  source            EstimateSource
+  assessed          Boolean         @default(true)
+  method            EstimateMethod  @default(objective)
+  updatedAt         DateTime        @updatedAt
+  calibrationTheta  Float?
+  calibrationSd     Float?
+  calibratedAt      DateTime?
+  calibrationMethod EstimateMethod?
+  displayBand       Int?
+  evidenceCount     Int             @default(0)
+  evidenceDays      Int             @default(0)
+  distinctTasks     Int             @default(0)
+  effectiveWeight   Float           @default(0)
+  reason            String          @default("calibration")
+  lastEvidenceAt    DateTime?
 
   @@id([userId, skill])
   @@map("skill_estimates")
+}
+
+/// Metadata only; learner text/audio remains in its existing authorized attempt record.
+model SkillEvidence {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skill       Skill
+  key         String
+  taskId      String
+  difficulty  Float
+  score       Float
+  confidence  Float
+  quality     Float
+  guess       Float
+  occurredAt  DateTime
+  concepts    String[]
+  source      String
+  assessment  String
+  substantial Boolean
+
+  @@unique([userId, skill, key])
+  @@index([userId, skill, occurredAt])
+  @@map("skill_evidence")
 }
 
 // ─── Placement ──────────────────────────────────────────────────────────────

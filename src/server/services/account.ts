@@ -1,6 +1,8 @@
 import "server-only";
 import type { PreferencesInput } from "@/lib/learning/preferences";
 import { db } from "@/server/db";
+import { lockLearner } from "./skill-estimation";
+import { levelIndex, readTheta } from "@/lib/learning/cefr";
 
 /**
  * Account settings and the learner's LGPD rights: access/portability (export)
@@ -66,6 +68,7 @@ export async function exportUserData(userId: string) {
     accounts,
     profile,
     skillEstimates,
+    skillEvidence,
     placementAttempts,
     memoryTraces,
     reviewLogs,
@@ -94,6 +97,7 @@ export async function exportUserData(userId: string) {
     db.account.findMany({ where, select: { providerId: true, createdAt: true } }),
     db.learnerProfile.findUnique({ where }),
     db.skillEstimate.findMany({ where }),
+    db.skillEvidence.findMany({ where, orderBy: { occurredAt: "asc" } }),
     db.placementAttempt.findMany({
       where,
       include: { responses: true },
@@ -125,6 +129,7 @@ export async function exportUserData(userId: string) {
     accounts,
     profile,
     skillEstimates,
+    skillEvidence,
     placementAttempts,
     memoryTraces,
     reviewLogs,
@@ -154,6 +159,7 @@ export async function deletePrivateData(userId: string, selection: PrivateDataSe
   const personalTraces = { userId, conceptId: { startsWith: "personal:" } };
   const counts = { conversations: 0, corrections: 0, speechAttempts: 0 };
   await db.$transaction(async (tx) => {
+    await lockLearner(tx, userId);
     if (selection.conversations) {
       counts.conversations = (await tx.conversation.deleteMany({ where: { userId } })).count;
       // Corrections kept for review no longer point to a conversation.
@@ -168,6 +174,31 @@ export async function deletePrivateData(userId: string, selection: PrivateDataSe
       await tx.reviewLog.deleteMany({ where: personalTraces });
     }
     if (selection.speech) {
+      await tx.skillEvidence.deleteMany({ where: { userId, source: "speech" } });
+      const estimates = await tx.skillEstimate.findMany({
+        where: { userId, skill: { in: ["speaking", "pronunciation"] }, source: "practice" },
+      });
+      for (const estimate of estimates) {
+        const theta = estimate.calibrationTheta ?? estimate.theta;
+        const method = estimate.calibrationMethod ?? "not_assessed";
+        await tx.skillEstimate.update({
+          where: { userId_skill: { userId, skill: estimate.skill } },
+          data: {
+            theta,
+            sd: estimate.calibrationSd ?? 1,
+            method,
+            assessed: ["objective", "perception", "ai_assessment"].includes(method),
+            source: method === "self_report" ? "self_report" : "placement",
+            displayBand: levelIndex(readTheta(theta).level),
+            reason: "calibration",
+            evidenceCount: 0,
+            evidenceDays: 0,
+            distinctTasks: 0,
+            effectiveWeight: 0,
+            lastEvidenceAt: null,
+          },
+        });
+      }
       counts.speechAttempts = (await tx.speechAttempt.deleteMany({ where: { userId } })).count;
     }
   });
