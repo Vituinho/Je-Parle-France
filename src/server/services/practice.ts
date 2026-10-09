@@ -127,6 +127,8 @@ export async function submitActivity(params: {
   hinted?: boolean;
   durationMs?: number;
   now?: Date;
+  /** Server-owned choice for additional skill practice; no FSRS mutation or review log. */
+  scheduleMemory?: boolean;
 }): Promise<SubmitResult> {
   const { userId, activity, context } = params;
   if (params.sessionId) {
@@ -217,6 +219,7 @@ export async function submitActivity(params: {
       const logs: (ReviewLogRecord & { activityId: string })[] = [];
       const changes: MasteryChange[] = [];
       for (const target of targets) {
+        if (params.scheduleMemory === false) continue;
         const key = traceKey(target.concept, target.dimension);
         const before = byKey.get(key) ?? null;
         const { trace, log } = applyReview({

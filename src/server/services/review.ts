@@ -8,6 +8,7 @@ import { reviewCandidates } from "@/lib/learning/planner/planner";
 import { db } from "@/server/db";
 import { loadTraces } from "@/server/repositories/memory";
 import { activitySeed, PracticeError, submitActivity, type PracticeContext } from "./practice";
+import type { SessionPlan } from "@/lib/learning/planner/planner";
 
 export interface PreparedReviewItem extends ReviewItem {
   key: string;
@@ -84,6 +85,28 @@ export async function submitReview(params: {
   hinted?: boolean;
   durationMs?: number;
 }) {
+  let scheduleMemory = true;
+  if (params.sessionId) {
+    const session = await db.dailySession.findFirst({
+      where: { id: params.sessionId, userId: params.userId },
+    });
+    const block = (session?.plan as unknown as SessionPlan | undefined)?.blocks[
+      session?.cursor ?? 0
+    ];
+    if (
+      !session ||
+      !block ||
+      !(block.kind === "review" || block.kind === "focus") ||
+      !block.items.some(
+        (item) =>
+          item.conceptId === params.item.conceptId &&
+          item.dimension === params.item.dimension &&
+          item.variant === params.item.variant,
+      )
+    )
+      throw new PracticeError("Este item não pertence à etapa atual.");
+    scheduleMemory = block.kind === "review";
+  }
   const index = getContent();
   const personal = await personalItems(params.userId, [params.item]);
   const activity = buildReviewActivity({
@@ -102,5 +125,6 @@ export async function submitReview(params: {
     sessionId: params.sessionId,
     hinted: params.hinted,
     durationMs: params.durationMs,
+    scheduleMemory,
   });
 }

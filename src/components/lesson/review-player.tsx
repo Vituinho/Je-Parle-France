@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import type { SupportMode } from "@/lib/learning/language-support";
 import type { SubmitResult } from "@/server/services/practice";
 import type { PreparedReviewItem } from "@/server/services/review";
+import type { ActivityResponse } from "@/lib/learning/grading/grade";
+import type { ReviewCheckResult } from "@/app/(focus)/revisar/actions";
 import { PracticeStep } from "./practice-step";
 
 export interface ReviewSummary {
@@ -30,6 +32,7 @@ export function ReviewPlayer({
   sessionId,
   lab,
   onFinished,
+  check,
 }: {
   items: PreparedReviewItem[];
   date: string;
@@ -40,6 +43,12 @@ export function ReviewPlayer({
   /** Pronunciation-lab drill (practice outside the review schedule). */
   lab?: boolean;
   onFinished?: (summary: ReviewSummary) => void;
+  check?: (input: {
+    activityId: string;
+    response: ActivityResponse;
+    hinted?: boolean;
+    durationMs?: number;
+  }) => Promise<ReviewCheckResult>;
 }) {
   const [queue, setQueue] = useState(() => items.map((_, index) => index));
   const [position, setPosition] = useState(0);
@@ -137,17 +146,19 @@ export function ReviewPlayer({
           activity={item.activity}
           support={support}
           onCheck={({ response, hinted, durationMs }) =>
-            checkReviewAction({
-              conceptId: item.conceptId,
-              dimension: item.dimension,
-              variant: item.variant,
-              lab,
-              date,
-              response,
-              hinted,
-              durationMs,
-              sessionId,
-            })
+            check
+              ? check({ activityId: item.activity.id, response, hinted, durationMs })
+              : checkReviewAction({
+                  conceptId: item.conceptId,
+                  dimension: item.dimension,
+                  variant: item.variant,
+                  lab,
+                  date,
+                  response,
+                  hinted,
+                  durationMs,
+                  sessionId,
+                })
           }
           onContinue={advance}
         />

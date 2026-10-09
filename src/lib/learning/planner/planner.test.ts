@@ -5,12 +5,24 @@ import {
   blockKinds,
   planSession,
   reviewCandidates,
+  dailyNewConceptLimit,
   type PlannerInput,
   type UpcomingLesson,
 } from "./planner";
 
 const NOW = new Date("2026-10-10T12:00:00Z");
 const DAY = 86_400_000;
+
+const intensivePractice = ["listening", "speaking", "writing", "pronunciation", "reading"].flatMap(
+  (skill) =>
+    Array.from({ length: 10 }, (_, n) => ({
+      activityId: `${skill}-${n}`,
+      skill: skill as import("./planner").FocusSkill,
+      seconds: 150,
+      concepts: ["lex:w50"],
+      level: 1,
+    })),
+);
 
 function practised(
   conceptId: string,
@@ -279,4 +291,171 @@ describe("daily session planner", () => {
     );
     expect(next.blocks.find((b) => b.kind === "focus")).not.toMatchObject({ skill: "listening" });
   });
+});
+
+describe("intensive study safeguards", () => {
+  it.each([5, 15, 30, 45, 60, 90, 120, 180, 240])(
+    "keeps %i-minute plans bounded and deterministic",
+    (minutes) => {
+      const state = input({
+        dailyMinutes: minutes,
+        studyPace: "accelerated",
+        practice: intensivePractice,
+      });
+      const plan = planSession(state);
+      expect(plan).toEqual(planSession(state));
+      expect(plan.seconds).toBeLessThanOrEqual(minutes * 60);
+      if (minutes === 5) expect(plan.blocks.length).toBeLessThanOrEqual(3);
+    },
+  );
+  it("uses several skills, with production and listening, even without providers", () => {
+    const plan = planSession(
+      input({ dailyMinutes: 90, studyPace: "accelerated", practice: intensivePractice }),
+    );
+    const skills = new Set(plan.blocks.flatMap((b) => (b.kind === "focus" ? [b.skill] : [])));
+    expect(skills.has("speaking")).toBe(true);
+    expect(skills.has("writing")).toBe(true);
+    expect(skills.has("listening")).toBe(true);
+    expect(skills.size).toBeGreaterThanOrEqual(4);
+    expect(plan.blocks.some((b) => b.kind === "conversation")).toBe(false);
+    expect(plan.segments!.length).toBeGreaterThan(1);
+    const ids = plan.blocks.flatMap((b) => (b.kind === "focus" ? (b.activityIds ?? []) : []));
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+  it("splits long plans into bounded resumable groups", () => {
+    const plan = planSession(
+      input({ dailyMinutes: 120, studyPace: "immersion", practice: intensivePractice }),
+    );
+    expect(plan.segments!.length).toBeGreaterThanOrEqual(3);
+    expect(plan.segments!.every((s) => s.seconds <= 35 * 60)).toBe(true);
+    expect(
+      plan.segments!.flatMap((s) => Array.from({ length: s.end - s.start }, (_, n) => s.start + n)),
+    ).toEqual(plan.blocks.map((_, n) => n));
+  });
+  it("protects memory with a daily, nonlinear new-material cap and a retention reduction", () => {
+    const sixty = input({ dailyMinutes: 60, studyPace: "accelerated" });
+    const longer = input({ dailyMinutes: 120, studyPace: "immersion" });
+    expect(dailyNewConceptLimit(longer)).toBeLessThan(2 * dailyNewConceptLimit(sixty));
+    const struggled = input({
+      ...longer,
+      traces: Array.from({ length: 10 }, (_, n) => practised("lex:w" + n, "recall", 1, false)),
+    });
+    expect(dailyNewConceptLimit(struggled)).toBeLessThan(dailyNewConceptLimit(longer));
+    const exhausted = planSession(
+      input({ dailyMinutes: 120, newConceptsToday: 30, practice: intensivePractice }),
+    );
+    expect(exhausted.blocks.some((b) => b.kind === "lesson")).toBe(false);
+    expect(exhausted.blocks.some((b) => b.kind === "focus")).toBe(true);
+  });
+  it("stops a micro-lesson before the first teaching card exceeding its cap", () => {
+    const state = input({
+      dailyMinutes: 120,
+      newConceptsToday: 15,
+      upcoming: [
+        {
+          lessonId: "micro",
+          track: "core",
+          minutes: 6,
+          steps: 6,
+          stepIndex: 0,
+          newConcepts: 5,
+          introducedByStep: [[], ["lex:new1"], [], ["lex:new2", "lex:new3"], [], []],
+        },
+      ],
+    });
+    const plan = planSession(state);
+    expect(plan.newConceptIds).toEqual(["lex:new1"]);
+    expect(plan.blocks.find((b) => b.kind === "lesson")).toMatchObject({ maxSteps: 3 });
+  });
+  it("never turns future FSRS cards into due reviews or duplicates due items", () => {
+    const state = input({ dailyMinutes: 120, practice: intensivePractice });
+    const plan = planSession(state);
+    const reviewed = plan.blocks.flatMap((b) => (b.kind === "review" ? b.items : []));
+    expect(
+      reviewed.every((item) =>
+        state.traces.some(
+          (t) =>
+            t.conceptId === item.conceptId &&
+            t.dimension === item.dimension &&
+            t.reps > 0 &&
+            t.due <= NOW,
+        ),
+      ),
+    ).toBe(true);
+    expect(new Set(reviewed.map((i) => i.conceptId + "#" + i.dimension)).size).toBe(
+      reviewed.length,
+    );
+    expect(plan.blocks[0]?.kind).toBe("review");
+  });
+  it("favours measured listening weakness over strong reading without monopolizing time", () => {
+    const state = input({
+      dailyMinutes: 90,
+      practice: intensivePractice,
+      skills: skills({ reading: 3.5, listening: 0.5, speaking: 1, writing: 3 }),
+    });
+    const plan = planSession(state);
+    const extra = plan.blocks.filter((b) => b.kind === "focus" && b.activityIds?.length);
+    expect(extra[0]).toMatchObject({ skill: "listening" });
+    const seconds = (skill: string) =>
+      extra.reduce((sum, b) => sum + (b.kind === "focus" && b.skill === skill ? b.seconds : 0), 0);
+    expect(seconds("listening")).toBeGreaterThan(seconds("reading"));
+    expect(seconds("speaking")).toBeGreaterThan(0);
+    expect(seconds("listening")).toBeLessThan(plan.seconds * 0.5);
+  });
+  it("does not bypass prerequisites or assign tasks above a weak skill's ability", () => {
+    const plan = planSession(
+      input({
+        dailyMinutes: 90,
+        practice: [
+          ...intensivePractice,
+          {
+            activityId: "too-hard",
+            skill: "listening",
+            seconds: 120,
+            concepts: ["lex:w50"],
+            level: 4,
+          },
+        ],
+        upcoming: [
+          {
+            lessonId: "locked",
+            track: "core",
+            minutes: 6,
+            steps: 6,
+            stepIndex: 0,
+            newConcepts: 1,
+            prerequisites: ["lex:not-met"],
+          },
+        ],
+      }),
+    );
+    expect(plan.blocks.some((b) => b.kind === "lesson")).toBe(false);
+    expect(plan.blocks.some((b) => b.kind === "focus" && b.activityIds?.includes("too-hard"))).toBe(
+      false,
+    );
+  });
+});
+
+it("uses authored transformations rather than repeating activities from the planned lesson", () => {
+  const plan = planSession(
+    input({
+      dailyMinutes: 90,
+      practice: intensivePractice,
+      upcoming: [
+        {
+          lessonId: "new",
+          track: "core",
+          minutes: 5,
+          steps: 3,
+          stepIndex: 0,
+          newConcepts: 0,
+          activityIdsByStep: ["listening-0", "speaking-0", "writing-0"],
+        },
+      ],
+    }),
+  );
+  const extraIds = plan.blocks.flatMap((b) => (b.kind === "focus" ? (b.activityIds ?? []) : []));
+  expect(extraIds).not.toContain("listening-0");
+  expect(extraIds).not.toContain("speaking-0");
+  expect(extraIds).not.toContain("writing-0");
 });

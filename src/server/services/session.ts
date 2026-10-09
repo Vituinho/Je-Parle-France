@@ -11,11 +11,14 @@ import {
   type SessionBlock,
   type SessionPlan,
   type UpcomingLesson,
+  type PracticeOpportunity,
 } from "@/lib/learning/planner/planner";
 import { hashString } from "@/lib/learning/random";
 import { db } from "@/server/db";
 import { loadTraces } from "@/server/repositories/memory";
 import { getLearnerLevel, today } from "./learner";
+import { lockLearner } from "./skill-estimation";
+import { localDate } from "@/lib/learning/time";
 
 export class SessionError extends Error {}
 
@@ -68,6 +71,11 @@ export function upcomingLessons(params: {
         ? (progress.get(ref.lesson.id)?.stepIndex ?? 0)
         : 0,
     newConcepts: newConceptsIn(ref, traced),
+    introducedByStep: ref.lesson.steps.map((step) =>
+      step.type === "teach" ? step.introduces : [],
+    ),
+    prerequisites: lessonDependencies(ref),
+    activityIdsByStep: ref.lesson.steps.map((step) => (step.type === "teach" ? null : step.id)),
   });
   const core = index.paths.core;
   const startIndex = Math.max(
@@ -122,16 +130,80 @@ export async function buildPlan(
 ): Promise<SessionPlan> {
   const index = getContent();
   const date = today(profile, now);
-  const [traces, level, progressRows] = await Promise.all([
+  const [traces, level, progressRows, day, otherPlans] = await Promise.all([
     loadTraces(db, userId),
     getLearnerLevel(userId),
     db.lessonProgress.findMany({ where: { userId } }),
+    db.dailyActivity.findUnique({ where: { userId_localDate: { userId, localDate: date } } }),
+    db.dailySession.findMany({ where: { userId, localDate: date, status: { not: "abandoned" } } }),
   ]);
   const progress = new Map(progressRows.map((row) => [row.lessonId, row]));
+  const known = new Set(traces.map((t) => t.conceptId));
+  const introducedToday = new Set(
+    traces
+      .filter((t) => localDate(t.introducedAt, profile.timezone) === date)
+      .map((t) => t.conceptId),
+  );
+  const reserved = new Set(
+    otherPlans
+      .flatMap((s) => (s.plan as unknown as SessionPlan).newConceptIds ?? [])
+      .filter((id) => !known.has(id)),
+  );
+  const tracks = new Set(["core", ...trackOrder(profile.destination)]);
+  const practice: PracticeOpportunity[] = [...index.activities.values()].flatMap((ref) => {
+    const activity = ref.activity;
+    const lesson = index.lessons.get(ref.lessonId);
+    if (
+      !lesson ||
+      !tracks.has(lesson.track) ||
+      activity.type === "teach" ||
+      activity.type === "self_assess"
+    )
+      return [];
+    const skill =
+      activity.type === "listening" || activity.type === "dictation"
+        ? "listening"
+        : activity.type === "speak"
+          ? activity.targets.some((t) => t.dimension === "pronunciation")
+            ? "pronunciation"
+            : "speaking"
+          : activity.type === "minimal_pair"
+            ? "pronunciation"
+            : activity.type === "reading"
+              ? "reading"
+              : ["type", "fill", "order", "error_correction", "open_writing"].includes(
+                    activity.type,
+                  )
+                ? "writing"
+                : null;
+    // Recognition-only tasks do not fill intensive time. Free writing needs a live grader.
+    if (!skill || (activity.type === "open_writing" && !getCapabilities().llm)) return [];
+    return [
+      {
+        activityId: activity.id,
+        skill,
+        seconds:
+          activity.type === "reading" ||
+          activity.type === "listening" ||
+          activity.type === "open_writing"
+            ? 180
+            : activity.type === "speak"
+              ? 120
+              : 75,
+        concepts: [
+          ...new Set([...lessonDependencies(lesson), ...activity.targets.map((t) => t.concept)]),
+        ],
+        level: levelIndex(lesson.unit.level),
+      },
+    ];
+  });
   return planSession({
     now,
     date,
     dailyMinutes: profile.dailyMinutes,
+    studyPace: profile.studyPace,
+    newConceptsToday: Math.max(day?.newConcepts ?? 0, introducedToday.size) + reserved.size,
+    practice,
     traces,
     concept: (id) => {
       const concept = index.concepts.get(id);
@@ -150,34 +222,55 @@ export async function buildPlan(
 
 /** Today's session: reuses an unfinished one, otherwise plans a new one. */
 export async function getTodaySession(userId: string, profile: LearnerProfile, now = new Date()) {
-  const date = today(profile, now);
-  const existing = await db.dailySession.findFirst({
-    where: { userId, localDate: date, status: { in: ["planned", "in_progress", "completed"] } },
-    orderBy: { createdAt: "desc" },
-  });
-  if (existing) return existing;
-  const plan = await buildPlan(userId, profile, now);
-  return db.dailySession.create({
-    data: {
-      userId,
-      localDate: date,
-      plannedMinutes: plan.minutes,
-      plan: plan as unknown as Prisma.InputJsonValue,
+  return db.$transaction(
+    async (tx) => {
+      await lockLearner(tx, userId);
+      const date = today(profile, now);
+      const existing = await tx.dailySession.findFirst({
+        where: { userId, localDate: date, status: { in: ["planned", "in_progress", "completed"] } },
+        orderBy: { createdAt: "desc" },
+      });
+      if (existing) return existing;
+      const plan = await buildPlan(userId, profile, now);
+      return tx.dailySession.create({
+        data: {
+          userId,
+          localDate: date,
+          plannedMinutes: plan.minutes,
+          plan: plan as unknown as Prisma.InputJsonValue,
+        },
+      });
     },
-  });
+    { timeout: 30_000 },
+  );
 }
 
 /** An extra session after today's is done ("praticar mais"). */
 export async function startExtraSession(userId: string, profile: LearnerProfile, now = new Date()) {
-  const plan = await buildPlan(userId, profile, now);
-  return db.dailySession.create({
-    data: {
-      userId,
-      localDate: plan.date,
-      plannedMinutes: plan.minutes,
-      plan: plan as unknown as Prisma.InputJsonValue,
+  return db.$transaction(
+    async (tx) => {
+      await lockLearner(tx, userId);
+      const unfinished = await tx.dailySession.findFirst({
+        where: {
+          userId,
+          localDate: today(profile, now),
+          status: { in: ["planned", "in_progress"] },
+        },
+        orderBy: { createdAt: "desc" },
+      });
+      if (unfinished) return unfinished;
+      const plan = await buildPlan(userId, profile, now);
+      return tx.dailySession.create({
+        data: {
+          userId,
+          localDate: plan.date,
+          plannedMinutes: plan.minutes,
+          plan: plan as unknown as Prisma.InputJsonValue,
+        },
+      });
     },
-  });
+    { timeout: 30_000 },
+  );
 }
 
 export function sessionPlan(session: DailySession): SessionPlan {
@@ -192,39 +285,46 @@ export async function getSession(userId: string, sessionId: string) {
 
 /** Marks block `blockIndex` as done and moves the cursor; completes the session at the end. */
 export async function completeBlock(userId: string, sessionId: string, blockIndex: number) {
-  const session = await getSession(userId, sessionId);
-  const plan = sessionPlan(session);
-  if (blockIndex < session.cursor) return session; // already done (double submit)
-  if (blockIndex !== session.cursor) throw new SessionError("Bloco fora de ordem.");
-  const cursor = blockIndex + 1;
-  const done = cursor >= plan.blocks.length;
-  const now = new Date();
-  return db.$transaction(async (tx) => {
-    const updated = await tx.dailySession.update({
-      where: { id: sessionId },
-      data: {
-        cursor,
-        status: done ? "completed" : "in_progress",
-        startedAt: session.startedAt ?? now,
-        completedAt: done ? now : null,
-      },
-    });
-    if (done) {
-      await tx.dailyActivity.upsert({
-        where: { userId_localDate: { userId, localDate: session.localDate } },
-        create: { userId, localDate: session.localDate, sessionCompleted: true },
-        update: { sessionCompleted: true },
-      });
-      await tx.studyEvent.create({
+  return db.$transaction(
+    async (tx) => {
+      await lockLearner(tx, userId);
+      const session = await tx.dailySession.findFirst({ where: { id: sessionId, userId } });
+      if (!session) throw new SessionError("Sessão não encontrada.");
+      const plan = sessionPlan(session);
+      if (blockIndex < session.cursor) return session; // already done (double submit)
+      if (blockIndex !== session.cursor) throw new SessionError("Bloco fora de ordem.");
+      if (!Number.isInteger(blockIndex) || blockIndex < 0 || blockIndex >= plan.blocks.length)
+        throw new SessionError("Etapa inválida.");
+      const cursor = blockIndex + 1;
+      const done = cursor >= plan.blocks.length;
+      const now = new Date();
+      const updated = await tx.dailySession.update({
+        where: { id: sessionId },
         data: {
-          userId,
-          type: "session_completed",
-          payload: { sessionId, minutes: session.plannedMinutes, blocks: plan.blocks.length },
+          cursor,
+          status: done ? "completed" : "in_progress",
+          startedAt: session.startedAt ?? now,
+          completedAt: done ? now : null,
         },
       });
-    }
-    return updated;
-  });
+      if (done) {
+        await tx.dailyActivity.upsert({
+          where: { userId_localDate: { userId, localDate: session.localDate } },
+          create: { userId, localDate: session.localDate, sessionCompleted: true },
+          update: { sessionCompleted: true },
+        });
+        await tx.studyEvent.create({
+          data: {
+            userId,
+            type: "session_completed",
+            payload: { sessionId, minutes: session.plannedMinutes, blocks: plan.blocks.length },
+          },
+        });
+      }
+      return updated;
+    },
+    { timeout: 20_000 },
+  );
 }
 
 export function blockTitle(block: SessionBlock, index: ContentIndex = getContent()): string {
@@ -242,6 +342,7 @@ export function blockTitle(block: SessionBlock, index: ContentIndex = getContent
         speaking: "Fala",
         listening: "Escuta",
         writing: "Escrita",
+        reading: "Leitura",
       }[block.skill];
     case "conversation":
       return index.scenarios.get(block.scenarioId)?.title.pt ?? "Conversa";

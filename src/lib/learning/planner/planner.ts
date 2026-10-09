@@ -1,6 +1,7 @@
 import type { CefrLevel } from "../cefr";
 import { retrievability, type MemoryTraceState } from "../memory/memory";
 import type { ConceptKind, Dimension, Skill } from "../skills";
+import { studyPace, type StudyPace } from "../study-pace";
 
 /**
  * Daily Session Engine. Answers "what is the most useful thing to study today,
@@ -18,7 +19,7 @@ export interface ReviewItem {
   variant?: number;
 }
 
-export type FocusSkill = "pronunciation" | "speaking" | "listening" | "writing";
+export type FocusSkill = "pronunciation" | "speaking" | "listening" | "writing" | "reading";
 
 export type SessionBlock =
   | { kind: "review"; seconds: number; items: ReviewItem[]; reason: string }
@@ -29,9 +30,17 @@ export type SessionBlock =
       track: "core" | "canada" | "france";
       /** Stop after this many steps (micro-lesson); undefined = whole lesson. */
       maxSteps?: number;
+      startStep?: number;
       reason: string;
     }
-  | { kind: "focus"; seconds: number; skill: FocusSkill; items: ReviewItem[]; reason: string }
+  | {
+      kind: "focus";
+      seconds: number;
+      skill: FocusSkill;
+      items: ReviewItem[];
+      activityIds?: string[];
+      reason: string;
+    }
   | { kind: "conversation"; seconds: number; scenarioId: string; reason: string };
 
 export type BlockKind = SessionBlock["kind"] | `focus:${FocusSkill}`;
@@ -43,6 +52,24 @@ export interface SessionPlan {
   blocks: SessionBlock[];
   /** Planned seconds (≤ minutes × 60, small overshoot allowed for a whole lesson). */
   seconds: number;
+  /** Additive metadata: old version-1 plans remain readable and frozen. */
+  pace?: StudyPace;
+  newConceptLimit?: number;
+  newConceptIds?: string[];
+  segments?: LearningSegment[];
+}
+
+export interface LearningSegment {
+  start: number;
+  end: number;
+  seconds: number;
+}
+export interface PracticeOpportunity {
+  activityId: string;
+  skill: FocusSkill;
+  seconds: number;
+  concepts: string[];
+  level: number;
 }
 
 export interface ConceptInfo {
@@ -58,12 +85,20 @@ export interface UpcomingLesson {
   /** Steps already done in an unfinished run. */
   stepIndex: number;
   newConcepts: number;
+  /** Unique taught concepts for each step; lets a micro-lesson respect the actual daily cap. */
+  introducedByStep?: string[][];
+  prerequisites?: string[];
+  activityIdsByStep?: (string | null)[];
 }
 
 export interface PlannerInput {
   now: Date;
   date: string;
   dailyMinutes: number;
+  studyPace?: StudyPace | null;
+  /** Used or reserved by other plans on this local day, not a per-session allowance. */
+  newConceptsToday?: number;
+  practice?: readonly PracticeOpportunity[];
   traces: readonly MemoryTraceState[];
   concept: (conceptId: string) => ConceptInfo | undefined;
   /** Next lessons in path order: core first, then destination tracks. */
@@ -185,6 +220,7 @@ const secondsOf = (items: Candidate[]) => items.reduce((sum, item) => sum + item
 
 const SKILL_FOR_FOCUS: Record<FocusSkill, Skill> = {
   pronunciation: "pronunciation",
+  reading: "reading",
   speaking: "speaking",
   listening: "listening",
   writing: "writing",
@@ -195,6 +231,7 @@ const FOCUS_REASON: Record<FocusSkill, string> = {
   speaking: "Falar em voz alta o que você já reconhece na leitura.",
   listening: "Treinar o ouvido com o que você já conhece.",
   writing: "Produzir por escrito o que você já reconhece.",
+  reading: "Aplicar o que você conhece em um texto no seu nível.",
 };
 
 // Uncertain starting points still invite practice, but cannot dominate measured weaknesses.
@@ -202,7 +239,8 @@ const reliability = (confidence: PlannerInput["skills"][Skill]["confidence"]) =>
   confidence === "low" ? 0.35 : confidence === "medium" ? 0.75 : 1;
 
 export function planSession(input: PlannerInput): SessionPlan {
-  const minutes = Math.max(5, input.dailyMinutes);
+  const minutes = Math.max(5, Math.min(240, input.dailyMinutes));
+  const pace = studyPace(input.studyPace, minutes);
   const total = minutes * 60;
   const blocks: SessionBlock[] = [];
   const candidates = reviewCandidates(input);
@@ -229,10 +267,18 @@ export function planSession(input: PlannerInput): SessionPlan {
   let remaining = total - secondsOf(reviewItems);
 
   // 2. New material, capped by cognitive load (halved under a review backlog).
-  const cap = Math.ceil(newConceptCap(minutes) / (backlog ? 2 : 1));
+  const cap = Math.max(0, dailyNewConceptLimit(input, backlog) - (input.newConceptsToday ?? 0));
   let newConcepts = 0;
+  const introduced = new Set<string>();
+  const lessonActivities = new Set<string>();
+  const available = new Set(input.traces.map((t) => t.conceptId));
   // Short sessions still get something new (a micro-lesson); longer ones leave room for skills.
-  const newBudget = Math.round(remaining * (minutes <= 5 ? 0.85 : backlog ? 0.45 : 0.7));
+  const newBudget = Math.round(
+    Math.min(
+      remaining * (minutes <= 5 ? 0.85 : backlog ? 0.45 : minutes >= 60 ? 0.35 : 0.7),
+      minutes >= 60 ? 25 * 60 : total,
+    ),
+  );
   let usedNew = 0;
   // People heading abroad get their destination track right after the first core lesson.
   const core = input.upcoming.filter((lesson) => lesson.track === "core");
@@ -246,16 +292,41 @@ export function planSession(input: PlannerInput): SessionPlan {
     if (left <= 0) continue;
     const perStep = (lesson.minutes * 60) / lesson.steps;
     const fullSeconds = Math.round(left * perStep);
-    const budgetLeft = newBudget - usedNew;
-    if (newConcepts >= cap || budgetLeft + 1 < perStep * 3) break;
+    const budgetLeft = Math.min(newBudget - usedNew, remaining - usedNew);
+    if (lesson.prerequisites?.some((id) => !available.has(id))) {
+      if (lesson.track === "core") break;
+      continue;
+    }
+    if (budgetLeft + 1 < perStep) break;
     // Only one track lesson per session, and only once the core lesson is placed.
     if (lesson.track !== "core" && blocks.some((b) => b.kind === "lesson" && b.track !== "core"))
       continue;
-    if (fullSeconds <= budgetLeft * 1.15) {
+    let allowedSteps = Math.min(left, Math.floor((budgetLeft + 1) / perStep));
+    const added = new Set<string>();
+    if (lesson.introducedByStep) {
+      let safe = 0;
+      for (let offset = 0; offset < allowedSteps; offset += 1) {
+        const ids = lesson.introducedByStep[lesson.stepIndex + offset] ?? [];
+        const next = new Set([...added, ...ids.filter((id) => !available.has(id))]);
+        if (newConcepts + next.size > cap) break;
+        next.forEach((id) => added.add(id));
+        safe += 1;
+      }
+      allowedSteps = safe;
+    } else if (newConcepts + lesson.newConcepts > cap) {
+      // Without step metadata, never assume a partial lesson introduces fewer concepts.
+      allowedSteps = 0;
+    }
+    if (allowedSteps === 0) {
+      if (lesson.track === "core") break;
+      continue;
+    }
+    if (allowedSteps === left) {
       blocks.push({
         kind: "lesson",
         seconds: fullSeconds,
         lessonId: lesson.lessonId,
+        startStep: lesson.stepIndex,
         track: lesson.track,
         reason:
           lesson.track === "core"
@@ -265,20 +336,30 @@ export function planSession(input: PlannerInput): SessionPlan {
             : "Situações reais do país para onde você vai.",
       });
       usedNew += fullSeconds;
-      newConcepts += lesson.newConcepts;
     } else {
-      const steps = Math.max(3, Math.floor(budgetLeft / perStep));
+      const steps = allowedSteps;
       blocks.push({
         kind: "lesson",
         seconds: Math.round(steps * perStep),
         lessonId: lesson.lessonId,
+        startStep: lesson.stepIndex,
         track: lesson.track,
         maxSteps: steps,
         reason: "Um pedaço da próxima lição — o resto fica para amanhã.",
       });
       usedNew += Math.round(steps * perStep);
-      break;
     }
+    newConcepts += lesson.introducedByStep ? added.size : lesson.newConcepts;
+    lesson.activityIdsByStep
+      ?.slice(lesson.stepIndex, lesson.stepIndex + allowedSteps)
+      .forEach((id) => {
+        if (id) lessonActivities.add(id);
+      });
+    added.forEach((id) => {
+      available.add(id);
+      introduced.add(id);
+    });
+    if (allowedSteps < left) break; // Never skip the rest of a prerequisite lesson.
   }
   remaining -= usedNew;
 
@@ -370,7 +451,62 @@ export function planSession(input: PlannerInput): SessionPlan {
     remaining -= conversationBudget;
   }
 
-  // 5. Spare time goes to more review (including production gaps).
+  // 5. Longer plans apply already met material in authored tasks, without touching FSRS.
+  if (minutes >= 45 && input.practice?.length) {
+    const selected = new Set<string>();
+    const counts = new Map<FocusSkill, number>();
+    let lastSkill: FocusSkill | undefined;
+    const opportunities = input.practice
+      .filter((p) => !lessonActivities.has(p.activityId))
+      .filter((p) => p.concepts.every((id) => available.has(id)))
+      .filter(
+        (p) =>
+          p.level <=
+          input.skills[p.skill].theta + (input.skills[p.skill].confidence === "low" ? 0.5 : 0.8),
+      );
+    while (remaining >= 45) {
+      const options = opportunities
+        .filter((p) => !selected.has(p.activityId) && p.seconds <= remaining)
+        .filter(
+          (p) =>
+            (counts.get(p.skill) ?? 0) <
+            (p.skill === "reading" && input.skills.reading.theta >= meanTheta ? 2 : 6),
+        );
+      if (!options.length) break;
+      options.sort((a, b) => {
+        const priority = (p: PracticeOpportunity) => {
+          const estimate = input.skills[p.skill];
+          return (
+            (meanTheta - estimate.theta) * reliability(estimate.confidence) +
+            (p.skill === "speaking" || p.skill === "writing"
+              ? pace === "accelerated" || pace === "immersion"
+                ? 0.8
+                : 0.4
+              : 0) +
+            (input.relocation && p.skill === "listening" ? 0.4 : 0) -
+            (counts.get(p.skill) ?? 0) * 0.8 -
+            (lastSkill === p.skill ? 2 : 0)
+          );
+        };
+        return priority(b) - priority(a) || a.activityId.localeCompare(b.activityId);
+      });
+      const choice = options[0]!;
+      selected.add(choice.activityId);
+      counts.set(choice.skill, (counts.get(choice.skill) ?? 0) + 1);
+      lastSkill = choice.skill;
+      blocks.push({
+        kind: "focus",
+        skill: choice.skill,
+        seconds: choice.seconds,
+        items: [],
+        activityIds: [choice.activityId],
+        reason: `${FOCUS_REASON[choice.skill]} Prática adicional; a revisão espaçada mantém seu calendário.`,
+      });
+      remaining -= choice.seconds;
+    }
+  }
+
+  // 6. Remaining due items may be reviewed; unused time never creates early reviews.
   if (remaining > 40) {
     const used = new Set(
       blocks.flatMap((block) =>
@@ -378,7 +514,7 @@ export function planSession(input: PlannerInput): SessionPlan {
       ),
     );
     const extra = takeWithin(
-      candidates.filter((c) => !used.has(`${c.conceptId}#${c.dimension}`)),
+      candidates.filter((c) => c.priority >= 1 && !used.has(`${c.conceptId}#${c.dimension}`)),
       remaining,
     );
     if (extra.length > 0) {
@@ -391,19 +527,88 @@ export function planSession(input: PlannerInput): SessionPlan {
           kind: "review",
           seconds: secondsOf(extra),
           items: extra.map(({ conceptId, dimension }) => ({ conceptId, dimension })),
-          reason: "Praticar na fala e na escrita o que você já reconhece.",
+          reason: "Revisões que já venceram, sem antecipar o calendário.",
         });
       }
     }
   }
 
+  const boundedBlocks = splitReviewBlocks(blocks);
   return {
     version: 1,
     date: input.date,
     minutes,
-    blocks,
-    seconds: blocks.reduce((sum, block) => sum + block.seconds, 0),
+    blocks: boundedBlocks,
+    seconds: boundedBlocks.reduce((sum, block) => sum + block.seconds, 0),
+    pace,
+    newConceptLimit: dailyNewConceptLimit(input, backlog),
+    newConceptIds: [...introduced],
+    segments: learningSegments(boundedBlocks, minutes),
   };
+}
+
+/** Initial safeguards, not empirically calibrated individual retention capacity. */
+export function dailyNewConceptLimit(input: PlannerInput, backlog = false): number {
+  const level = Math.min(input.skills.reading.theta, input.skills.listening.theta);
+  const levelCap = level < 1 ? 12 : level < 2 ? 16 : 20;
+  const pace = studyPace(input.studyPace, input.dailyMinutes);
+  const bonus =
+    input.dailyMinutes >= 60 && (pace === "accelerated" || pace === "immersion") ? 2 : 0;
+  const recent = input.traces.filter(
+    (t) =>
+      t.lastReview &&
+      input.now.getTime() - t.lastReview.getTime() <= 14 * 86_400_000 &&
+      t.lastScore !== null,
+  );
+  const struggling =
+    recent.length >= 8 &&
+    recent.reduce((sum, t) => sum + (t.lastScore ?? 0), 0) / recent.length < 0.75;
+  return Math.ceil(
+    Math.min(newConceptCap(input.dailyMinutes) + bonus, levelCap) / (backlog || struggling ? 2 : 1),
+  );
+}
+
+function splitReviewBlocks(blocks: SessionBlock[]): SessionBlock[] {
+  return blocks.flatMap((block): SessionBlock[] => {
+    if (block.kind !== "review" || block.seconds <= 600) return [block];
+    const result: SessionBlock[] = [];
+    let items: ReviewItem[] = [];
+    let seconds = 0;
+    for (const item of block.items) {
+      const cost = ITEM_SECONDS[item.dimension];
+      if (seconds + cost > 600) {
+        result.push({ ...block, items, seconds });
+        items = [];
+        seconds = 0;
+      }
+      items.push(item);
+      seconds += cost;
+    }
+    if (items.length) result.push({ ...block, items, seconds });
+    return result;
+  });
+}
+
+export function learningSegments(
+  blocks: readonly SessionBlock[],
+  minutes: number,
+): LearningSegment[] {
+  if (!blocks.length) return [];
+  const limit = minutes > 60 ? 25 * 60 : Infinity;
+  const segments: LearningSegment[] = [];
+  let start = 0;
+  let seconds = 0;
+  for (let i = 0; i < blocks.length; i += 1) {
+    const cost = blocks[i]!.seconds;
+    if (seconds > 0 && seconds + cost > limit) {
+      segments.push({ start, end: i, seconds });
+      start = i;
+      seconds = 0;
+    }
+    seconds += cost;
+  }
+  segments.push({ start, end: blocks.length, seconds });
+  return segments;
 }
 
 export function blockKinds(plan: SessionPlan): BlockKind[] {

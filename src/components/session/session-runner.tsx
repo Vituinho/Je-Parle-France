@@ -3,7 +3,11 @@
 import { X } from "lucide-react";
 import Link from "next/link";
 import { useState, useTransition } from "react";
-import { completeBlockAction, extraSessionAction } from "@/app/(focus)/sessao/actions";
+import {
+  completeBlockAction,
+  extraSessionAction,
+  checkSessionPracticeAction,
+} from "@/app/(focus)/sessao/actions";
 import { Fr } from "@/components/fr";
 import { LessonPlayer } from "@/components/lesson/lesson-player";
 import { ReviewPlayer } from "@/components/lesson/review-player";
@@ -15,7 +19,7 @@ import type { SupportMode } from "@/lib/learning/language-support";
 import type { PreparedReviewItem } from "@/server/services/review";
 
 export type BlockPayload = { title: string; reason: string; seconds: number } & (
-  | { kind: "review" | "focus"; items: PreparedReviewItem[] }
+  | { kind: "review" | "focus"; items: PreparedReviewItem[]; authored?: boolean }
   | {
       kind: "lesson";
       lessonId: string;
@@ -55,13 +59,20 @@ export function SessionRunner({
   const [cursor, setCursor] = useState(initialCursor);
   const [playing, setPlaying] = useState(false);
   const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
   const finished = cursor >= blocks.length;
   const block = blocks[cursor];
 
   function blockDone() {
     startTransition(async () => {
       const result = await completeBlockAction({ sessionId, blockIndex: cursor });
-      setCursor(result.cursor ?? cursor + 1);
+      if (!result.ok || result.cursor === undefined) {
+        setError("Não foi possível salvar. Tente continuar novamente.");
+        setPlaying(false);
+        return;
+      }
+      setError(null);
+      setCursor(result.cursor);
       setPlaying(false);
     });
   }
@@ -93,6 +104,11 @@ export function SessionRunner({
           exitHref="/hoje"
           sessionId={sessionId}
           onFinished={blockDone}
+          check={
+            block.authored
+              ? (input) => checkSessionPracticeAction({ ...input, sessionId })
+              : undefined
+          }
         />
       );
     }
@@ -121,6 +137,11 @@ export function SessionRunner({
           {extra ? "Prática extra" : "Sessão de hoje"}
         </span>
       </header>
+      {error && (
+        <p role="alert" className="text-destructive mt-4">
+          {error}
+        </p>
+      )}
 
       {finished ? (
         <div className="mt-10">

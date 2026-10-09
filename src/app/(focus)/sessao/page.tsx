@@ -52,9 +52,27 @@ async function Session({
       blocks.push({
         ...base,
         kind: block.kind,
+        authored: block.kind === "focus" && Boolean(block.activityIds?.length),
         // Items are only prepared for blocks still ahead.
         items:
-          index >= session.cursor ? await prepareReviewItems(user.id, block.items, plan.date) : [],
+          index >= session.cursor
+            ? [
+                ...(await prepareReviewItems(user.id, block.items, plan.date)),
+                ...(block.kind === "focus" ? (block.activityIds ?? []) : []).flatMap((id) => {
+                  const activity = content.activities.get(id)?.activity;
+                  if (!activity || activity.type === "teach") return [];
+                  const target = activity.targets[0];
+                  return [
+                    {
+                      key: activity.id,
+                      conceptId: target?.concept ?? "",
+                      dimension: target?.dimension ?? ("recall" as const),
+                      activity: toClientActivity(activity, seed),
+                    },
+                  ];
+                }),
+              ]
+            : [],
       });
     } else if (block.kind === "lesson") {
       const ref = content.lessons.get(block.lessonId);
@@ -75,7 +93,10 @@ async function Session({
             ? ref.lesson.steps.map((step) => toClientActivity(step, seed))
             : [],
         startAt: progress && progress.status !== "completed" ? progress.stepIndex : 0,
-        maxSteps: block.maxSteps,
+        maxSteps:
+          block.maxSteps === undefined
+            ? undefined
+            : Math.max(1, (block.startStep ?? 0) + block.maxSteps - (progress?.stepIndex ?? 0)),
         conceptLabels: Object.fromEntries(
           [...conceptIds].map((conceptId) => [
             conceptId,
