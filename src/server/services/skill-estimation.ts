@@ -109,7 +109,8 @@ export async function recordSkillEvidence(
           method === "ai_assessment" ||
           (row.assessed && method !== "not_assessed"),
         source: "practice",
-        lastEvidenceAt: now,
+        // Weak/hinted fragments cannot refresh the age of measured ability.
+        lastEvidenceAt: measured[0]?.occurredAt ?? row.lastEvidenceAt,
       },
     });
     if (estimate.band !== previous.band)

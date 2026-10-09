@@ -96,6 +96,40 @@ describe.skipIf(!hasTestDatabase)("continuous skill persistence", () => {
     );
     expect(await db.skillEvidence.count({ where: { userId: user.id } })).toBe(0);
   });
+  it("keeps an old calibration uncertain after a hinted comprehension success", async () => {
+    const user = await learner();
+    const now = new Date();
+    const past = new Date(now.getTime() - 180 * 86_400_000);
+    await db.skillEstimate.update({
+      where: { userId_skill: { userId: user.id, skill: "listening" } },
+      data: { calibratedAt: past, lastEvidenceAt: null },
+    });
+    expect((await getLearnerLevel(user.id)).skills.listening.confidence).toBe("low");
+    const ref = [...getContent().activities.values()].find(
+      (r) =>
+        r.activity.type === "listening" &&
+        getContent().lessons.get(r.lessonId)?.unit.level === "B1",
+    )!;
+    await submitActivity({
+      userId: user.id,
+      activity: ref.activity,
+      lessonId: ref.lessonId,
+      response: oracleResponse(ref.activity, activitySeed(user.id), true),
+      context: "lesson",
+      hinted: true,
+      now,
+    });
+    const estimate = (await getLearnerLevel(user.id)).skills.listening;
+    expect(estimate).toMatchObject({ level: "A2", confidence: "low", evidenceCount: 0 });
+    expect(estimate.explanation).toContain("confirmação recente");
+    expect(
+      (
+        await db.skillEstimate.findUniqueOrThrow({
+          where: { userId_skill: { userId: user.id, skill: "listening" } },
+        })
+      ).lastEvidenceAt,
+    ).toBeNull();
+  });
   it("keeps evidence history and refreshes calibration on a retake", async () => {
     const user = await learner();
     for (let i = 0; i < 24; i++)
