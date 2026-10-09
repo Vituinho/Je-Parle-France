@@ -18,7 +18,7 @@ export const unitOpinion: UnitInput = {
         pt: "Dar opinião com indicativo e subjuntivo.",
         fr: "Exprimer son opinion.",
       },
-      minutes: 7,
+      minutes: 9,
       steps: [
         {
           id: "b1-u5-l1-t1",
@@ -99,6 +99,76 @@ export const unitOpinion: UnitInput = {
           translation: "Acho que é difícil, mas é possível. (ou a sua opinião)",
           targets: [t("gram:exprimer-opinion", "speaking"), t("lex:a-mon-avis", "speaking", 0.5)],
         },
+        {
+          id: "b1-u5-l1-a6",
+          type: "listening",
+          instruction: say.listen,
+          lines: [
+            {
+              speaker: "Ana",
+              text: "J'aimerais suivre un cours de conversation après le travail, trois soirs par semaine. À mon avis, ce serait une bonne façon de progresser plus vite.",
+              gender: "f",
+              region: "fr-CA",
+            },
+            {
+              speaker: "Marc",
+              text: "Parler souvent est utile, mais je ne pense pas que ce soit une bonne idée de rentrer très tard trois fois par semaine. L'an dernier, j'étais tellement fatigué que j'ai arrêté mes cours.",
+              gender: "m",
+              region: "fr-CA",
+            },
+            {
+              speaker: "Ana",
+              text: "Tu trouves donc que les cours sont inutiles ?",
+              gender: "f",
+              region: "fr-CA",
+            },
+            {
+              speaker: "Marc",
+              text: "Non, je pense que les cours peuvent vraiment nous aider. Je voudrais commencer par un soir par semaine, puis ajouter un autre soir si nous avons le temps.",
+              gender: "m",
+              region: "fr-CA",
+            },
+            {
+              speaker: "Ana",
+              text: "D'accord. Je vais choisir le cours du mardi pour commencer, et on verra après un mois.",
+              gender: "f",
+              region: "fr-CA",
+            },
+          ],
+          questions: [
+            {
+              prompt: { pt: "Com qual parte da proposta Marc discorda?" },
+              options: [
+                "Da frequência de três noites após o trabalho",
+                "Da utilidade de conversar em francês",
+                "Da ideia de estudar com Ana",
+              ],
+              optionsLang: "pt",
+              answer: 0,
+            },
+            {
+              prompt: { pt: "Por que Marc menciona o curso do ano passado?" },
+              options: [
+                "Para mostrar que já fala francês fluentemente",
+                "Para explicar seu receio de desistir por cansaço",
+                "Para recomendar a mesma escola",
+              ],
+              optionsLang: "pt",
+              answer: 1,
+            },
+            {
+              prompt: { pt: "O que Ana decide ao final?" },
+              options: [
+                "Abandonar os cursos de conversa",
+                "Ir três noites desde a primeira semana",
+                "Começar às terças e avaliar depois de um mês",
+              ],
+              optionsLang: "pt",
+              answer: 2,
+            },
+          ],
+          targets: [t("lex:a-mon-avis", "listening"), t("gram:exprimer-opinion", "recognition", 0.5)],
+        },
       ],
     },
     {
@@ -108,7 +178,7 @@ export const unitOpinion: UnitInput = {
         pt: "Argumentar com conectores: por um lado, em compensação, no entanto.",
         fr: "Argumenter avec des connecteurs.",
       },
-      minutes: 7,
+      minutes: 9,
       steps: [
         {
           id: "b1-u5-l2-t1",
@@ -212,6 +282,70 @@ export const unitOpinion: UnitInput = {
           translation:
             "Por um lado, a cidade é prática; por outro, o campo é mais tranquilo. Na minha opinião, a cidade é melhor para trabalhar.",
           targets: [t("gram:exprimer-opinion", "speaking")],
+        },
+        {
+          id: "b1-u5-l2-a5",
+          type: "listening",
+          instruction: say.listen,
+          lines: [
+            {
+              speaker: "Camille",
+              text: "D'un côté, travailler à la maison me permet d'éviter les transports. De l'autre, je vois moins mes collègues. À mon avis, on devrait venir au bureau deux jours par semaine.",
+              gender: "f",
+              region: "fr-FR",
+            },
+            {
+              speaker: "Nicolas",
+              text: "Pourtant, moi, j'ai besoin de voir l'équipe tous les jours pour demander de l'aide. Et à la maison, il y a beaucoup de bruit.",
+              gender: "m",
+              region: "fr-FR",
+            },
+            {
+              speaker: "Camille",
+              text: "C'est vrai ; par contre, certains collègues habitent loin. Pourquoi ne pas garder le bureau ouvert toute la semaine, avec deux journées où tout le monde doit venir ? Les autres jours, chacun pourrait choisir.",
+              gender: "f",
+              region: "fr-FR",
+            },
+            {
+              speaker: "Nicolas",
+              text: "D'accord. Comme ça, je pourrais venir chaque jour, et on garderait deux journées pour travailler ensemble.",
+              gender: "m",
+              region: "fr-FR",
+            },
+          ],
+          questions: [
+            {
+              prompt: { pt: "Qual dificuldade Nicolas apresenta ao argumento de Camille?" },
+              options: [
+                "Ele mora mais longe que todos os colegas",
+                "Ele precisa de ajuda da equipe e sua casa é barulhenta",
+                "Ele não gosta de trabalhar com os colegas",
+              ],
+              optionsLang: "pt",
+              answer: 1,
+            },
+            {
+              prompt: { pt: "Qual é o compromisso aceito ao final?" },
+              options: [
+                "Fechar o escritório nos outros três dias",
+                "Exigir que todos venham todos os dias",
+                "Ter dois dias comuns e permitir a escolha nos demais",
+              ],
+              optionsLang: "pt",
+              answer: 2,
+            },
+            {
+              prompt: { pt: "Por que a proposta final atende à preocupação de Nicolas?" },
+              options: [
+                "Ele pode continuar no escritório diariamente",
+                "Sua casa ficará mais silenciosa",
+                "Ele deixará de precisar de ajuda",
+              ],
+              optionsLang: "pt",
+              answer: 0,
+            },
+          ],
+          targets: [t("lex:par-contre", "listening"), t("lex:pourtant", "listening", 0.5)],
         },
       ],
     },

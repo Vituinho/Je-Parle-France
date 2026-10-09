@@ -116,6 +116,14 @@ links whenever the file is touched; the content test requires https and a `check
 
 ## Growth plan
 
+B1.1 has six distinct listening tasks. The opinion unit includes a Quebec course-choice
+conversation (position, supporting experience, final decision) and a France workplace debate
+(counterargument, compromise, inference). These practise the existing opinion/connectors
+objectives in its two published lessons; no new grammar module or B1.2 lesson is introduced.
+They remove the six-task listening evidence bottleneck without weakening promotion rules.
+The adaptive-loop integration test now uses all six published tasks rather than placement-bank
+fixtures. This makes the gate reachable; it does not guarantee promotion after one session.
+
 1. **Core A1–B1** — done: A1.1–A2.2 and B1.1 (25 units, 64 lessons). Next: B1.2 — the _plus-que-parfait_,
    _en_ + gerund, relative _dont_, the passive, longer listening at natural speed and structured
    monologues for the oral exams.

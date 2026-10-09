@@ -101,16 +101,17 @@ describe.skipIf(!hasTestDatabase)("adaptive learning loop", () => {
       (r) =>
         r.activity.type === "listening" && content.lessons.get(r.lessonId)?.unit.level === "B1",
     );
-    // The course has four B1 listening tasks. Two existing bank tasks are practice fixtures
-    // only here, to prove the six-task gate without adding content or weakening it.
-    const bankTasks = [...content.placementItems.values()]
-      .filter((i) => i.skill === "listening" && i.level === "B1")
-      .slice(0, 2);
-    const tasks = [
-      ...courseTasks.map((r) => ({ activity: r.activity, lessonId: r.lessonId })),
-      ...bankTasks.map((i) => ({ activity: i.activity, lessonId: courseTasks[0]!.lessonId })),
-    ];
+    // Six genuine published B1.1 tasks satisfy the unchanged promotion gate.
+    // Never substitute placement-bank questions or duplicate a listening script.
+    const tasks = courseTasks.map((r) => ({ activity: r.activity, lessonId: r.lessonId }));
     expect(tasks).toHaveLength(6);
+    expect(
+      new Set(
+        tasks.map(({ activity }) =>
+          activity.type === "listening" ? activity.lines.map((line) => line.text).join(" ") : "",
+        ),
+      ).size,
+    ).toBe(6);
     for (let day = 0; day < 60; day++) {
       const now = new Date(START.getTime() + (day + 1) * DAY);
       vi.setSystemTime(now);
