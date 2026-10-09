@@ -432,6 +432,8 @@ export function buildReviewActivity(params: {
   dimension: Dimension;
   seed: string;
   personal?: PersonalItemData;
+  /** Skill application within a persisted focus block; never changes review scheduling. */
+  productionPractice?: boolean;
 }): Activity | null {
   const { index, conceptId, dimension, seed } = params;
   const random = seededRandom(`${seed}:${conceptId}:${dimension}`);
@@ -442,6 +444,43 @@ export function buildReviewActivity(params: {
   if (!concept || !conceptDimensions(concept).includes(dimension)) return null;
   switch (concept.kind) {
     case "lexical":
+      if (params.productionPractice && dimension === "listening") {
+        const range = numberRange(concept);
+        const forms = range
+          ? [NUMBER_WORDS[range[0] + Math.floor(random() * (range[1] - range[0] + 1))]!]
+          : recallForms(concept);
+        // Only the taught word/chunk: an example sentence may contain unseen prerequisites.
+        return {
+          id: reviewActivityId(conceptId, dimension),
+          type: "dictation",
+          targets: [{ concept: conceptId, dimension, weight: 1 }],
+          instruction: { pt: "Ouça e escreva em francês.", fr: "Écoutez et écrivez en français." },
+          audio: { text: forms[0]!, region: voiceFor(concept), gender: "f", rate: "normal" },
+          accept: forms,
+          translation: concept.meaning,
+        };
+      }
+      if (params.productionPractice && dimension === "speaking") {
+        const range = numberRange(concept);
+        const forms = range
+          ? [NUMBER_WORDS[range[0] + Math.floor(random() * (range[1] - range[0] + 1))]!]
+          : recallForms(concept);
+        return {
+          id: reviewActivityId(conceptId, dimension),
+          type: "speak",
+          targets: [{ concept: conceptId, dimension, weight: 1 }],
+          mode: "respond",
+          instruction: {
+            pt: "Diga em francês. Depois compare com o modelo.",
+            fr: "Dites-le en français, puis comparez.",
+          },
+          prompt: { pt: concept.meaning, hideText: false },
+          text: forms[0]!,
+          accept: forms,
+          region: voiceFor(concept),
+          translation: concept.meaning,
+        };
+      }
       return lexicalActivity(index, concept, dimension, random);
     case "pronunciation":
       return pronunciationActivity(concept, dimension, random);

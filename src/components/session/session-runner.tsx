@@ -17,6 +17,7 @@ import type { ConceptLabel } from "@/lib/content/repository";
 import type { ClientActivity } from "@/lib/learning/activities/client";
 import type { SupportMode } from "@/lib/learning/language-support";
 import type { PreparedReviewItem } from "@/server/services/review";
+import type { LearningSegment } from "@/lib/learning/planner/planner";
 
 export type BlockPayload = { title: string; reason: string; seconds: number } & (
   | { kind: "review" | "focus"; items: PreparedReviewItem[]; authored?: boolean }
@@ -27,6 +28,7 @@ export type BlockPayload = { title: string; reason: string; seconds: number } & 
       steps: ClientActivity[];
       startAt: number;
       maxSteps?: number;
+      alreadyDone?: boolean;
       conceptLabels: Record<string, ConceptLabel>;
     }
   | { kind: "conversation"; scenarioId: string }
@@ -47,6 +49,9 @@ export function SessionRunner({
   initialCursor,
   support,
   extra,
+  segments,
+  targetMinutes,
+  recordedSeconds,
 }: {
   sessionId: string;
   date: string;
@@ -55,13 +60,22 @@ export function SessionRunner({
   initialCursor: number;
   support: SupportMode;
   extra: boolean;
+  segments: LearningSegment[];
+  targetMinutes: number;
+  recordedSeconds: number;
 }) {
   const [cursor, setCursor] = useState(initialCursor);
   const [playing, setPlaying] = useState(false);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [seconds, setSeconds] = useState(recordedSeconds);
   const finished = cursor >= blocks.length;
   const block = blocks[cursor];
+  const segmentIndex = Math.max(
+    0,
+    segments.findIndex((s) => cursor < s.end),
+  );
+  const atBreak = cursor > 0 && !finished && segments.some((s) => s.end === cursor);
 
   function blockDone() {
     startTransition(async () => {
@@ -73,6 +87,7 @@ export function SessionRunner({
       }
       setError(null);
       setCursor(result.cursor);
+      setSeconds(result.recordedSeconds ?? seconds);
       setPlaying(false);
     });
   }
@@ -126,7 +141,11 @@ export function SessionRunner({
   }));
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-5 pt-5 pb-8 sm:px-8">
+    <div
+      data-session-id={sessionId}
+      data-session-cursor={cursor}
+      className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-5 pt-5 pb-8 sm:px-8"
+    >
       <header className="flex items-center justify-between">
         <Button asChild variant="ghost" size="icon-lg" aria-label="Voltar para hoje">
           <Link href="/hoje">
@@ -143,6 +162,11 @@ export function SessionRunner({
         </p>
       )}
 
+      <p className="text-muted-foreground mt-4 text-sm" aria-live="polite">
+        Tempo registrado hoje: {Math.floor(seconds / 60)} min · Meta diária: {targetMinutes} min.{" "}
+        Plano: ~{plannedMinutes} min. O tempo é uma referência; suas respostas mostram o
+        aprendizado.
+      </p>
       {finished ? (
         <div className="mt-10">
           <Fr as="p" className="text-primary text-2xl">
@@ -150,8 +174,8 @@ export function SessionRunner({
           </Fr>
           <h1 className="mt-1 text-[2rem] leading-tight font-bold">Sessão concluída</h1>
           <p className="text-muted-foreground mt-3 text-lg leading-relaxed">
-            Tudo o que você praticou já foi reagendado. Amanhã a sessão muda conforme o que você
-            acertou e errou hoje.
+            Seu progresso ficou salvo. As revisões seguem seu calendário; a prática extra não
+            antecipa revisões. Amanhã o plano considera suas respostas.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Button asChild className="h-12 rounded-xl px-6 text-base">
@@ -180,11 +204,31 @@ export function SessionRunner({
           </h1>
           <LineProgress
             orientation="vertical"
-            stations={stations}
+            stations={
+              segments.length > 1
+                ? stations.slice(segments[segmentIndex]!.start, segments[segmentIndex]!.end)
+                : stations
+            }
             className="mt-8"
             ariaLabel="Etapas da sessão"
           />
 
+          {segments.length > 1 && (
+            <section className="mt-5 space-y-3" aria-label="Blocos do dia">
+              <p className="font-semibold">
+                Bloco {segmentIndex + 1} de {segments.length} · {segments.length - segmentIndex - 1}{" "}
+                depois deste
+              </p>
+              {atBreak && <h2 className="text-lg font-bold">Bloco {segmentIndex} concluído</h2>}
+              <p className="text-muted-foreground text-sm">
+                {atBreak ? "Boa hora para uma pausa. " : "Você pode pausar quando precisar. "}
+                Faça o próximo bloco agora ou mais tarde; o progresso fica salvo.
+              </p>
+            </section>
+          )}
+          <Button asChild variant="outline" className="mt-5 h-11 rounded-xl">
+            <Link href="/hoje">Pausar e continuar mais tarde</Link>
+          </Button>
           {block?.kind === "conversation" ? (
             <div className="border-border bg-card mt-6 rounded-2xl border p-5">
               <p className="font-semibold">{block.title}</p>
@@ -216,6 +260,10 @@ export function SessionRunner({
                     (block.kind === "review" || block.kind === "focus") &&
                     block.items.length === 0
                   ) {
+                    blockDone();
+                    return;
+                  }
+                  if (block?.kind === "lesson" && block.alreadyDone) {
                     blockDone();
                     return;
                   }

@@ -13,8 +13,10 @@ import {
   getTodaySession,
   sessionPlan,
   SessionError,
+  recordedStudySeconds,
 } from "@/server/services/session";
 import { requireLearner } from "@/server/session";
+import { learningSegments, lessonWindow } from "@/lib/learning/planner/planner";
 import { notFound } from "next/navigation";
 
 export const metadata: Metadata = { title: "Sessão de hoje" };
@@ -57,7 +59,13 @@ async function Session({
         items:
           index >= session.cursor
             ? [
-                ...(await prepareReviewItems(user.id, block.items, plan.date)),
+                ...(await prepareReviewItems(
+                  user.id,
+                  block.items,
+                  plan.date,
+                  block.kind === "review",
+                  block.kind === "focus",
+                )),
                 ...(block.kind === "focus" ? (block.activityIds ?? []) : []).flatMap((id) => {
                   const activity = content.activities.get(id)?.activity;
                   if (!activity || activity.type === "teach") return [];
@@ -78,6 +86,12 @@ async function Session({
       const ref = content.lessons.get(block.lessonId);
       if (!ref) continue;
       const progress = index >= session.cursor ? await startLesson(user.id, block.lessonId) : null;
+      const window = lessonWindow(
+        block,
+        progress?.stepIndex ?? 0,
+        ref.lesson.steps.length,
+        progress?.status === "completed",
+      );
       const conceptIds = new Set(
         ref.lesson.steps.flatMap((step) =>
           step.type === "teach" ? step.introduces : step.targets.map((target) => target.concept),
@@ -92,11 +106,7 @@ async function Session({
           index >= session.cursor
             ? ref.lesson.steps.map((step) => toClientActivity(step, seed))
             : [],
-        startAt: progress && progress.status !== "completed" ? progress.stepIndex : 0,
-        maxSteps:
-          block.maxSteps === undefined
-            ? undefined
-            : Math.max(1, (block.startStep ?? 0) + block.maxSteps - (progress?.stepIndex ?? 0)),
+        ...window,
         conceptLabels: Object.fromEntries(
           [...conceptIds].map((conceptId) => [
             conceptId,
@@ -111,9 +121,13 @@ async function Session({
 
   return (
     <SessionRunner
+      key={`${session.id}:${session.cursor}`}
       sessionId={session.id}
       date={plan.date}
       plannedMinutes={Math.max(1, Math.round(plan.seconds / 60))}
+      targetMinutes={plan.minutes}
+      segments={plan.segments ?? learningSegments(plan.blocks, plan.minutes)}
+      recordedSeconds={await recordedStudySeconds(user.id, plan.date)}
       blocks={blocks}
       initialCursor={session.cursor}
       support={supportFor(level.level, profile)}

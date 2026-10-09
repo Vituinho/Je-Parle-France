@@ -10,6 +10,42 @@ const { index } = buildContentIndex(course);
 if (!index) throw new Error("content must be valid");
 
 describe("review activity generator", () => {
+  it("turns taught vocabulary into dictation and prompted speech without unseen sentence material", () => {
+    for (const conceptId of ["lex:bonjour", "lex:le-souper", "lex:nombres-0-10"]) {
+      for (const dimension of ["listening", "speaking"] as const) {
+        const activity = buildReviewActivity({
+          index,
+          conceptId,
+          dimension,
+          seed: "practice",
+          productionPractice: true,
+        })!;
+        expect(activity.type).toBe(dimension === "listening" ? "dictation" : "speak");
+        if (activity.type === "speak") expect(activity.mode).toBe("respond");
+        const response = oracleResponse(activity, "seed", true);
+        expect(
+          gradeActivity(activity, toAuthoredResponse(activity, response, "seed")).correct,
+        ).toBe(true);
+        expect(
+          buildReviewActivity({
+            index,
+            conceptId,
+            dimension,
+            seed: "practice",
+            productionPractice: true,
+          }),
+        ).toEqual(activity);
+      }
+    }
+    expect(
+      buildReviewActivity({
+        index,
+        conceptId: "lex:bonjour",
+        dimension: "listening",
+        seed: "practice",
+      })?.type,
+    ).toBe("choice");
+  });
   it("builds a correctly gradable exercise for every concept × tracked dimension", () => {
     let built = 0;
     for (const concept of index.concepts.values()) {

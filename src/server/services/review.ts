@@ -32,16 +32,33 @@ export async function prepareReviewItems(
   userId: string,
   items: readonly ReviewItem[],
   date: string,
+  dueOnly = false,
+  productionPractice = false,
 ): Promise<PreparedReviewItem[]> {
   const index = getContent();
   const personal = await personalItems(userId, items);
   const prepared: PreparedReviewItem[] = [];
+  const due = dueOnly
+    ? await loadTraces(db, userId, [...new Set(items.map((i) => i.conceptId))])
+    : [];
   for (const item of items) {
+    if (
+      dueOnly &&
+      !due.some(
+        (t) =>
+          t.conceptId === item.conceptId &&
+          t.dimension === item.dimension &&
+          t.reps > 0 &&
+          t.due.getTime() <= Date.now(),
+      )
+    )
+      continue;
     const activity = buildReviewActivity({
       index,
       conceptId: item.conceptId,
       dimension: item.dimension,
       seed: reviewSeed(userId, date, item.variant),
+      productionPractice,
       personal: personal.get(item.conceptId.replace("personal:", "")),
     });
     if (!activity) continue;
@@ -86,6 +103,9 @@ export async function submitReview(params: {
   durationMs?: number;
 }) {
   let scheduleMemory = true;
+  let context = params.context;
+  let checkDue = false;
+  let productionPractice = false;
   if (params.sessionId) {
     const session = await db.dailySession.findFirst({
       where: { id: params.sessionId, userId: params.userId },
@@ -106,6 +126,11 @@ export async function submitReview(params: {
     )
       throw new PracticeError("Este item não pertence à etapa atual.");
     scheduleMemory = block.kind === "review";
+    productionPractice = block.kind === "focus";
+    if (scheduleMemory) {
+      context = "review";
+      checkDue = true;
+    }
   }
   const index = getContent();
   const personal = await personalItems(params.userId, [params.item]);
@@ -114,14 +139,40 @@ export async function submitReview(params: {
     conceptId: params.item.conceptId,
     dimension: params.item.dimension,
     seed: reviewSeed(params.userId, params.date, params.item.variant),
+    productionPractice,
     personal: personal.get(params.item.conceptId.replace("personal:", "")),
   });
   if (!activity) throw new PracticeError("Este item não pode ser revisado.");
+  if (checkDue) {
+    const trace = await db.memoryTrace.findUnique({
+      where: {
+        userId_conceptId_dimension: {
+          userId: params.userId,
+          conceptId: params.item.conceptId,
+          dimension: params.item.dimension,
+        },
+      },
+    });
+    if (!trace || trace.reps === 0 || trace.due.getTime() > Date.now()) {
+      const previous = await db.activityAttempt.findFirst({
+        where: { userId: params.userId, sessionId: params.sessionId, activityId: activity.id },
+        orderBy: { createdAt: "desc" },
+        select: { correct: true },
+      });
+      if (!previous || previous.correct)
+        throw new PracticeError(
+          "Este item já foi reagendado. Continue a sessão para atualizar a revisão.",
+        );
+      // One corrective retry is additional practice, not a premature second FSRS review.
+      scheduleMemory = false;
+      context = "session";
+    }
+  }
   return submitActivity({
     userId: params.userId,
     activity,
     response: params.response,
-    context: params.context,
+    context,
     sessionId: params.sessionId,
     hinted: params.hinted,
     durationMs: params.durationMs,

@@ -1,7 +1,13 @@
 import "server-only";
 import type { DailySession, LearnerProfile, Prisma } from "@/generated/prisma/client";
 import { getCapabilities } from "@/lib/ai/capabilities";
-import { getContent, lessonDependencies, type ContentIndex, type LessonRef } from "@/lib/content";
+import {
+  getContent,
+  lessonDependencies,
+  conceptDimensions,
+  type ContentIndex,
+  type LessonRef,
+} from "@/lib/content";
 import { levelIndex, type CefrLevel } from "@/lib/learning/cefr";
 import type { MemoryTraceState } from "@/lib/learning/memory/memory";
 import {
@@ -114,8 +120,12 @@ function pickScenario(
   return options[hashString(date) % options.length]?.id;
 }
 
-async function recentBlocks(userId: string, beforeDate: string): Promise<BlockKind[]> {
-  const recent = await db.dailySession.findMany({
+async function recentBlocks(
+  userId: string,
+  beforeDate: string,
+  client: Prisma.TransactionClient,
+): Promise<BlockKind[]> {
+  const recent = await client.dailySession.findMany({
     where: { userId, localDate: { lt: beforeDate } },
     orderBy: { createdAt: "desc" },
     take: 2,
@@ -127,15 +137,18 @@ export async function buildPlan(
   userId: string,
   profile: LearnerProfile,
   now = new Date(),
+  client: Prisma.TransactionClient = db,
 ): Promise<SessionPlan> {
   const index = getContent();
   const date = today(profile, now);
   const [traces, level, progressRows, day, otherPlans] = await Promise.all([
-    loadTraces(db, userId),
-    getLearnerLevel(userId),
-    db.lessonProgress.findMany({ where: { userId } }),
-    db.dailyActivity.findUnique({ where: { userId_localDate: { userId, localDate: date } } }),
-    db.dailySession.findMany({ where: { userId, localDate: date, status: { not: "abandoned" } } }),
+    loadTraces(client, userId),
+    getLearnerLevel(userId, client),
+    client.lessonProgress.findMany({ where: { userId } }),
+    client.dailyActivity.findUnique({ where: { userId_localDate: { userId, localDate: date } } }),
+    client.dailySession.findMany({
+      where: { userId, localDate: date, status: { not: "abandoned" } },
+    }),
   ]);
   const progress = new Map(progressRows.map((row) => [row.lessonId, row]));
   const known = new Set(traces.map((t) => t.conceptId));
@@ -207,14 +220,16 @@ export async function buildPlan(
     traces,
     concept: (id) => {
       const concept = index.concepts.get(id);
-      return concept ? { kind: concept.kind, level: concept.level } : undefined;
+      return concept
+        ? { kind: concept.kind, level: concept.level, dimensions: conceptDimensions(concept) }
+        : undefined;
     },
     upcoming: upcomingLessons({ index, profile, level: level.level, progress, traces }),
     skills: level.skills,
     relocation:
       profile.goals.some((goal) => RELOCATION_GOALS.includes(goal)) ||
       profile.destination !== "undecided",
-    recentBlocks: await recentBlocks(userId, date),
+    recentBlocks: await recentBlocks(userId, date, client),
     capabilities: { conversation: getCapabilities().llm },
     scenarioId: pickScenario(index, profile, level.level, date),
   });
@@ -231,7 +246,7 @@ export async function getTodaySession(userId: string, profile: LearnerProfile, n
         orderBy: { createdAt: "desc" },
       });
       if (existing) return existing;
-      const plan = await buildPlan(userId, profile, now);
+      const plan = await buildPlan(userId, profile, now, tx);
       return tx.dailySession.create({
         data: {
           userId,
@@ -259,7 +274,7 @@ export async function startExtraSession(userId: string, profile: LearnerProfile,
         orderBy: { createdAt: "desc" },
       });
       if (unfinished) return unfinished;
-      const plan = await buildPlan(userId, profile, now);
+      const plan = await buildPlan(userId, profile, now, tx);
       return tx.dailySession.create({
         data: {
           userId,
@@ -281,6 +296,16 @@ export async function getSession(userId: string, sessionId: string) {
   const session = await db.dailySession.findFirst({ where: { id: sessionId, userId } });
   if (!session) throw new SessionError("Sessão não encontrada.");
   return session;
+}
+
+export async function recordedStudySeconds(userId: string, date: string): Promise<number> {
+  return (
+    (
+      await db.dailyActivity.findUnique({
+        where: { userId_localDate: { userId, localDate: date } },
+      })
+    )?.studySeconds ?? 0
+  );
 }
 
 /** Marks block `blockIndex` as done and moves the cursor; completes the session at the end. */

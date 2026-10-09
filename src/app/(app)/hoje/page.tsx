@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { getDashboard, type Dashboard } from "@/server/services/dashboard";
 import { recentAchievements } from "@/server/services/progress";
 import { requireLearner } from "@/server/session";
+import { STUDY_PACE_OPTIONS } from "@/lib/learning/study-pace";
 
 export const metadata: Metadata = { title: "Hoje" };
 
@@ -35,6 +36,13 @@ function TodayCard({ session }: { session: Dashboard["session"] }) {
         </h2>
         <span className="text-muted-foreground">~{session.plannedMinutes} min</span>
       </div>
+      <p className="text-muted-foreground mt-2 text-sm">
+        Ritmo: {STUDY_PACE_OPTIONS.find((p) => p.value === session.pace)?.label} · Meta diária:{" "}
+        {session.minutes} minutos. {session.completedMinutes} min registrados hoje.{" "}
+        <Link href="/conta" className="text-primary underline">
+          Ajustar ritmo
+        </Link>
+      </p>
       {session.plannedMinutes < session.minutes * 0.75 && !done && (
         <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
           Hoje fica abaixo dos seus {session.minutes} min: limitamos o conteúdo novo para não
@@ -45,13 +53,31 @@ function TodayCard({ session }: { session: Dashboard["session"] }) {
         orientation="vertical"
         className="mt-6"
         ariaLabel="Etapas da sessão de hoje"
-        stations={session.blocks.map((block, index) => ({
-          id: `${index}`,
-          label: block.title,
-          detail: `${block.minutes} min`,
-          state:
-            index < session.cursor ? "done" : index === session.cursor ? "current" : "upcoming",
-        }))}
+        stations={
+          session.segments.length > 1
+            ? session.segments.map((segment, index) => ({
+                id: String(index),
+                label: `Bloco ${index + 1}`,
+                detail: `${Math.round(segment.seconds / 60)} min · ${[...new Set(session.blocks.slice(segment.start, segment.end).map((b) => b.title))].slice(0, 3).join(" + ")}`,
+                state:
+                  segment.end <= session.cursor
+                    ? "done"
+                    : session.cursor >= segment.start
+                      ? "current"
+                      : "upcoming",
+              }))
+            : session.blocks.map((block, index) => ({
+                id: `${index}`,
+                label: block.title,
+                detail: `${block.minutes} min`,
+                state:
+                  index < session.cursor
+                    ? "done"
+                    : index === session.cursor
+                      ? "current"
+                      : "upcoming",
+              }))
+        }
       />
       <Button asChild className="mt-6 h-12 w-full rounded-xl text-base">
         <Link href="/sessao">
@@ -67,7 +93,13 @@ function TodayCard({ session }: { session: Dashboard["session"] }) {
   );
 }
 
-function WeekPanel({ habits }: { habits: Dashboard["habits"] }) {
+function WeekPanel({
+  habits,
+  workload,
+}: {
+  habits: Dashboard["habits"];
+  workload: Dashboard["workload"];
+}) {
   return (
     <section aria-labelledby="week" className="space-y-4">
       <h2 id="week" className="text-lg font-bold">
@@ -97,6 +129,11 @@ function WeekPanel({ habits }: { habits: Dashboard["habits"] }) {
           {habits.activeThisWeek} de {habits.weeklyGoal}
         </strong>{" "}
         dias da sua meta semanal{habits.weeklyGoalMet && " — meta cumprida"}.
+      </p>
+      <p className="text-muted-foreground text-sm">
+        {workload.completedMinutes} de {workload.targetMinutes} min na semana
+        {workload.met && " — meta de tempo cumprida"}. Distribua como couber na sua rotina, com dias
+        mais leves e descanso.
       </p>
       {habits.streakDays > 1 && (
         <p className="text-muted-foreground text-sm">
@@ -258,7 +295,10 @@ async function Today() {
       <div className="grid gap-10 lg:grid-cols-[1.4fr_1fr]">
         <TodayCard session={data.session} />
         <div className="space-y-8">
-          <WeekPanel habits={data.habits} />
+          <WeekPanel habits={data.habits} workload={data.workload} />
+          <p className="text-muted-foreground text-sm" aria-live="polite">
+            {data.paceIndicator.message}
+          </p>
           {data.due > 0 && (
             <div className="border-border border-t pt-6">
               <p className="font-semibold">

@@ -6,11 +6,46 @@ import {
   planSession,
   reviewCandidates,
   dailyNewConceptLimit,
+  lessonWindow,
   type PlannerInput,
   type UpcomingLesson,
 } from "./planner";
 
 const NOW = new Date("2026-10-10T12:00:00Z");
+
+it("applies a beginner's newly taught words in multiple modes with a natural break and bounded repetition", () => {
+  const plan = planSession(
+    input({
+      dailyMinutes: 90,
+      traces: [],
+      practice: [],
+      capabilities: { conversation: false },
+      upcoming: [
+        {
+          lessonId: "first",
+          track: "core",
+          minutes: 12,
+          steps: 2,
+          stepIndex: 0,
+          newConcepts: 4,
+          introducedByStep: [["lex:w1", "lex:w2", "lex:w3", "lex:w4"], []],
+        },
+      ],
+      concept: () => ({
+        kind: "lexical",
+        level: "A0",
+        dimensions: ["listening", "recall", "speaking"],
+      }),
+    }),
+  );
+  expect(new Set(plan.blocks.filter((b) => b.kind === "focus").map((b) => b.skill))).toEqual(
+    new Set(["speaking", "listening", "writing"]),
+  );
+  expect(plan.segments).toHaveLength(2);
+  expect(plan.segments![0]!.end).toBe(1);
+  expect(plan.seconds).toBeLessThan(30 * 60); // Do not manufacture a full ninety minutes from four words.
+  expect(plan.blocks.some((b) => b.kind === "review")).toBe(false);
+});
 const DAY = 86_400_000;
 
 const intensivePractice = ["listening", "speaking", "writing", "pronunciation", "reading"].flatMap(
@@ -458,4 +493,24 @@ it("uses authored transformations rather than repeating activities from the plan
   expect(extraIds).not.toContain("listening-0");
   expect(extraIds).not.toContain("speaking-0");
   expect(extraIds).not.toContain("writing-0");
+});
+
+it("rotates equally suitable practice across days and preserves the frozen micro-lesson end", () => {
+  const state = input({ dailyMinutes: 90, practice: intensivePractice });
+  const ids = (date: string) =>
+    planSession({ ...state, date }).blocks.flatMap((b) =>
+      b.kind === "focus" ? (b.activityIds ?? []) : [],
+    );
+  expect(ids("2026-10-10")).not.toEqual(ids("2026-10-11"));
+  const micro = {
+    kind: "lesson" as const,
+    lessonId: "micro",
+    track: "core" as const,
+    startStep: 2,
+    maxSteps: 3,
+    seconds: 180,
+    reason: "resume",
+  };
+  expect(lessonWindow(micro, 4, 10)).toEqual({ startAt: 4, maxSteps: 1, alreadyDone: false });
+  expect(lessonWindow(micro, 8, 10)).toEqual({ startAt: 5, maxSteps: 0, alreadyDone: true });
 });

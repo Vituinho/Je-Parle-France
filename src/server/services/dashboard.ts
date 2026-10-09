@@ -2,7 +2,9 @@ import "server-only";
 import type { LearnerProfile } from "@/generated/prisma/client";
 import { getContent } from "@/lib/content";
 import { describeTheta } from "@/lib/learning/cefr";
-import { reviewCandidates } from "@/lib/learning/planner/planner";
+import { reviewCandidates, learningSegments } from "@/lib/learning/planner/planner";
+import { studyPace } from "@/lib/learning/study-pace";
+import { weeklyWorkload, deadlinePace } from "@/lib/learning/study-workload";
 import {
   habitSummary,
   isActiveDay,
@@ -65,6 +67,15 @@ export async function getDashboard(userId: string, profile: LearnerProfile, now 
     progress,
     vocabulary,
     habits,
+    workload: weeklyWorkload(days, date, profile.dailyMinutes, profile.weeklyGoalDays),
+    paceIndicator: deadlinePace({
+      skills: level.skills,
+      dailyMinutes: profile.dailyMinutes,
+      weeklyGoalDays: profile.weeklyGoalDays,
+      targetLevel: profile.targetLevel,
+      targetMonth: profile.targetDate?.toISOString().slice(0, 7) ?? null,
+      date,
+    }),
     week: {
       studyMinutes: Math.round(sum("studySeconds") / 60),
       listeningMinutes: Math.round(sum("listeningSeconds") / 60),
@@ -75,6 +86,11 @@ export async function getDashboard(userId: string, profile: LearnerProfile, now 
       id: session.id,
       status: session.status,
       cursor: session.cursor,
+      pace: studyPace(plan.pace, plan.minutes),
+      completedMinutes: Math.floor(
+        (days.find((d) => d.localDate === date)?.studySeconds ?? 0) / 60,
+      ),
+      segments: plan.segments ?? learningSegments(plan.blocks, plan.minutes),
       minutes: plan.minutes,
       plannedMinutes: Math.max(1, Math.round(plan.seconds / 60)),
       blocks: plan.blocks.map((block) => ({

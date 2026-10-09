@@ -2,6 +2,7 @@ import type { CefrLevel } from "../cefr";
 import { retrievability, type MemoryTraceState } from "../memory/memory";
 import type { ConceptKind, Dimension, Skill } from "../skills";
 import { studyPace, type StudyPace } from "../study-pace";
+import { hashString } from "../random";
 
 /**
  * Daily Session Engine. Answers "what is the most useful thing to study today,
@@ -75,6 +76,7 @@ export interface PracticeOpportunity {
 export interface ConceptInfo {
   kind: ConceptKind;
   level: CefrLevel;
+  dimensions?: readonly Dimension[];
 }
 
 export interface UpcomingLesson {
@@ -378,7 +380,7 @@ export function planSession(input: PlannerInput): SessionPlan {
   ]);
   const usedKeys = new Set(reviewItems.map((item) => `${item.conceptId}#${item.dimension}`));
   for (const [skill, dims] of practisedDims) {
-    const pool = input.traces
+    const pool: Candidate[] = input.traces
       .filter((trace) => dims.includes(trace.dimension))
       .filter((trace) => !usedKeys.has(`${trace.conceptId}#${trace.dimension}`))
       .filter((trace) => {
@@ -393,6 +395,22 @@ export function planSession(input: PlannerInput): SessionPlan {
         seconds: ITEM_SECONDS[trace.dimension],
       }))
       .sort((a, b) => b.priority - a.priority || a.conceptId.localeCompare(b.conceptId));
+    // Apply freshly taught words in another mode, without creating due memory reviews.
+    // One bounded pass per skill: a small vocabulary never becomes ninety minutes of drills.
+    if (minutes >= 45 && skill !== "pronunciation") {
+      for (const conceptId of introduced) {
+        const info = input.concept(conceptId);
+        if (info?.kind !== "lexical") continue;
+        const dimension = dims.find((d) => info.dimensions?.includes(d));
+        if (!dimension || usedKeys.has(`${conceptId}#${dimension}`)) continue;
+        pool.push({
+          conceptId,
+          dimension,
+          priority: 0.5,
+          seconds: skill === "speaking" ? 60 : skill === "listening" ? 45 : 30,
+        });
+      }
+    }
     if (pool.length === 0) continue;
     const estimate = input.skills[SKILL_FOR_FOCUS[skill]];
     const weakness = (meanTheta - estimate.theta) * reliability(estimate.confidence);
@@ -427,7 +445,7 @@ export function planSession(input: PlannerInput): SessionPlan {
       remaining - conversationBudget,
     );
     if (budget < 45) break;
-    const items = takeWithin(option.items, budget);
+    const items = takeWithin(option.items.slice(0, minutes >= 45 ? 6 : undefined), budget);
     // A block of one or two items is not worth the context switch.
     if (items.length < 2 || secondsOf(items) < 45) continue;
     blocks.push({
@@ -488,7 +506,11 @@ export function planSession(input: PlannerInput): SessionPlan {
             (lastSkill === p.skill ? 2 : 0)
           );
         };
-        return priority(b) - priority(a) || a.activityId.localeCompare(b.activityId);
+        return (
+          priority(b) - priority(a) ||
+          hashString(input.date + a.activityId) - hashString(input.date + b.activityId) ||
+          a.activityId.localeCompare(b.activityId)
+        );
       });
       const choice = options[0]!;
       selected.add(choice.activityId);
@@ -600,7 +622,12 @@ export function learningSegments(
   let seconds = 0;
   for (let i = 0; i < blocks.length; i += 1) {
     const cost = blocks[i]!.seconds;
-    if (seconds > 0 && seconds + cost > limit) {
+    const applicationBreak =
+      minutes > 60 &&
+      seconds >= 5 * 60 &&
+      blocks[i - 1]?.kind === "lesson" &&
+      (blocks[i]?.kind === "focus" || blocks[i]?.kind === "conversation");
+    if (seconds > 0 && (seconds + cost > limit || applicationBreak)) {
       segments.push({ start, end: i, seconds });
       start = i;
       seconds = 0;
@@ -615,4 +642,20 @@ export function blockKinds(plan: SessionPlan): BlockKind[] {
   return plan.blocks.map((block) =>
     block.kind === "focus" ? (`focus:${block.skill}` as const) : block.kind,
   );
+}
+
+/** A resume cannot extend the frozen micro-lesson into unplanned teaching cards. */
+export function lessonWindow(
+  block: Extract<SessionBlock, { kind: "lesson" }>,
+  stepIndex: number,
+  totalSteps: number,
+  completed = false,
+) {
+  const end = Math.min(totalSteps, (block.startStep ?? 0) + (block.maxSteps ?? totalSteps));
+  const startAt = Math.max(block.startStep ?? 0, Math.min(stepIndex, end));
+  return {
+    startAt,
+    maxSteps: block.maxSteps === undefined ? undefined : end - startAt,
+    alreadyDone: completed || startAt >= end,
+  };
 }

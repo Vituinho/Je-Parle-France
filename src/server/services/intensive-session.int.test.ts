@@ -14,7 +14,9 @@ import {
   sessionPlan,
   startExtraSession,
 } from "./session";
-import { submitReview } from "./review";
+import { submitReview, prepareReviewItems } from "./review";
+import type { SessionPlan } from "@/lib/learning/planner/planner";
+import type { Prisma } from "@/generated/prisma/client";
 
 const now = new Date("2026-10-09T12:00:00Z");
 async function learner(minutes = 90) {
@@ -35,6 +37,127 @@ async function learner(minutes = 90) {
 describe.skipIf(!hasTestDatabase)("intensive session persistence", () => {
   beforeEach(resetDatabase);
   afterAll(() => db.$disconnect());
+
+  it("gives a first-day beginner separate teaching and offline production blocks without scheduling practice as review", async () => {
+    const { user, profile } = await learner();
+    const session = await getTodaySession(user.id, profile, now);
+    const plan = sessionPlan(session);
+    expect(plan.segments!.length).toBeGreaterThan(1);
+    const focuses = plan.blocks.filter((b) => b.kind === "focus");
+    expect(new Set(focuses.map((b) => b.skill))).toEqual(
+      new Set(["speaking", "listening", "writing"]),
+    );
+    expect(plan.newConceptIds!.length).toBeLessThanOrEqual(plan.newConceptLimit!);
+    const position = plan.blocks.findIndex((b) => b.kind === "focus" && b.skill === "listening");
+    const block = plan.blocks[position]!;
+    if (block.kind !== "focus") throw new Error("missing focus");
+    await db.dailySession.update({ where: { id: session.id }, data: { cursor: position } });
+    const prepared = await prepareReviewItems(user.id, block.items, plan.date, false, true);
+    expect(prepared.length).toBeGreaterThan(1);
+    expect(prepared.every((p) => p.activity.type === "dictation")).toBe(true);
+    const { buildReviewActivity } = await import("@/lib/learning/review/generate");
+    const { reviewSeed } = await import("./review");
+    const item = block.items[0]!;
+    const activity = buildReviewActivity({
+      index: getContent(),
+      conceptId: item.conceptId,
+      dimension: item.dimension,
+      seed: reviewSeed(user.id, plan.date),
+      productionPractice: true,
+    })!;
+    await submitReview({
+      userId: user.id,
+      sessionId: session.id,
+      item,
+      date: plan.date,
+      context: "session",
+      response: oracleResponse(activity, activitySeed(user.id), true),
+    });
+    expect(await db.memoryTrace.count({ where: { userId: user.id } })).toBe(0);
+    expect(await db.reviewLog.count({ where: { userId: user.id } })).toBe(0);
+    expect(
+      (await db.dailyActivity.findFirstOrThrow({ where: { userId: user.id } })).reviewsDone,
+    ).toBe(0);
+  });
+
+  it("counts due session review once and excludes it from a paused review after FSRS rescheduling", async () => {
+    const { user } = await learner();
+    const activity = lessonActivity("a0-u1-l1", "a0-u1-l1-a1");
+    await submitActivity({
+      userId: user.id,
+      activity,
+      response: oracleResponse(activity, activitySeed(user.id), true),
+      context: "lesson",
+      now: new Date(Date.now() - 3 * 86_400_000),
+    });
+    const item = { conceptId: "lex:bonjour", dimension: "recognition" as const };
+    const plan: SessionPlan = {
+      version: 1,
+      date: "2026-10-09",
+      minutes: 5,
+      seconds: 12,
+      blocks: [{ kind: "review", seconds: 12, items: [item], reason: "due" }],
+    };
+    const session = await db.dailySession.create({
+      data: {
+        userId: user.id,
+        localDate: plan.date,
+        plannedMinutes: 5,
+        plan: plan as unknown as Prisma.InputJsonValue,
+      },
+    });
+    expect(await prepareReviewItems(user.id, [item], plan.date, true)).toHaveLength(1);
+    const response = { kind: "choice" as const, choice: 0 };
+    // Rebuild the correct authored response for the generated activity (rather than guessing).
+    const { buildReviewActivity } = await import("@/lib/learning/review/generate");
+    const { reviewSeed } = await import("./review");
+    const review = buildReviewActivity({
+      index: getContent(),
+      conceptId: item.conceptId,
+      dimension: item.dimension,
+      seed: reviewSeed(user.id, plan.date),
+    })!;
+    Object.assign(response, oracleResponse(review, activitySeed(user.id), true));
+    await submitReview({
+      userId: user.id,
+      sessionId: session.id,
+      item,
+      date: plan.date,
+      context: "session",
+      response,
+    });
+    const day = await db.dailyActivity.findFirstOrThrow({
+      where: { userId: user.id },
+      orderBy: { localDate: "desc" },
+    });
+    expect(day.reviewsDone).toBe(1);
+    expect(await prepareReviewItems(user.id, [item], plan.date, true)).toHaveLength(0);
+    await expect(
+      submitReview({
+        userId: user.id,
+        sessionId: session.id,
+        item,
+        date: plan.date,
+        context: "session",
+        response,
+      }),
+    ).rejects.toThrow("reagendado");
+  });
+
+  it("makes concurrent final-block completion idempotent", async () => {
+    const { user, profile } = await learner();
+    const session = await getTodaySession(user.id, profile, now);
+    const last = sessionPlan(session).blocks.length - 1;
+    await db.dailySession.update({ where: { id: session.id }, data: { cursor: last } });
+    const [a, b] = await Promise.all([
+      completeBlock(user.id, session.id, last),
+      completeBlock(user.id, session.id, last),
+    ]);
+    expect(a.cursor).toBe(b.cursor);
+    expect(
+      await db.studyEvent.count({ where: { userId: user.id, type: "session_completed" } }),
+    ).toBe(1);
+  });
 
   it("does not reschedule future memory or credit review when skill practice is submitted", async () => {
     const { user } = await learner();
@@ -65,11 +188,11 @@ describe.skipIf(!hasTestDatabase)("intensive session persistence", () => {
 
   it("serializes concurrent plan requests and preserves the cursor and frozen plan", async () => {
     const { user, profile } = await learner();
-    const [a, b] = await Promise.all([
-      getTodaySession(user.id, profile, now),
-      getTodaySession(user.id, profile, now),
-    ]);
-    expect(a.id).toBe(b.id);
+    const sessions = await Promise.all(
+      Array.from({ length: 12 }, () => getTodaySession(user.id, profile, now)),
+    );
+    const a = sessions[0]!;
+    expect(new Set(sessions.map((s) => s.id)).size).toBe(1);
     await completeBlock(user.id, a.id, 0);
     const restored = await getSession(user.id, a.id);
     expect(restored.cursor).toBe(1);
