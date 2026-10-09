@@ -3,18 +3,25 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { nextCookies } from "better-auth/next-js";
 import { db } from "@/server/db";
-import { serverEnv } from "@/lib/env";
+import { serverEnv, type ServerEnv } from "@/lib/env";
 
 /**
  * Better Auth configuration (ADR-005). Email + password for now; e-mail
  * verification and password reset need an e-mail provider and are planned.
  */
-function createAuth() {
-  const env = serverEnv();
+export function createAuth(env: ServerEnv = serverEnv()) {
   return betterAuth({
     appName: "Je Parle Français",
     secret: env.BETTER_AUTH_SECRET,
     baseURL: env.BETTER_AUTH_URL,
+    trustedOrigins: env.BETTER_AUTH_URL ? [new URL(env.BETTER_AUTH_URL).origin] : undefined,
+    advanced: {
+      disableCSRFCheck: false,
+      disableOriginCheck: false,
+      // Never infer the public origin from arbitrary proxy headers.
+      // Environment validation permits HTTP only on loopback for local tests.
+      useSecureCookies: env.BETTER_AUTH_URL?.startsWith("https://"),
+    },
     database: prismaAdapter(db, { provider: "postgresql" }),
     emailAndPassword: {
       enabled: true,

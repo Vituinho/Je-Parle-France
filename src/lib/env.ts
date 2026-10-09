@@ -4,9 +4,8 @@ import { z } from "zod";
 /**
  * Server-side environment, validated once on first access.
  *
- * Optional integrations (LLM, speech, storage) fall back to development mocks
- * when their keys are missing, so the app stays fully usable offline. Each
- * consumer checks `isConfigured` helpers instead of reading process.env directly.
+ * Optional integrations default to labelled mocks. Explicitly selecting a real
+ * provider requires its credentials; configuration mistakes never become mocks.
  */
 const emptyToUndefined = (value: unknown) =>
   typeof value === "string" && value.trim() === "" ? undefined : value;
@@ -46,21 +45,76 @@ const serverEnvSchema = z
         message: "AZURE_SPEECH_KEY and AZURE_SPEECH_REGION are required when SPEECH_PROVIDER=azure",
       });
     }
+    if (
+      URL.canParse(env.DATABASE_URL) &&
+      !/^postgres(ql)?:$/.test(new URL(env.DATABASE_URL).protocol)
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["DATABASE_URL"],
+        message: "Use a PostgreSQL connection URL",
+      });
+    }
+    if (env.AZURE_SPEECH_REGION && !/^[a-z0-9-]+$/.test(env.AZURE_SPEECH_REGION)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["AZURE_SPEECH_REGION"],
+        message: "Use an Azure region name, not an endpoint URL",
+      });
+    }
+    if (env.NODE_ENV === "production") {
+      if (!env.BETTER_AUTH_URL) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["BETTER_AUTH_URL"],
+          message: "Required in production",
+        });
+      }
+      if (/change-me|placeholder|example-secret/i.test(env.BETTER_AUTH_SECRET)) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["BETTER_AUTH_SECRET"],
+          message: "Replace the example with a randomly generated secret",
+        });
+      }
+    }
+    if (env.BETTER_AUTH_URL && URL.canParse(env.BETTER_AUTH_URL)) {
+      const url = new URL(env.BETTER_AUTH_URL);
+      const loopback = ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
+      if (
+        (url.protocol !== "https:" && !(url.protocol === "http:" && loopback)) ||
+        url.username ||
+        url.password ||
+        url.pathname !== "/" ||
+        url.search ||
+        url.hash
+      ) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["BETTER_AUTH_URL"],
+          message:
+            "Use the HTTPS public origin without a path (HTTP allowed only on loopback for local tests)",
+        });
+      }
+    }
   });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
 
 let cached: ServerEnv | undefined;
 
-export function serverEnv(): ServerEnv {
-  if (cached) return cached;
-  const parsed = serverEnvSchema.safeParse(process.env);
+export function validateServerEnv(input: Record<string, string | undefined>): ServerEnv {
+  const parsed = serverEnvSchema.safeParse(input);
   if (!parsed.success) {
     const issues = parsed.error.issues
       .map((issue) => `  - ${issue.path.join(".")}: ${issue.message}`)
       .join("\n");
     throw new Error(`Invalid server environment:\n${issues}\nSee .env.example.`);
   }
-  cached = parsed.data;
+  return parsed.data;
+}
+
+export function serverEnv(): ServerEnv {
+  cached ??= validateServerEnv(process.env);
   return cached;
 }

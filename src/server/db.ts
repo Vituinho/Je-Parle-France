@@ -8,7 +8,12 @@ export type Db = PrismaClient;
 const globalForPrisma = globalThis as unknown as { __jpfPrisma?: PrismaClient };
 
 function createClient(): PrismaClient {
-  const adapter = new PrismaPg({ connectionString: serverEnv().DATABASE_URL });
+  const adapter = new PrismaPg({
+    connectionString: serverEnv().DATABASE_URL,
+    max: 10,
+    connectionTimeoutMillis: 5_000,
+    idleTimeoutMillis: 30_000,
+  });
   return new PrismaClient({ adapter });
 }
 

@@ -6,6 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "prestart": "npm run env:check",
+    "env:check": "node --conditions=react-server --import tsx scripts/check-env.ts",
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
     "format": "prettier --write .",
