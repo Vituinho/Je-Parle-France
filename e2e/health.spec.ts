@@ -8,6 +8,16 @@ test("public healthcheck and production assets are available without a session",
   expect(await health.json()).toEqual({ status: "ok" });
   expect(health.headers()["cache-control"]).toBe("no-store");
   expect((await request.post("/api/health")).status()).toBe(405);
+  const redirect = await request.get("/hoje", {
+    headers: {
+      Host: "staging.example.test",
+      "x-forwarded-host": "staging.example.test",
+      "x-forwarded-proto": "https",
+    },
+    maxRedirects: 0,
+  });
+  expect(redirect.status()).toBe(307);
+  expect(redirect.headers()["location"]).toMatch(/^\/entrar\?next=/);
   const signup = await request.get("/cadastro");
   expect(signup.status()).toBe(200);
   const css = (await signup.text()).match(/href="([^"\s]+\.css(?:\?[^"\s]*)?)"/);

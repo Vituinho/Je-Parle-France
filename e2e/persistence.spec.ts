@@ -58,11 +58,21 @@ test("answers are graded honestly and progress survives logout and login", async
   await page.goto("/hoje");
   await expect(page).toHaveURL(/\/entrar/);
 
+  // Backslashes normalize into a protocol-relative URL in browser URL parsers.
+  // Never send the learner or their session to an external post-login target.
+  let attemptedExternalRedirect = false;
+  await page.route(/^https?:\/\/attacker\.example\.test\//, async (route) => {
+    attemptedExternalRedirect = true;
+    await route.abort();
+  });
+  await page.goto("/entrar?next=" + encodeURIComponent("/\\attacker.example.test"));
+
   // Sign back in: the lesson resumes where it was left, and the words are in the notebook.
   await page.getByLabel("E-mail").fill(learner.email);
   await page.getByLabel("Senha").fill(learner.password);
   await page.getByRole("button", { name: "Entrar", exact: true }).click();
   await expect(page).toHaveURL(/\/hoje$/);
+  expect(attemptedExternalRedirect).toBe(false);
 
   await page.goto("/licao/a0-u1-l1");
   await expect(step(page)).toHaveAttribute("data-step", /^a0-u1-l1-a3-/);

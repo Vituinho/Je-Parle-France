@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useTransition } from "react";
 import { authClient } from "@/lib/auth-client";
+import { safeNext } from "@/lib/auth-redirect";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,11 +23,6 @@ const ERROR_MESSAGES: Record<string, string> = {
 function messageFor(error: { code?: string; message?: string } | null | undefined): string {
   if (!error) return "Não foi possível continuar. Verifique sua conexão e tente de novo.";
   return (error.code && ERROR_MESSAGES[error.code]) || "Não foi possível continuar. Tente de novo.";
-}
-
-/** Only allow same-origin relative redirects. */
-function safeNext(next: string | null, fallback: string): string {
-  return next && next.startsWith("/") && !next.startsWith("//") ? next : fallback;
 }
 
 export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
