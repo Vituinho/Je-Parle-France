@@ -22,6 +22,14 @@ The overall level uses stable receptive/knowledge bands. Exam readiness excludes
 unmeasured estimates. Account export includes evidence; deleting speech assessments removes their
 derived evidence and resets affected practice estimates to their retained calibration.
 
+## Daily planner
+
+The existing planner consumes updated latent estimates and dashboard confidence. Relative weakness
+is weighted by confidence (high 1, medium 0.75, low 0.35), so an unmeasured production starting point
+does not overwhelm measured gaps. Low-confidence focus is described as practice/confirmation.
+Goals, destination tracks, due FSRS reviews, recent focus penalties and time budgets remain in place.
+An already saved daily session stays stable; the next day or extra session uses the updated profile.
+
 ## Statistical engine
 
 `src/lib/learning/skill-estimation/estimate.ts` is pure TypeScript. It reuses the placement

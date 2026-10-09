@@ -68,7 +68,7 @@ export interface PlannerInput {
   concept: (conceptId: string) => ConceptInfo | undefined;
   /** Next lessons in path order: core first, then destination tracks. */
   upcoming: readonly UpcomingLesson[];
-  skills: Record<Skill, { theta: number }>;
+  skills: Record<Skill, { theta: number; confidence?: "high" | "medium" | "low" }>;
   /** Learner wants to live/work in a francophone place (speaking & listening matter more). */
   relocation: boolean;
   /** Block kinds done in the last two sessions, most recent first. */
@@ -197,6 +197,10 @@ const FOCUS_REASON: Record<FocusSkill, string> = {
   writing: "Produzir por escrito o que você já reconhece.",
 };
 
+// Uncertain starting points still invite practice, but cannot dominate measured weaknesses.
+const reliability = (confidence: PlannerInput["skills"][Skill]["confidence"]) =>
+  confidence === "low" ? 0.35 : confidence === "medium" ? 0.75 : 1;
+
 export function planSession(input: PlannerInput): SessionPlan {
   const minutes = Math.max(5, input.dailyMinutes);
   const total = minutes * 60;
@@ -279,10 +283,12 @@ export function planSession(input: PlannerInput): SessionPlan {
   remaining -= usedNew;
 
   // 3. Skill blocks compete on weakness, goals and variety.
+  const skillStates = Object.values(input.skills);
   const meanTheta =
-    Object.values(input.skills).reduce((sum, skill) => sum + skill.theta, 0) /
-    Object.keys(input.skills).length;
-  const focusOptions: { skill: FocusSkill; score: number; items: Candidate[] }[] = [];
+    skillStates.reduce((sum, skill) => sum + skill.theta * reliability(skill.confidence), 0) /
+    skillStates.reduce((sum, skill) => sum + reliability(skill.confidence), 0);
+  const focusOptions: { skill: FocusSkill; score: number; items: Candidate[]; reason: string }[] =
+    [];
   const practisedDims = new Map<FocusSkill, Dimension[]>([
     ["pronunciation", ["pronunciation", "listening"]],
     ["speaking", ["speaking"]],
@@ -307,7 +313,8 @@ export function planSession(input: PlannerInput): SessionPlan {
       }))
       .sort((a, b) => b.priority - a.priority || a.conceptId.localeCompare(b.conceptId));
     if (pool.length === 0) continue;
-    const weakness = meanTheta - input.skills[SKILL_FOR_FOCUS[skill]].theta;
+    const estimate = input.skills[SKILL_FOR_FOCUS[skill]];
+    const weakness = (meanTheta - estimate.theta) * reliability(estimate.confidence);
     const goal = input.relocation && (skill === "speaking" || skill === "listening") ? 0.3 : 0;
     const brazilianBoost = skill === "pronunciation" ? 0.2 : 0;
     const recentPenalty = input.recentBlocks.slice(0, 3).includes(`focus:${skill}`) ? 0.5 : 0;
@@ -315,6 +322,12 @@ export function planSession(input: PlannerInput): SessionPlan {
       skill,
       score: weakness + goal + brazilianBoost - recentPenalty,
       items: pool,
+      reason:
+        estimate.confidence === "low"
+          ? `Praticar e confirmar uma habilidade cuja estimativa ainda tem pouca confiança. ${FOCUS_REASON[skill]}`
+          : weakness > 0.3 && estimate.confidence !== undefined
+            ? `As evidências recentes indicam mais espaço para fortalecer esta habilidade. ${FOCUS_REASON[skill]}`
+            : FOCUS_REASON[skill],
     });
   }
   focusOptions.sort((a, b) => b.score - a.score || a.skill.localeCompare(b.skill));
@@ -341,7 +354,7 @@ export function planSession(input: PlannerInput): SessionPlan {
       skill: option.skill,
       seconds: secondsOf(items),
       items: items.map(({ conceptId, dimension }) => ({ conceptId, dimension })),
-      reason: FOCUS_REASON[option.skill],
+      reason: option.reason,
     });
     remaining -= secondsOf(items);
   }

@@ -218,4 +218,65 @@ describe("daily session planner", () => {
     );
     expect(new Set(keys).size).toBe(keys.length);
   });
+
+  it("changes focus when continuous listening evidence improves the latent estimate", () => {
+    const measured = (listening: number): PlannerInput["skills"] =>
+      Object.fromEntries(
+        Object.entries(
+          skills({
+            listening,
+            speaking: 2.5,
+            reading: 3.5,
+            vocabulary: 3.5,
+            grammar: 3.5,
+            writing: 3.5,
+            pronunciation: 3.5,
+          }),
+        ).map(([skill, state]) => [skill, { ...state, confidence: "medium" }]),
+      ) as PlannerInput["skills"];
+    const base = input({ upcoming: [], skills: measured(1.8) });
+    const first = planSession(base).blocks.find((b) => b.kind === "focus");
+    const next = planSession({ ...base, skills: measured(3.6) }).blocks.find(
+      (b) => b.kind === "focus",
+    );
+    expect(first).toMatchObject({
+      skill: "listening",
+      reason: expect.stringContaining("evidências recentes"),
+    });
+    expect(next).toMatchObject({ skill: "speaking" });
+  });
+
+  it("does not let an uncertain production starting point dominate a measured listening gap", () => {
+    const estimates: PlannerInput["skills"] = skills({
+      reading: 3.5,
+      vocabulary: 3.5,
+      grammar: 3.5,
+      writing: 3.5,
+      pronunciation: 3.5,
+      listening: 1.2,
+      speaking: 0,
+    });
+    for (const state of Object.values(estimates)) state.confidence = "medium";
+    estimates.speaking.confidence = "low";
+    const plan = planSession(input({ upcoming: [], skills: estimates }));
+    expect(plan.blocks.find((b) => b.kind === "focus")).toMatchObject({ skill: "listening" });
+    expect(plan.seconds).toBeLessThanOrEqual(15 * 60);
+  });
+
+  it("explains uncertain focus as confirmation while keeping variety and overdue reviews", () => {
+    const estimates: PlannerInput["skills"] = skills({ listening: 0 });
+    for (const state of Object.values(estimates)) state.confidence = "low";
+    const plan = planSession(input({ skills: estimates, dailyMinutes: 30 }));
+    expect(plan.blocks[0]?.kind).toBe("review");
+    const focus = plan.blocks.find((b) => b.kind === "focus");
+    expect(focus).toMatchObject({
+      skill: "listening",
+      reason: expect.stringContaining("confirmar"),
+    });
+    expect(plan.blocks.some((b) => b.kind === "lesson" && b.track === "canada")).toBe(true);
+    const next = planSession(
+      input({ skills: estimates, dailyMinutes: 15, recentBlocks: ["focus:listening"] }),
+    );
+    expect(next.blocks.find((b) => b.kind === "focus")).not.toMatchObject({ skill: "listening" });
+  });
 });
