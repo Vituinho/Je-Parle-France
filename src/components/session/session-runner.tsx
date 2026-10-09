@@ -19,6 +19,7 @@ import type { SupportMode } from "@/lib/learning/language-support";
 import type { PreparedReviewItem } from "@/server/services/review";
 import type { LearningSegment } from "@/lib/learning/planner/planner";
 import { sendSessionTransition } from "@/components/lesson/use-active-study-time";
+import type { StudyAdvice } from "@/lib/learning/telemetry/metrics";
 
 export type BlockPayload = { title: string; reason: string; seconds: number } & (
   | { kind: "review" | "focus"; items: PreparedReviewItem[]; authored?: boolean }
@@ -53,6 +54,7 @@ export function SessionRunner({
   segments,
   targetMinutes,
   recordedSeconds,
+  studyAdvice,
 }: {
   sessionId: string;
   date: string;
@@ -64,6 +66,7 @@ export function SessionRunner({
   segments: LearningSegment[];
   targetMinutes: number;
   recordedSeconds: number;
+  studyAdvice?: StudyAdvice[];
 }) {
   const [cursor, setCursor] = useState(initialCursor);
   const [playing, setPlaying] = useState(false);
@@ -87,11 +90,11 @@ export function SessionRunner({
     };
     document.addEventListener("visibilitychange", pause);
     window.addEventListener("pagehide", exit);
+    if (playing) void sendSessionTransition(sessionId, "start");
     return () => {
       document.removeEventListener("visibilitychange", pause);
       window.removeEventListener("pagehide", exit);
     };
-    if (playing) void sendSessionTransition(sessionId, "start");
   }, [sessionId, playing]);
 
   function blockDone() {
@@ -184,6 +187,11 @@ export function SessionRunner({
         Plano: ~{plannedMinutes} min. O tempo é uma referência; suas respostas mostram o
         aprendizado.
       </p>
+      {studyAdvice?.map((a) => (
+        <p key={a.kind} className="bg-accent mt-4 rounded-xl p-3 text-sm">
+          {a.message}
+        </p>
+      ))}
       {finished ? (
         <div className="mt-10">
           <Fr as="p" className="text-primary text-2xl">

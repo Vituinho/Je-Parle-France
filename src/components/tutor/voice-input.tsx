@@ -7,6 +7,7 @@ import { toWav16k } from "@/components/activities/wav";
 import { useCapabilities } from "@/components/capabilities";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { withStudyWait } from "@/components/lesson/use-active-study-time";
 
 interface TranscriptionResponse {
   status?: "ok" | "no_speech" | "not_understood" | "error";
@@ -45,7 +46,9 @@ export function VoiceInput({
       const form = new FormData();
       form.set("audio", await toWav16k(recording), "turn.wav");
       form.set("locale", locale);
-      const response = await fetch("/api/speech/transcribe", { method: "POST", body: form });
+      const response = await withStudyWait(() =>
+        fetch("/api/speech/transcribe", { method: "POST", body: form }),
+      );
       const body = (await response.json()) as TranscriptionResponse;
       if (!response.ok) throw new Error(body.error ?? STATUS_MESSAGE.error);
       if (body.status === "ok" && body.transcript) {

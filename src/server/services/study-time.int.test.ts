@@ -40,6 +40,32 @@ describe.skipIf(!hasTestDatabase)("active session telemetry", () => {
   }
   const now = new Date("2026-10-09T12:00:00Z");
   const at = (seconds: number) => new Date(now.getTime() + seconds * 1000);
+  it("credits owned active tutor conversations and rejects other learners, closed conversations and mismatched plan blocks", async () => {
+    const { user, session } = await fixture();
+    const other = await createTestUser();
+    const conversation = await db.conversation.create({
+      data: { userId: user.id, level: "A2", correctionMode: "important_only" },
+    });
+    const slice = {
+      activityId: `conversation:${conversation.id}`,
+      streamId: crypto.randomUUID(),
+      sequence: 0,
+      activeMs: 0,
+    };
+    await expect(recordActiveSlice(other.id, slice, now)).rejects.toThrow("Atividade");
+    await expect(
+      recordActiveSlice(user.id, { ...slice, sessionId: session.id }, now),
+    ).rejects.toThrow("etapa");
+    await recordActiveSlice(user.id, slice, now);
+    expect(
+      (await recordActiveSlice(user.id, { ...slice, sequence: 1, activeMs: 10000 }, at(10)))
+        .creditedSeconds,
+    ).toBe(10);
+    await db.conversation.update({ where: { id: conversation.id }, data: { status: "ended" } });
+    await expect(
+      recordActiveSlice(user.id, { ...slice, sequence: 2, activeMs: 10000 }, at(20)),
+    ).rejects.toThrow("Atividade");
+  });
   it("measures active work separately from a ninety-minute goal, deduplicates, pauses and resumes", async () => {
     const { user, session, slice } = await fixture();
     await recordActiveSlice(user.id, slice, now);

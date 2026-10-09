@@ -16,6 +16,8 @@ import { getDashboard, type Dashboard } from "@/server/services/dashboard";
 import { recentAchievements } from "@/server/services/progress";
 import { requireLearner } from "@/server/session";
 import { STUDY_PACE_OPTIONS } from "@/lib/learning/study-pace";
+import { getLearningTelemetry } from "@/server/services/learning-telemetry";
+import { WeeklyLearning } from "@/components/progress/weekly-learning";
 
 export const metadata: Metadata = { title: "Hoje" };
 
@@ -250,9 +252,10 @@ function StatsPanel({ data }: { data: Dashboard }) {
 
 async function Today() {
   const { user, profile } = await requireLearner();
-  const [data, achievements] = await Promise.all([
+  const [data, achievements, metrics] = await Promise.all([
     getDashboard(user.id, profile),
     recentAchievements(user.id, profile),
+    getLearningTelemetry(user.id),
   ]);
   const firstName = user.name.split(" ")[0] ?? user.name;
   const authentic = dailyAuthentic(getContent().course.authentic, {
@@ -296,6 +299,7 @@ async function Today() {
         <TodayCard session={data.session} />
         <div className="space-y-8">
           <WeekPanel habits={data.habits} workload={data.workload} />
+          <WeeklyLearning metrics={metrics} />
           <p className="text-muted-foreground text-sm" aria-live="polite">
             {data.paceIndicator.message}
           </p>

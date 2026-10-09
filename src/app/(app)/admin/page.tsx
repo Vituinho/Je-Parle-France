@@ -36,6 +36,9 @@ async function Admin() {
     <div className="space-y-12">
       <header>
         <h1 className="text-[2rem] leading-tight font-bold">Administração do conteúdo</h1>
+        <Link href="/admin/piloto" className="text-primary underline">
+          Piloto de aprendizagem
+        </Link>
         <p className="text-muted-foreground mt-2 max-w-2xl leading-relaxed">
           Inventário do curso, problemas de validação e prévia das lições com respostas. O conteúdo
           é editado no repositório (<code>content/</code>) e validado com{" "}

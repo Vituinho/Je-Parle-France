@@ -6,6 +6,7 @@ import { Fr } from "@/components/fr";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { toWav16k } from "./wav";
+import { withStudyWait } from "@/components/lesson/use-active-study-time";
 
 interface AssessmentResponse {
   status: "ok" | "no_speech" | "not_understood" | "error";
@@ -75,7 +76,9 @@ export function PronunciationCheck({
       form.set("referenceText", referenceText);
       form.set("locale", locale);
       form.set("activityId", activityId);
-      const response = await fetch("/api/speech/assess", { method: "POST", body: form });
+      const response = await withStudyWait(() =>
+        fetch("/api/speech/assess", { method: "POST", body: form }),
+      );
       const body = (await response.json()) as AssessmentResponse;
       if (!response.ok) throw new Error(body.error ?? "Falha na avaliação.");
       setResult(body);

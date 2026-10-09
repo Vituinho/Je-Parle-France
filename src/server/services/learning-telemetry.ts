@@ -98,7 +98,7 @@ export async function getLearningTelemetry(
         userId,
         localDate: { gte: addDays(localDate(now, timezone), -7), lte: localDate(now, timezone) },
       },
-      select: { localDate: true, activeSeconds: true },
+      select: { localDate: true, activeSeconds: true, newConcepts: true },
     }),
   ]);
   return learningMetrics({

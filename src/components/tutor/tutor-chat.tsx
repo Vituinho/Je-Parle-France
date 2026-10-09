@@ -20,6 +20,10 @@ import {
 import { cn } from "@/lib/utils";
 import { TutorReport } from "./tutor-report";
 import { VoiceInput } from "./voice-input";
+import {
+  useActiveStudyTime,
+  sendSessionTransition,
+} from "@/components/lesson/use-active-study-time";
 
 export interface ChatTurn {
   id: string;
@@ -124,6 +128,7 @@ export function TutorChat({
   const [ending, startEnding] = useTransition();
   const input = useRef<HTMLTextAreaElement>(null);
   const bottom = useRef<HTMLDivElement>(null);
+  const active = useActiveStudyTime(`conversation:${conversationId}`, sessionId, !initialReport);
 
   useEffect(() => {
     bottom.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -144,8 +149,11 @@ export function TutorChat({
     const wasSpoken = spoken;
     setText("");
     setSpoken(false);
+    active.setEnabled(false);
     startSending(async () => {
+      await active.flush();
       const result = await sendMessageAction({ conversationId, text: message, spoken: wasSpoken });
+      active.setEnabled(true);
       if (!result.ok) {
         setError(result.error);
         setTurns((current) => current.filter((turn) => turn.id !== optimisticId));
@@ -165,9 +173,12 @@ export function TutorChat({
 
   function end() {
     setError(null);
+    active.setEnabled(false);
     startEnding(async () => {
+      await active.flush();
       const result = await endConversationAction({ conversationId, sessionId });
       if (!result.ok) {
+        active.setEnabled(true);
         setError(result.error);
         return;
       }
@@ -179,7 +190,12 @@ export function TutorChat({
     <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-5 pt-5 sm:px-8">
       <header className="border-border flex items-center gap-3 border-b pb-4">
         <Button asChild variant="ghost" size="icon-lg" aria-label="Voltar">
-          <Link href={sessionId ? "/sessao" : "/tutor"}>
+          <Link
+            href={sessionId ? "/sessao" : "/tutor"}
+            onClick={() => {
+              if (sessionId) void sendSessionTransition(sessionId, "pause");
+            }}
+          >
             <ArrowLeft />
           </Link>
         </Button>

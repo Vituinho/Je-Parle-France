@@ -90,8 +90,23 @@ export async function recordActiveSlice(userId: string, input: unknown, now = ne
         : null;
       if (slice.sessionId && (!session || ["completed", "abandoned"].includes(session.status)))
         throw new StudyTimeError("Sessão não encontrada ou encerrada.");
+      const conversation = slice.activityId.startsWith("conversation:")
+        ? await tx.conversation.findFirst({
+            where: { id: slice.activityId.slice("conversation:".length), userId, status: "active" },
+            select: { scenarioId: true },
+          })
+        : null;
+      const currentBlock = (session?.plan as unknown as SessionPlan | undefined)?.blocks?.[
+        session?.cursor ?? 0
+      ];
+      const conversationAllowed =
+        !!conversation &&
+        (!session ||
+          (currentBlock?.kind === "conversation" &&
+            currentBlock.scenarioId === conversation.scenarioId));
       if (
         session &&
+        !conversationAllowed &&
         !inBlock(
           (session.plan as unknown as SessionPlan).blocks?.[session.cursor],
           slice.activityId,
@@ -101,6 +116,7 @@ export async function recordActiveSlice(userId: string, input: unknown, now = ne
       if (
         !session &&
         !getContent().activities.has(slice.activityId) &&
+        !conversationAllowed &&
         !/^rv-[a-z0-9-]+$/.test(slice.activityId)
       )
         throw new StudyTimeError("Atividade não encontrada.");

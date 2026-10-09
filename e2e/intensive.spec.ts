@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import pg from "pg";
 import { answerCurrentStep, completeOnboarding, signUp } from "./helpers";
 
 test("accelerated 90-minute plan completes a block, pauses, and resumes after login", async ({
@@ -25,10 +26,16 @@ test("accelerated 90-minute plan completes a block, pauses, and resumes after lo
   const start = page
     .getByRole("button", { name: /^(Começar|Continuar)$/ })
     .filter({ visible: true });
+  let sampled = false;
   for (let guard = 0; guard < 100; guard += 1) {
     await expect(step.or(start).first()).toBeVisible();
-    if (await step.count()) await answerCurrentStep(page);
-    else if (Number(await overview.getAttribute("data-session-cursor")) >= firstEnd) break;
+    if (await step.count()) {
+      if (!sampled) {
+        await page.waitForTimeout(2100);
+        sampled = true;
+      }
+      await answerCurrentStep(page);
+    } else if (Number(await overview.getAttribute("data-session-cursor")) >= firstEnd) break;
     else await start.click();
   }
   await expect(page.getByRole("heading", { name: "Bloco 1 concluído" })).toBeVisible();
@@ -37,6 +44,28 @@ test("accelerated 90-minute plan completes a block, pauses, and resumes after lo
   expect(savedSession.cursor).toBe(firstEnd);
   expect(savedSession.status).toBe("in_progress");
   await page.getByRole("link", { name: "Pausar e continuar mais tarde" }).click();
+  await expect(page.getByRole("heading", { name: "Aprendizagem na semana" })).toBeVisible();
+  await expect
+    .poll(async () => {
+      const exported = await (await page.request.get("/api/conta/dados")).json();
+      return exported.studyEvents.filter((e: { type: string }) => e.type === "session_paused")
+        .length;
+    })
+    .toBeGreaterThan(0);
+  const paused = await (await page.request.get("/api/conta/dados")).json();
+  const pausedSeconds = paused.dailySessions.find(
+    (s: { id: string }) => s.id === session.id,
+  ).activeSeconds;
+  expect(pausedSeconds).toBeGreaterThan(0);
+  await expect(page.locator("[data-weekly-active-seconds]:visible")).toHaveAttribute(
+    "data-weekly-active-seconds",
+    String(
+      paused.dailyActivity.reduce(
+        (sum: number, d: { activeSeconds: number }) => sum + d.activeSeconds,
+        0,
+      ),
+    ),
+  );
   await page.getByRole("button", { name: "Abrir menu da conta" }).filter({ visible: true }).click();
   await page.getByRole("menuitem", { name: "Sair" }).click();
   await expect(page).toHaveURL(/\/$/);
@@ -51,7 +80,25 @@ test("accelerated 90-minute plan completes a block, pauses, and resumes after lo
     String(firstEnd),
   );
   await expect(page.getByText(/Bloco 2 de/)).toBeVisible();
+  // More measured work after resuming; one additional authored/generated task is enough.
+  await start.click();
+  await expect(step).toBeVisible();
+  await page.waitForTimeout(2100);
+  await answerCurrentStep(page);
+  await page.goto("/hoje");
+  await expect
+    .poll(async () => {
+      const exported = await (await page.request.get("/api/conta/dados")).json();
+      return exported.dailySessions.find((s: { id: string }) => s.id === session.id).activeSeconds;
+    })
+    .toBeGreaterThan(pausedSeconds);
   const restored = await (await page.request.get("/api/conta/dados")).json();
+  expect(restored.studyEvents.some((e: { type: string }) => e.type === "session_resumed")).toBe(
+    true,
+  );
+  expect(restored.studyEvents.some((e: { type: string }) => e.type === "block_completed")).toBe(
+    true,
+  );
   expect(restored.dailySessions.find((s: { id: string }) => s.id === session.id).plan).toEqual(
     session.plan,
   );
@@ -69,12 +116,44 @@ test("accelerated 90-minute plan completes a block, pauses, and resumes after lo
   const after = await (await page.request.get("/api/conta/dados")).json();
   expect(after.profile.dailyMinutes).toBe(120);
   expect(after.profile.studyPace).toBe("immersion");
-  expect(after.dailySessions.find((s: { id: string }) => s.id === session.id).cursor).toBe(
-    firstEnd,
-  );
+  expect(
+    after.dailySessions.find((s: { id: string }) => s.id === session.id).cursor,
+  ).toBeGreaterThanOrEqual(firstEnd);
   expect(after.dailySessions.find((s: { id: string }) => s.id === session.id).plan).toEqual(
     session.plan,
   );
   await page.goto("/hoje");
   await expect(page.getByText(/Ritmo: Acelerado · Meta diária: 90 minutos/)).toBeVisible();
+  await page
+    .locator("[data-weekly-active-seconds]:visible")
+    .screenshot({ path: `.data/verification/telemetry-weekly-${test.info().project.name}.png` });
+  // A normal learner cannot inspect the pilot. Then promote only this disposable local fixture.
+  await page.goto("/admin/piloto");
+  await expect(page.getByRole("heading", { name: "Página não encontrada" })).toBeVisible();
+  const dbUrl = process.env.DATABASE_URL ?? "postgresql://jpf@localhost:54329/jpf_dev";
+  const parsedUrl = new URL(dbUrl);
+  if (
+    !["localhost", "127.0.0.1"].includes(parsedUrl.hostname) ||
+    !parsedUrl.pathname.endsWith("/jpf_dev")
+  )
+    throw new Error("Pilot E2E role fixture is restricted to the local development database");
+  const client = new pg.Client({ connectionString: dbUrl });
+  await client.connect();
+  try {
+    await client.query("update users set role = 'admin' where email = $1", [learner.email]);
+  } finally {
+    await client.end();
+  }
+  await page.goto(`/admin/piloto?learner=${after.user.id}`);
+  await expect(
+    page.getByRole("heading", { name: "Piloto de aprendizagem", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator(`[data-pilot-session="${session.id}"]`)).toHaveAttribute(
+    "data-pilot-active-seconds",
+    String(after.dailySessions.find((s: { id: string }) => s.id === session.id).activeSeconds),
+  );
+  await expect(page.getByRole("heading", { name: "Linha do tempo educacional" })).toBeVisible();
+  await page.screenshot({
+    path: `.data/verification/telemetry-pilot-${test.info().project.name}.png`,
+  });
 });

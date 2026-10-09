@@ -128,6 +128,7 @@ async function Session({
       targetMinutes={plan.minutes}
       segments={plan.segments ?? learningSegments(plan.blocks, plan.minutes)}
       recordedSeconds={await recordedStudySeconds(user.id, plan.date)}
+      studyAdvice={plan.studyAdvice}
       blocks={blocks}
       initialCursor={session.cursor}
       support={supportFor(level.level, profile)}

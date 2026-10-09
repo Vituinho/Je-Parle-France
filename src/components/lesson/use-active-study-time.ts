@@ -4,6 +4,19 @@ import { ActiveStudyClock, SLICE_MS } from "@/lib/learning/telemetry/active-time
 import type { ActiveSlice } from "@/lib/learning/telemetry/events";
 
 const flushers = new Set<() => Promise<void>>();
+let waiting = 0;
+const waitListeners = new Set<() => void>();
+/** Coarse provider-wait state only; accepts no learner content or operation details. */
+export async function withStudyWait<T>(call: () => Promise<T>): Promise<T> {
+  waiting++;
+  for (const notify of waitListeners) notify();
+  try {
+    return await call();
+  } finally {
+    waiting--;
+    for (const notify of waitListeners) notify();
+  }
+}
 export async function sendSessionTransition(sessionId: string, transition: "start" | "pause") {
   if (transition === "pause") await Promise.all([...flushers].map((flush) => flush()));
   return fetch("/api/learning/session", {
@@ -15,19 +28,20 @@ export async function sendSessionTransition(sessionId: string, transition: "star
 }
 
 /** No key values, coordinates, responses or audio are inspected or sent. */
-export function useActiveStudyTime(activityId: string, sessionId?: string) {
+export function useActiveStudyTime(activityId: string, sessionId?: string, initialEnabled = true) {
   const state = useRef<{
     clock: ActiveStudyClock;
     sent: number;
     sequence: number;
     streamId: string;
     queue: Promise<unknown>;
+    enabled: boolean;
   } | null>(null);
-  const read = () => state.current?.clock.sample(performance.now()) ?? 0;
+  const read = () => Math.floor(state.current?.clock.sample(performance.now()) ?? 0);
   const flush = () => {
     const current = state.current;
     if (!current) return Promise.resolve();
-    const total = current.clock.sample(performance.now());
+    const total = Math.floor(current.clock.sample(performance.now()));
     while (total - current.sent > 0) {
       const ms = Math.min(SLICE_MS, total - current.sent);
       current.sent += ms;
@@ -51,6 +65,7 @@ export function useActiveStudyTime(activityId: string, sessionId?: string) {
     return current.queue.then(() => undefined);
   };
   useEffect(() => {
+    if (!initialEnabled) return;
     const clock = new ActiveStudyClock(performance.now());
     clock.setVisible(performance.now(), !document.hidden && document.hasFocus());
     const streamId = crypto.randomUUID();
@@ -59,6 +74,7 @@ export function useActiveStudyTime(activityId: string, sessionId?: string) {
       clock,
       streamId,
       sequence: 0,
+      enabled: true,
       sent: 0,
       queue: fetch("/api/learning/time", {
         method: "POST",
@@ -69,13 +85,22 @@ export function useActiveStudyTime(activityId: string, sessionId?: string) {
       }).catch(() => undefined),
     };
     const interact = () => clock.interact(performance.now());
+    const waitChanged = () =>
+      clock.setEnabled(performance.now(), !!state.current?.enabled && waiting === 0);
+    waitListeners.add(waitChanged);
+    waitChanged();
     const visibility = () => {
       clock.setVisible(performance.now(), !document.hidden && document.hasFocus());
-      if (document.hidden) void flush();
+      if (document.hidden) {
+        void flush();
+        if (sessionId) void sendSessionTransition(sessionId, "pause");
+      } else if (sessionId && state.current?.enabled)
+        void sendSessionTransition(sessionId, "start");
     };
     const hide = () => {
       clock.setVisible(performance.now(), false);
       void flush();
+      if (sessionId) void sendSessionTransition(sessionId, "pause");
     };
     document.addEventListener("visibilitychange", visibility);
     window.addEventListener("focus", visibility);
@@ -93,6 +118,7 @@ export function useActiveStudyTime(activityId: string, sessionId?: string) {
       void flush();
       clearInterval(timer);
       flushers.delete(flush);
+      waitListeners.delete(waitChanged);
       document.removeEventListener("visibilitychange", visibility);
       window.removeEventListener("focus", visibility);
       window.removeEventListener("blur", hide);
@@ -104,10 +130,15 @@ export function useActiveStudyTime(activityId: string, sessionId?: string) {
     };
     // The caller remounts this hook for each activity instance; listeners read no changing state.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activityId, sessionId]);
+  }, [activityId, sessionId, initialEnabled]);
   return {
     read,
     flush,
-    setEnabled: (enabled: boolean) => state.current?.clock.setEnabled(performance.now(), enabled),
+    setEnabled: (enabled: boolean) => {
+      if (state.current) {
+        state.current.enabled = enabled;
+        state.current.clock.setEnabled(performance.now(), enabled && waiting === 0);
+      }
+    },
   };
 }

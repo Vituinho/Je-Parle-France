@@ -45,7 +45,7 @@ export interface TelemetryInput {
   reviews: readonly TelemetryReview[];
   evidence: readonly SkillEvidence[];
   events: readonly { type: string; payload: unknown; createdAt: Date; sessionId: string | null }[];
-  days: readonly { localDate: string; activeSeconds: number }[];
+  days: readonly { localDate: string; activeSeconds: number; newConcepts?: number }[];
   truncated?: boolean;
 }
 export interface StudyAdvice {
@@ -361,7 +361,12 @@ export function learningMetrics(input: TelemetryInput) {
         .reduce((sum, d) => sum + d.activeSeconds, 0),
       referenceMinutes: input.dailyMinutes * input.weeklyGoalDays,
       strengthened: strengthened.size,
-      introduced: introduced.size,
+      introduced: Math.max(
+        introduced.size,
+        input.days
+          .filter((d) => d.localDate >= from && d.localDate <= through)
+          .reduce((sum, d) => sum + (d.newConcepts ?? 0), 0),
+      ),
       retention: retention(
         input.reviews.filter((r) => inWeek(r.reviewedAt)),
         timezone,

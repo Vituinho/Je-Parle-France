@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useCapabilities } from "@/components/capabilities";
+import { withStudyWait } from "@/components/lesson/use-active-study-time";
 
 /**
  * French speech synthesis in the browser — the zero-cost TTS fallback
@@ -149,7 +150,7 @@ export function useFrenchSpeech() {
   const speakOne = useCallback(
     async (text: string, options: SpeakOptions = {}) => {
       if (serverTts) {
-        const url = await serverClip(text, options);
+        const url = await withStudyWait(() => serverClip(text, options));
         if (url) {
           await new Promise<void>((resolve) => {
             const audio = new Audio(url);

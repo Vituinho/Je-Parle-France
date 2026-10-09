@@ -105,6 +105,12 @@ async function Account() {
         <div className="space-y-10">
           <div>
             <h3 className="text-lg font-semibold">O que guardamos</h3>
+            <p className="text-muted-foreground mt-2 text-sm">
+              Também guardamos metadados educacionais: janelas aproximadas de tempo ativo, etapas
+              concluídas, resultados e evidências de aprendizagem. Não registramos teclas digitadas
+              nem posições do mouse. Esses dados entram na exportação e são removidos ao excluir a
+              conta.
+            </p>
             <ul className="mt-2 list-disc space-y-1 pl-5 leading-relaxed">
               <li>Seu perfil e preferências, as respostas dos diagnósticos e dos exercícios.</li>
               <li>O histórico de memória de cada palavra e estrutura, para agendar as revisões.</li>
