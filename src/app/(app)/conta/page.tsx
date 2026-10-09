@@ -8,6 +8,7 @@ import { Fr } from "@/components/fr";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { DailyMinutes } from "@/lib/learning/onboarding";
+import { studyPace } from "@/lib/learning/study-pace";
 import { getCapabilities } from "@/lib/ai/capabilities";
 import { getAccount } from "@/server/services/account";
 import { requireLearner } from "@/server/session";
@@ -53,6 +54,7 @@ async function Account() {
   const initial: PreferencesValues = {
     name: account.name,
     dailyMinutes: profile.dailyMinutes as DailyMinutes,
+    studyPace: studyPace(profile.studyPace, profile.dailyMinutes),
     weeklyGoalDays: profile.weeklyGoalDays,
     destination: profile.destination,
     targetLevel: profile.targetLevel ?? "",

@@ -4,6 +4,8 @@ import { createTestUser, hasTestDatabase, resetDatabase } from "@/test/db";
 import { deletePrivateData, exportUserData, getAccount, updatePreferences } from "./account";
 import { completeOnboarding } from "./onboarding";
 import { endConversation, sendLearnerMessage, startConversation } from "./tutor";
+import { studyPace } from "@/lib/learning/study-pace";
+import { getTodaySession, sessionPlan } from "./session";
 
 async function learner() {
   const user = await createTestUser();
@@ -34,11 +36,40 @@ describe.skipIf(!hasTestDatabase)("account service", () => {
   beforeEach(resetDatabase);
   afterAll(() => db.$disconnect());
 
+  it("keeps legacy time and frozen sessions, and changes only future planning", async () => {
+    const user = await learner();
+    const legacy = await db.learnerProfile.update({
+      where: { userId: user.id },
+      data: { studyPace: null },
+    });
+    const now = new Date("2026-10-09T12:00:00Z");
+    const frozen = await getTodaySession(user.id, legacy, now);
+    expect(studyPace(legacy.studyPace, legacy.dailyMinutes)).toBe("light");
+    await updatePreferences(user.id, {
+      name: user.name,
+      dailyMinutes: 90,
+      studyPace: "accelerated",
+      weeklyGoalDays: 5,
+      destination: legacy.destination,
+      targetLevel: null,
+      correctionMode: legacy.correctionMode,
+      supportPreference: legacy.supportPreference,
+      timezone: legacy.timezone,
+    });
+    const changed = await db.learnerProfile.findUniqueOrThrow({ where: { userId: user.id } });
+    expect((await getTodaySession(user.id, changed, now)).plan).toEqual(frozen.plan);
+    const tomorrow = await getTodaySession(user.id, changed, new Date("2026-10-10T12:00:00Z"));
+    expect(sessionPlan(tomorrow).minutes).toBe(90);
+    expect(changed.onboardedAt).toEqual(legacy.onboardedAt);
+    expect(changed.startLessonId).toBe(legacy.startLessonId);
+  });
+
   it("updates preferences without touching progress", async () => {
     const user = await learner();
     await updatePreferences(user.id, {
       name: "Ana Paula",
       dailyMinutes: 30,
+      studyPace: "accelerated",
       weeklyGoalDays: 4,
       destination: "canada_quebec",
       targetLevel: null,
@@ -51,6 +82,7 @@ describe.skipIf(!hasTestDatabase)("account service", () => {
     expect(account.name).toBe("Ana Paula");
     expect(profile).toMatchObject({
       dailyMinutes: 30,
+      studyPace: "accelerated",
       weeklyGoalDays: 4,
       destination: "canada_quebec",
       targetLevel: null,

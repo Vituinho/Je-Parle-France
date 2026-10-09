@@ -65,6 +65,13 @@ enum SupportPreference {
   more_french
 }
 
+enum StudyPace {
+  light
+  balanced
+  accelerated
+  immersion
+}
+
 enum PlacementStatus {
   not_started
   skipped
@@ -258,6 +265,8 @@ model LearnerProfile {
   destination       Destination
   priorExperience   PriorExperience
   dailyMinutes      Int
+  /// Null preserves legacy profiles; pace is inferred without rewriting their plans.
+  studyPace         StudyPace?
   /// CEFR level the learner aims for; null = "não sei".
   targetLevel       String?
   targetDate        DateTime?         @db.Date

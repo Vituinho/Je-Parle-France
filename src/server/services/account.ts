@@ -33,6 +33,7 @@ export async function updatePreferences(userId: string, input: PreferencesInput)
       where: { userId },
       data: {
         dailyMinutes: input.dailyMinutes,
+        studyPace: input.studyPace,
         weeklyGoalDays: input.weeklyGoalDays,
         destination: input.destination,
         targetLevel: input.targetLevel,
@@ -48,6 +49,7 @@ export async function updatePreferences(userId: string, input: PreferencesInput)
         type: "preferences_updated",
         payload: {
           dailyMinutes: input.dailyMinutes,
+          studyPace: input.studyPace ?? null,
           weeklyGoalDays: input.weeklyGoalDays,
           destination: input.destination,
           supportPreference: input.supportPreference,

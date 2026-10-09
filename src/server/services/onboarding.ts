@@ -4,6 +4,7 @@ import { SKILLS } from "@/lib/learning/skills";
 import { experiencePrior, type OnboardingInput } from "@/lib/learning/onboarding";
 import { db } from "@/server/db";
 import { levelIndex, readTheta } from "@/lib/learning/cefr";
+import { studyPace } from "@/lib/learning/study-pace";
 
 /**
  * Saves the onboarding answers, seeds self-reported skill estimates (marked as
@@ -19,6 +20,7 @@ export async function completeOnboarding(userId: string, input: OnboardingInput)
     destination: input.destination,
     priorExperience: input.priorExperience,
     dailyMinutes: input.dailyMinutes,
+    studyPace: studyPace(input.studyPace, input.dailyMinutes),
     targetLevel: input.targetLevel,
     targetDate: input.targetMonth ? new Date(`${input.targetMonth}-01T00:00:00Z`) : null,
     placementStatus: fromZero ? ("skipped" as const) : ("not_started" as const),

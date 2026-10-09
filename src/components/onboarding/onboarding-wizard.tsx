@@ -10,8 +10,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { StudyChoices } from "@/components/study-choices";
+import { studyPace, type StudyPace } from "@/lib/learning/study-pace";
 import {
-  DAILY_MINUTES,
   estimateTimeToLevel,
   experiencePrior,
   minutesPerDayForDeadline,
@@ -25,7 +26,6 @@ import {
 } from "@/lib/learning/onboarding";
 import {
   DESTINATION_OPTIONS as DESTINATIONS,
-  SESSION_DESCRIPTIONS as DURATIONS,
   TARGET_LEVEL_OPTIONS as LEVELS,
   type TargetLevel,
 } from "@/lib/learning/preferences";
@@ -36,6 +36,7 @@ interface Answers {
   destination: Destination | null;
   priorExperience: PriorExperience | null;
   dailyMinutes: DailyMinutes | null;
+  studyPace: StudyPace | null;
   targetLevel: TargetLevel | null | "unknown";
   targetMonth: string;
   start: StartChoice | null;
@@ -119,6 +120,7 @@ export function OnboardingWizard({ firstName }: { firstName: string }) {
     destination: null,
     priorExperience: null,
     dailyMinutes: null,
+    studyPace: null,
     targetLevel: null,
     targetMonth: "",
     start: null,
@@ -138,7 +140,12 @@ export function OnboardingWizard({ firstName }: { firstName: string }) {
       case "experience":
         return answers.priorExperience !== null;
       case "time":
-        return answers.dailyMinutes !== null;
+        return (
+          answers.dailyMinutes !== null &&
+          answers.dailyMinutes >= 5 &&
+          answers.dailyMinutes <= 240 &&
+          Number.isInteger(answers.dailyMinutes)
+        );
       case "target":
         return answers.targetLevel !== null;
       case "start":
@@ -182,6 +189,7 @@ export function OnboardingWizard({ firstName }: { firstName: string }) {
         destination: answers.destination,
         priorExperience: answers.priorExperience,
         dailyMinutes: answers.dailyMinutes,
+        studyPace: studyPace(answers.studyPace, answers.dailyMinutes ?? 30),
         targetLevel: answers.targetLevel === "unknown" ? null : answers.targetLevel,
         targetMonth: answers.targetMonth || undefined,
         start: answers.start,
@@ -307,26 +315,12 @@ export function OnboardingWizard({ firstName }: { firstName: string }) {
             )}
 
             {current.id === "time" && (
-              <>
-                <div className="grid gap-2.5">
-                  {DAILY_MINUTES.map((minutes) => (
-                    <ChoiceTile
-                      key={minutes}
-                      type="radio"
-                      name="dailyMinutes"
-                      value={String(minutes)}
-                      title={`${minutes} minutos`}
-                      description={DURATIONS[minutes]}
-                      checked={answers.dailyMinutes === minutes}
-                      onChange={() => update({ dailyMinutes: minutes })}
-                    />
-                  ))}
-                </div>
-                <p className="text-muted-foreground mt-4 text-sm">
-                  Cada duração monta uma sessão diferente — não é só mais do mesmo. Dá para mudar
-                  quando quiser.
-                </p>
-              </>
+              <StudyChoices
+                minutes={answers.dailyMinutes}
+                pace={studyPace(answers.studyPace, answers.dailyMinutes ?? 30)}
+                onMinutes={(dailyMinutes) => update({ dailyMinutes })}
+                onPace={(pace) => update({ studyPace: pace })}
+              />
             )}
 
             {current.id === "target" && (

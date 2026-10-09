@@ -31,8 +31,9 @@ describe("onboarding schema", () => {
     ).toBe(true);
   });
 
-  it("only accepts the offered daily durations and real target levels", () => {
-    expect(onboardingSchema.safeParse({ ...valid, dailyMinutes: 20 }).success).toBe(false);
+  it("accepts bounded custom durations and real target levels", () => {
+    expect(onboardingSchema.safeParse({ ...valid, dailyMinutes: 20 }).success).toBe(true);
+    expect(onboardingSchema.safeParse({ ...valid, dailyMinutes: 241 }).success).toBe(false);
     expect(onboardingSchema.safeParse({ ...valid, targetLevel: "A0" }).success).toBe(false);
     expect(onboardingSchema.safeParse({ ...valid, targetLevel: null }).success).toBe(true);
   });

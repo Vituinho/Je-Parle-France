@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { CEFR_LEVELS, levelIndex, type CefrLevel } from "./cefr";
+import { dailyMinutesSchema, STUDY_PACES } from "./study-pace";
 
 export const LEARNING_GOALS = [
   "move_canada",
@@ -31,8 +32,8 @@ export const PRIOR_EXPERIENCES = [
 ] as const;
 export type PriorExperience = (typeof PRIOR_EXPERIENCES)[number];
 
-export const DAILY_MINUTES = [5, 15, 30, 60] as const;
-export type DailyMinutes = (typeof DAILY_MINUTES)[number];
+export const DAILY_MINUTES = [5, 15, 30, 45, 60, 90, 120, 180] as const;
+export type DailyMinutes = number;
 
 export const START_CHOICES = ["quick", "complete", "from_zero"] as const;
 export type StartChoice = (typeof START_CHOICES)[number];
@@ -48,7 +49,8 @@ export const onboardingSchema = z
     goalOther: z.string().trim().max(120).optional(),
     destination: z.enum(DESTINATIONS),
     priorExperience: z.enum(PRIOR_EXPERIENCES),
-    dailyMinutes: z.literal(DAILY_MINUTES),
+    dailyMinutes: dailyMinutesSchema,
+    studyPace: z.enum(STUDY_PACES).optional(),
     targetLevel: z.enum(CEFR_LEVELS).exclude(["A0"]).nullable(),
     /** Month the learner hopes to reach the target level, "YYYY-MM". */
     targetMonth: targetDateSchema,

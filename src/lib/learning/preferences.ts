@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { CEFR_LEVELS, type CefrLevel } from "./cefr";
 import type { SupportPreference } from "./language-support";
-import { DAILY_MINUTES, DESTINATIONS, type DailyMinutes, type Destination } from "./onboarding";
+import { DESTINATIONS, type DailyMinutes, type Destination } from "./onboarding";
+import { dailyMinutesSchema, STUDY_PACES } from "./study-pace";
 import { CORRECTION_MODES } from "./tutor/tutor";
 
 /**
@@ -33,7 +34,11 @@ export const SESSION_DESCRIPTIONS: Record<DailyMinutes, string> = {
   5: "Revisão do essencial, uma ideia nova e uma frase em voz alta.",
   15: "Revisão, uma microlição, um pouco de escuta e prática ativa.",
   30: "Sessão equilibrada: revisão, lição, escuta, pronúncia e fala.",
+  45: "Mais espaço para escuta e produção, mantendo a revisão.",
   60: "Sessão completa, com leitura, escrita e conversa com o tutor.",
+  90: "Blocos variados para escutar, falar, escrever e aplicar o que aprendeu.",
+  120: "Estudo em blocos, com pausas e prática em situações reais.",
+  180: "Imersão em blocos: pratique ao longo do dia, com tempo para descansar.",
 };
 
 export const TARGET_LEVEL_OPTIONS: { value: TargetLevel; description: string }[] = [
@@ -98,7 +103,8 @@ const asNumber = (value: unknown) => (typeof value === "string" ? Number(value) 
 
 export const preferencesSchema = z.object({
   name: z.string().trim().min(1, "Diga como quer ser chamado").max(60),
-  dailyMinutes: z.preprocess(asNumber, z.literal(DAILY_MINUTES)),
+  dailyMinutes: z.preprocess(asNumber, dailyMinutesSchema),
+  studyPace: z.enum(STUDY_PACES).optional(),
   weeklyGoalDays: z.preprocess(asNumber, z.literal(WEEKLY_GOAL_DAYS)),
   destination: z.enum(DESTINATIONS),
   targetLevel: z.preprocess(

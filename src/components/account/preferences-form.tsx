@@ -7,10 +7,11 @@ import { ChoiceTile } from "@/components/choice-tile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { DAILY_MINUTES, type DailyMinutes, type Destination } from "@/lib/learning/onboarding";
+import { type DailyMinutes, type Destination } from "@/lib/learning/onboarding";
+import { StudyChoices } from "@/components/study-choices";
+import type { StudyPace } from "@/lib/learning/study-pace";
 import {
   DESTINATION_OPTIONS,
-  SESSION_DESCRIPTIONS,
   SUPPORT_PREFERENCE_LABELS,
   SUPPORT_PREFERENCES,
   TARGET_LEVEL_OPTIONS,
@@ -28,6 +29,7 @@ import { cn } from "@/lib/utils";
 export interface PreferencesValues {
   name: string;
   dailyMinutes: DailyMinutes;
+  studyPace: StudyPace;
   weeklyGoalDays: number;
   destination: Destination;
   targetLevel: string;
@@ -105,20 +107,13 @@ export function PreferencesForm({ initial }: { initial: PreferencesValues }) {
         hint="A sessão de hoje já planejada não muda; a de amanhã usa o novo tempo."
         error={errors.dailyMinutes}
       >
-        <div className="grid gap-3 sm:grid-cols-2">
-          {DAILY_MINUTES.map((minutes) => (
-            <ChoiceTile
-              key={minutes}
-              type="radio"
-              name="dailyMinutes"
-              value={String(minutes)}
-              checked={values.dailyMinutes === minutes}
-              onChange={() => set("dailyMinutes", minutes)}
-              title={`${minutes} minutos`}
-              description={SESSION_DESCRIPTIONS[minutes]}
-            />
-          ))}
-        </div>
+        <StudyChoices
+          minutes={values.dailyMinutes}
+          pace={values.studyPace}
+          onMinutes={(minutes) => set("dailyMinutes", minutes)}
+          onPace={(pace) => set("studyPace", pace)}
+        />
+        {errors.studyPace && <p className="text-destructive text-sm">{errors.studyPace}</p>}
       </Fieldset>
 
       <Fieldset

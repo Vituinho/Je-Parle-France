@@ -31,7 +31,7 @@ describe("preferencesSchema", () => {
   });
 
   it("rejects values outside the offered choices", () => {
-    expect(preferencesSchema.safeParse({ ...valid, dailyMinutes: 20 }).success).toBe(false);
+    expect(preferencesSchema.safeParse({ ...valid, dailyMinutes: 4 }).success).toBe(false);
     expect(preferencesSchema.safeParse({ ...valid, weeklyGoalDays: 2 }).success).toBe(false);
     expect(preferencesSchema.safeParse({ ...valid, targetLevel: "A0" }).success).toBe(false);
     expect(preferencesSchema.safeParse({ ...valid, timezone: "Mars/Olympus" }).success).toBe(false);
