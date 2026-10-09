@@ -431,6 +431,10 @@ model ReviewLog {
   learningSteps Int
   reviewedAt    DateTime
   activityId    String?
+  /// Null for historical records; unknown outcomes are excluded from pilot retention.
+  score         Float?
+  hinted        Boolean?
+  selfRated     Boolean?
 
   @@index([userId, reviewedAt])
   @@map("review_logs")
@@ -467,12 +471,16 @@ model ActivityAttempt {
   score      Float
   correct    Boolean
   durationMs Int?
+  level      String?
+  hinted     Boolean?
+  selfRated  Boolean?
   /// Minimal learner response for analytics; never audio.
   response   Json?
   createdAt  DateTime        @default(now())
 
   @@index([userId, createdAt])
   @@index([activityId])
+  @@index([sessionId, createdAt])
   @@map("activity_attempts")
 }
 
@@ -490,6 +498,7 @@ model DailySession {
   createdAt      DateTime           @default(now())
   startedAt      DateTime?
   completedAt    DateTime?
+  studyEvents    StudyEvent[]
 
   @@index([userId, localDate])
   @@map("daily_sessions")
@@ -501,6 +510,8 @@ model DailyActivity {
   user                User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   localDate           String
   studySeconds        Int     @default(0)
+  /// Active-window telemetry only; historical bounded interaction credit stays separate.
+  activeSeconds       Int     @default(0)
   activitiesCompleted Int     @default(0)
   reviewsDone         Int     @default(0)
   newConcepts         Int     @default(0)
@@ -588,15 +599,21 @@ model SpeechAttempt {
 // ─── Analytics, motivation, quotas ──────────────────────────────────────────
 
 model StudyEvent {
-  id        String   @id @default(cuid())
+  id        String        @id @default(cuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   type      String
   payload   Json?
-  createdAt DateTime @default(now())
+  createdAt DateTime      @default(now())
+  sessionId String?
+  session   DailySession? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  /// Server-generated lifecycle keys or client stream sequence keys; legacy events remain null.
+  dedupeKey String?
 
+  @@unique([userId, dedupeKey])
   @@index([userId, createdAt])
   @@index([type, createdAt])
+  @@index([sessionId, createdAt])
   @@map("study_events")
 }
 

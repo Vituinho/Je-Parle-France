@@ -64,6 +64,9 @@ export interface ReviewLogRecord {
   scheduledDays: number;
   learningSteps: number;
   reviewedAt: Date;
+  score?: number;
+  hinted?: boolean;
+  selfRated?: boolean;
 }
 
 function toCard(trace: MemoryTraceState): Card {
@@ -181,6 +184,9 @@ export function applyReview(params: {
       scheduledDays: log.scheduled_days,
       learningSteps: log.learning_steps,
       reviewedAt: now,
+      score: outcome.score,
+      hinted: outcome.hinted ?? false,
+      selfRated: outcome.selfRated || outcome.verdict === "recorded" || false,
     },
   };
 }

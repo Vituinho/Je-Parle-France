@@ -27,6 +27,7 @@ import { lockLearner, recordSkillEvidence } from "./skill-estimation";
 import { evaluateWriting } from "./writing";
 import type { WritingAssessment } from "@/lib/learning/writing/assessment";
 import { compareLevels } from "@/lib/learning/cefr";
+import { recordLearningEvent } from "./learning-events";
 
 export class PracticeError extends Error {}
 
@@ -254,7 +255,7 @@ export async function submitActivity(params: {
 
       await saveTraces(tx, userId, updated);
       await saveReviewLogs(tx, userId, logs);
-      await tx.activityAttempt.create({
+      const attempt = await tx.activityAttempt.create({
         data: {
           userId,
           activityId: activity.id,
@@ -265,6 +266,9 @@ export async function submitActivity(params: {
           score: grade.score,
           correct: grade.correct,
           durationMs: params.durationMs ?? null,
+          level: level ?? null,
+          hinted: params.hinted ?? false,
+          selfRated: grade.selfRated || grade.verdict === "recorded" || false,
           response: (writing
             ? { answer: params.response, writingAssessment: writing }
             : params.response) as unknown as Prisma.InputJsonValue,
@@ -278,6 +282,15 @@ export async function submitActivity(params: {
         speaking: buckets.speaking,
       });
       await recordSkillEvidence(tx, userId, evidence, now);
+      await recordLearningEvent(
+        tx,
+        userId,
+        {
+          type: "activity_completed",
+          payload: { attemptId: attempt.id, masteryChanges: changes.slice(0, 40) },
+        },
+        { sessionId: params.sessionId, dedupeKey: `attempt:${attempt.id}`, now },
+      );
       return { feedback, changes };
     },
     { timeout: 20_000 },
