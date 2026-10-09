@@ -123,6 +123,20 @@ describe("Azure speech adapter", () => {
     stubFetch({}, { ok: false, status: 401 });
     await expect(provider.transcribe(wav, "fr-FR")).rejects.toThrow("401");
   });
+  it("classifies provider rate limiting without a retry", async () => {
+    const fetchMock = stubFetch({ secret: "private output" }, { ok: false, status: 429 });
+    await expect(provider.transcribe(wav, "fr-FR")).rejects.toMatchObject({
+      reason: "rate_limited",
+    });
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+  it("rejects missing credentials before sending audio", () => {
+    const fetchMock = stubFetch({});
+    expect(() => new AzureSpeechProvider("", "canadacentral")).toThrow(
+      "credentials not configured",
+    );
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
 
   it.each(["fr-FR", "fr-CA"] as const)(
     "transcribes %s without fabricated metrics",

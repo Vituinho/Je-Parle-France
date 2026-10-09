@@ -87,6 +87,23 @@ describe("Anthropic application adapter", () => {
     ).rejects.toMatchObject({ reason: "timeout" });
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
+  it("aborts an actual hanging fetch through the SDK deadline", async () => {
+    const fetchMock = vi.fn<typeof fetch>(
+      (_url, init) =>
+        new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener("abort", () =>
+            reject(new DOMException("aborted", "AbortError")),
+          );
+        }),
+    );
+    await expect(
+      new AnthropicProvider("key", "test-model", {
+        fetch: fetchMock,
+        timeoutMs: 10,
+      }).generateObject(params),
+    ).rejects.toMatchObject({ reason: "timeout" });
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
 
   it.each([
     ["refusal", "refusal"],

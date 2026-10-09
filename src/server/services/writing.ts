@@ -1,5 +1,6 @@
 import "server-only";
 import { getLLM, LLMUnavailableError } from "@/lib/ai/llm";
+import { reportProviderFailure } from "@/lib/ai/diagnostics";
 import { getContent } from "@/lib/content";
 import type { ActivityOf } from "@/lib/content/schema";
 import { serverEnv } from "@/lib/env";
@@ -71,6 +72,8 @@ export async function evaluateWriting(
     if (error instanceof LLMUnavailableError)
       return unassessedWriting(original, level, error.message);
     // Malformed or invented output is not learning evidence. Do not expose provider output.
+    if (llm.id === "anthropic")
+      reportProviderFailure("anthropic", "writing_feedback", "invalid_output");
     return unassessedWriting(
       original,
       level,

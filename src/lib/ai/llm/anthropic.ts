@@ -2,6 +2,7 @@ import "server-only";
 import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { z } from "zod";
+import { reportProviderFailure } from "../diagnostics";
 import {
   LLMUnavailableError,
   type GenerateObjectParams,
@@ -61,24 +62,30 @@ export class AnthropicProvider implements LLMProvider {
         model: response.model,
       };
     } catch (error) {
-      if (error instanceof LLMUnavailableError) throw error;
-      if (error instanceof Anthropic.APIConnectionTimeoutError)
-        throw new LLMUnavailableError("O tutor demorou a responder. Tente de novo.", "timeout");
-      if (error instanceof z.ZodError || error instanceof SyntaxError)
-        throw new LLMUnavailableError("Resposta inválida do tutor.", "invalid_output");
-      if (error instanceof Anthropic.RateLimitError) {
-        throw new LLMUnavailableError(
-          "O tutor está ocupado. Tente de novo em instantes.",
-          "rate_limited",
-        );
-      }
-      if (error instanceof Anthropic.APIError) {
-        throw new LLMUnavailableError("O tutor está indisponível no momento.", "unavailable");
-      }
-      // The SDK wraps JSON/Zod parsing failures in its base (non-HTTP) error.
-      if (error instanceof Anthropic.AnthropicError)
-        throw new LLMUnavailableError("Resposta inválida do tutor.", "invalid_output");
-      throw new LLMUnavailableError("O tutor está indisponível no momento.", "unavailable");
+      const failure = this.classifyFailure(error);
+      reportProviderFailure("anthropic", params.purpose, failure.reason);
+      throw failure;
     }
+  }
+
+  private classifyFailure(error: unknown): LLMUnavailableError {
+    if (error instanceof LLMUnavailableError) return error;
+    if (error instanceof Anthropic.APIConnectionTimeoutError)
+      return new LLMUnavailableError("O tutor demorou a responder. Tente de novo.", "timeout");
+    if (error instanceof z.ZodError || error instanceof SyntaxError)
+      return new LLMUnavailableError("Resposta inválida do tutor.", "invalid_output");
+    if (error instanceof Anthropic.RateLimitError) {
+      return new LLMUnavailableError(
+        "O tutor está ocupado. Tente de novo em instantes.",
+        "rate_limited",
+      );
+    }
+    if (error instanceof Anthropic.APIError) {
+      return new LLMUnavailableError("O tutor está indisponível no momento.", "unavailable");
+    }
+    // The SDK wraps JSON/Zod parsing failures in its base (non-HTTP) error.
+    if (error instanceof Anthropic.AnthropicError)
+      return new LLMUnavailableError("Resposta inválida do tutor.", "invalid_output");
+    return new LLMUnavailableError("O tutor está indisponível no momento.", "unavailable");
   }
 }

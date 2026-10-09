@@ -7,7 +7,7 @@ import { db } from "@/server/db";
 import { consumeQuota, QuotaError, throttle } from "@/server/quota";
 import { getCurrentUser } from "@/server/session";
 
-const MAX_BYTES = 1_200_000; // ~37 s of 16 kHz mono PCM; the client caps recordings at 15 s
+const MAX_BYTES = 1_200_000; // Container cap; PCM duration is validated <=30 s (recorder caps at 15 s).
 
 const fieldsSchema = z.object({
   referenceText: z.string().trim().min(1).max(300),

@@ -1,6 +1,7 @@
 import "server-only";
 import { z } from "zod";
 import { validateSpeechWav } from "./audio";
+import { reportProviderFailure } from "../diagnostics";
 import {
   SpeechProviderError,
   type PronunciationAssessmentProvider,
@@ -122,25 +123,35 @@ export class AzureSpeechProvider
     private readonly timeoutMs = 20_000,
   ) {
     if (!/^[a-z0-9-]+$/.test(region)) throw new SpeechProviderError("Invalid Azure region.");
+    if (!key.trim()) throw new SpeechProviderError("Speech credentials not configured.");
   }
 
   private async request<T>(
     url: string,
     init: RequestInit,
     read: (response: Response) => Promise<T>,
+    operation: "tts" | "stt" | "pronunciation",
   ): Promise<T> {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.timeoutMs);
     try {
       const response = await fetch(url, { ...init, signal: controller.signal });
       if (!response.ok)
-        throw new SpeechProviderError(`Speech request failed with ${response.status}`);
+        throw new SpeechProviderError(
+          `Speech request failed with ${response.status}`,
+          response.status === 429 ? "rate_limited" : "unavailable",
+        );
       return await read(response);
     } catch (error) {
-      if (controller.signal.aborted)
-        throw new SpeechProviderError("Speech request timed out.", "timeout");
-      if (error instanceof SpeechProviderError) throw error;
-      throw new SpeechProviderError("Speech service unavailable.");
+      const failure = controller.signal.aborted
+        ? new SpeechProviderError("Speech request timed out.", "timeout")
+        : error instanceof SpeechProviderError
+          ? error
+          : new SpeechProviderError("Speech service unavailable.");
+      // Audio/locale validation happens locally before this request boundary.
+      if (failure.reason !== "malformed_audio")
+        reportProviderFailure("azure", operation, failure.reason);
+      throw failure;
     } finally {
       clearTimeout(timer);
     }
@@ -168,9 +179,12 @@ export class AzureSpeechProvider
         body: ssml,
       },
       (response) => response.arrayBuffer(),
+      "tts",
     );
-    if (!audio.byteLength)
+    if (!audio.byteLength) {
+      reportProviderFailure("azure", "tts", "invalid_output");
       throw new SpeechProviderError("Empty synthesis output.", "invalid_output");
+    }
     return { audio, contentType: "audio/mpeg" };
   }
 
@@ -207,20 +221,26 @@ export class AzureSpeechProvider
           throw new SpeechProviderError("Invalid recognition output.", "invalid_output");
         return parsed.data;
       },
+      assessment ? "pronunciation" : "stt",
     );
   }
 
   features(locale: SpeechLocale): PronunciationFeatures {
-    if (!Object.hasOwn(AZURE_PRONUNCIATION_FEATURES, locale))
+    if (!Object.hasOwn(AZURE_PRONUNCIATION_FEATURES, locale)) {
+      reportProviderFailure("azure", "capabilities", "unsupported");
       throw new SpeechProviderError("Unsupported speech locale.", "unsupported");
+    }
     return AZURE_PRONUNCIATION_FEATURES[locale];
   }
 
   async transcribe(wav: ArrayBuffer, locale: SpeechLocale): Promise<TranscriptionResult> {
     const result = await this.recognize(wav, locale);
     const status = statusOf(result.RecognitionStatus);
-    if (status === "ok" && !(result.NBest?.[0]?.Display ?? result.DisplayText)?.trim())
+    if (status === "error") reportProviderFailure("azure", "stt", "unavailable");
+    if (status === "ok" && !(result.NBest?.[0]?.Display ?? result.DisplayText)?.trim()) {
+      reportProviderFailure("azure", "stt", "invalid_output");
       throw new SpeechProviderError("Missing recognition transcript.", "invalid_output");
+    }
     return {
       status,
       transcript:
@@ -248,6 +268,7 @@ export class AzureSpeechProvider
     const status = statusOf(result.RecognitionStatus);
     const best = result.NBest?.[0];
     if (status !== "ok") {
+      if (status === "error") reportProviderFailure("azure", "pronunciation", "unavailable");
       return { status, transcript: null, granularity: "word", scores: null, words: [] };
     }
     if (
@@ -256,8 +277,10 @@ export class AzureSpeechProvider
       best.FluencyScore === undefined ||
       best.CompletenessScore === undefined ||
       best.PronScore === undefined
-    )
+    ) {
+      reportProviderFailure("azure", "pronunciation", "invalid_output");
       throw new SpeechProviderError("Missing pronunciation metrics.", "invalid_output");
+    }
     return {
       status,
       transcript: best.Display ?? result.DisplayText ?? null,

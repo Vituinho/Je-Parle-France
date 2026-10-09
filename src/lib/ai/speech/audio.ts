@@ -4,7 +4,7 @@ import { SpeechProviderError } from "./types";
 export function validateSpeechWav(buffer: ArrayBuffer): void {
   const fail = () => {
     throw new SpeechProviderError(
-      "Use WAV PCM 16-bit mono at 16 kHz, up to 37 seconds.",
+      "Use WAV PCM 16-bit mono at 16 kHz, up to 30 seconds.",
       "malformed_audio",
     );
   };
@@ -33,7 +33,8 @@ export function validateSpeechWav(buffer: ArrayBuffer): void {
       if (!format) fail();
     }
     if (name === "data") {
-      if (data || !format || size === 0 || size % 2 !== 0 || size > 37 * 32_000) fail();
+      // Scripted pronunciation assessment beyond 30 s needs the continuous API.
+      if (data || !format || size === 0 || size % 2 !== 0 || size > 30 * 32_000) fail();
       data = true;
     }
     offset = start + size + (size % 2);

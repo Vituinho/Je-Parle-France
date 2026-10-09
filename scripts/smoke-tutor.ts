@@ -37,10 +37,14 @@ async function main() {
       JSON.stringify({
         passed: !result.simulated,
         provider: provider.id,
+        model: result.model,
+        scenario: "synthetic-a2-quebec",
+        maxOutputTokens: 800,
         structuredOutputValid: true,
         usage: result.usage,
       }),
     );
+    if (result.simulated) process.exitCode = 1;
   } catch (error) {
     console.error(
       JSON.stringify({

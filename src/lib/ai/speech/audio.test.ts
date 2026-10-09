@@ -3,6 +3,10 @@ import { encodeWav } from "@/components/activities/wav";
 import { validateSpeechWav } from "./audio";
 
 describe("short speech WAV validation", () => {
+  it("rejects clips beyond the scripted pronunciation API limit", async () => {
+    const wav = await encodeWav(new Float32Array(31 * 16000), 16000).arrayBuffer();
+    expect(() => validateSpeechWav(wav)).toThrow("up to 30 seconds");
+  });
   it("accepts the browser recorder's actual format", async () => {
     const awaited = await encodeWav(new Float32Array(1600), 16_000).arrayBuffer();
     expect(() => validateSpeechWav(awaited)).not.toThrow();

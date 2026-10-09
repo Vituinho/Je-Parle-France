@@ -99,6 +99,7 @@ export class SpeechProviderError extends Error {
       | "malformed_audio"
       | "unsupported"
       | "timeout"
+      | "rate_limited"
       | "invalid_output"
       | "unavailable" = "unavailable",
   ) {
