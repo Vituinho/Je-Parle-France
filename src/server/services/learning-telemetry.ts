@@ -11,24 +11,37 @@ export async function getLearningTelemetry(
   userId: string,
   now = new Date(),
   client: Prisma.TransactionClient = db,
+  range?: { from: string; through: string },
 ) {
   const profile = await client.learnerProfile.findUnique({
     where: { userId },
     select: { timezone: true, dailyMinutes: true, weeklyGoalDays: true },
   });
   const timezone = profile?.timezone ?? "America/Sao_Paulo";
-  const since = new Date(now.getTime() - 90 * 86400000);
+  const since = range
+    ? new Date(`${addDays(range.from, -1)}T00:00:00Z`)
+    : new Date(now.getTime() - 90 * 86400000);
+  const until = range
+    ? new Date(
+        Math.min(now.getTime(), new Date(`${addDays(range.through, 2)}T00:00:00Z`).getTime()),
+      )
+    : now;
+  const inRange = (at: Date) =>
+    !range || (localDate(at, timezone) >= range.from && localDate(at, timezone) <= range.through);
   const [sessions, attempts, reviews, evidence, events, days] = await Promise.all([
     client.dailySession.findMany({
       where: {
         userId,
-        localDate: { gte: addDays(localDate(now, timezone), -90), lte: localDate(now, timezone) },
+        localDate: {
+          gte: range?.from ?? addDays(localDate(now, timezone), -90),
+          lte: range?.through ?? localDate(now, timezone),
+        },
       },
       orderBy: [{ localDate: "desc" }, { id: "asc" }],
       take: 301,
     }),
     client.activityAttempt.findMany({
-      where: { userId, createdAt: { gte: since, lte: now } },
+      where: { userId, createdAt: { gte: since, lte: until } },
       orderBy: [{ createdAt: "desc" }, { id: "asc" }],
       take: 5001,
       select: {
@@ -45,7 +58,7 @@ export async function getLearningTelemetry(
       },
     }),
     client.reviewLog.findMany({
-      where: { userId, reviewedAt: { gte: since, lte: now } },
+      where: { userId, reviewedAt: { gte: since, lte: until } },
       orderBy: [{ reviewedAt: "desc" }, { id: "asc" }],
       take: 5001,
       select: {
@@ -59,14 +72,14 @@ export async function getLearningTelemetry(
       },
     }),
     client.skillEvidence.findMany({
-      where: { userId, occurredAt: { gte: since, lte: now } },
+      where: { userId, occurredAt: { gte: since, lte: until } },
       orderBy: [{ occurredAt: "desc" }, { id: "asc" }],
       take: 5001,
     }),
     client.studyEvent.findMany({
       where: {
         userId,
-        createdAt: { gte: since, lte: now },
+        createdAt: { gte: since, lte: until },
         type: {
           in: [
             "activity_started",
@@ -94,13 +107,16 @@ export async function getLearningTelemetry(
     dailyMinutes: profile?.dailyMinutes ?? 30,
     weeklyGoalDays: profile?.weeklyGoalDays ?? 5,
     sessions: sessions.slice(0, 300).map((s) => ({ ...s, plan: s.plan as unknown as SessionPlan })),
-    attempts: attempts.slice(0, 5000),
-    reviews: reviews.slice(0, 5000),
-    evidence: evidence.slice(0, 5000).flatMap((e) => {
-      const parsed = evidenceSchema.safeParse(e);
-      return parsed.success ? [parsed.data] : [];
-    }),
-    events: events.slice(0, 5000),
+    attempts: attempts.slice(0, 5000).filter((a) => inRange(a.createdAt)),
+    reviews: reviews.slice(0, 5000).filter((r) => inRange(r.reviewedAt)),
+    evidence: evidence
+      .slice(0, 5000)
+      .filter((e) => inRange(e.occurredAt))
+      .flatMap((e) => {
+        const parsed = evidenceSchema.safeParse(e);
+        return parsed.success ? [parsed.data] : [];
+      }),
+    events: events.slice(0, 5000).filter((e) => inRange(e.createdAt)),
     days,
     truncated:
       sessions.length > 300 ||
