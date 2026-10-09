@@ -45,3 +45,16 @@ visible to the learner and to the planner.
 
 For aggregation (progress bars) states map to values: unseen 0, introduced 0.1, learning 0.3,
 decaying 0.45, familiar 0.6, strong 0.85, mastered 1.
+
+## Intensive practice and scheduling
+
+Daily session `review` blocks contain due memory items and count completed reviews. `focus`
+blocks may practise future items or freshly taught concepts, but their submissions leave memory
+traces, review logs, stability and due dates unchanged. They retain attempts, bounded study time
+and eligible skill evidence, using the existing task deduplication and quality gates. Self-rated
+or simulated speech cannot raise measured speaking/pronunciation proficiency.
+
+On resume, a due review block omits items already rescheduled elsewhere. A corrective retry after
+an incorrect due answer supplies feedback as additional practice, without a second early FSRS
+update. Daily new-material limits include introduced concepts and unconsumed plan reservations
+across extra sessions on the learner's local day. See [INTENSIVE-LEARNING.md](INTENSIVE-LEARNING.md).

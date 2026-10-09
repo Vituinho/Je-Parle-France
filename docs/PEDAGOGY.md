@@ -23,18 +23,30 @@ planner, graders) implement these principles; when the two disagree, fix one of 
 
 ## Learning science we rely on
 
-| Principle                             | How it shows up                                                                                                            |
-| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| Retrieval practice                    | Activities ask the learner to produce or recognise, not reread. Flashcards are always active recall.                       |
-| Spacing (FSRS)                        | Every concept × dimension has its own memory trace scheduled by FSRS.                                                      |
-| Interleaving                          | Daily sessions mix review of older concepts with new ones and different skills.                                            |
-| Comprehensible input                  | Listening and reading are calibrated slightly above the learner's level; transcripts and speed control are available.      |
-| Output & noticing                     | Typed and spoken production with specific feedback (expected form, the difference, why).                                   |
-| Perceptual training                   | Pronunciation starts with _hearing_ the contrast (minimal pairs, varied voices) before producing it.                       |
-| Cognitive load                        | New concepts per session are capped by available time and review backlog; teaching cards are short; one new idea per card. |
-| Desirable difficulty, not frustration | Items are chosen near the learner's estimated level; hints lower the rating instead of blocking progress.                  |
+| Principle                             | How it shows up                                                                                                       |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Retrieval practice                    | Activities ask the learner to produce or recognise, not reread. Flashcards are always active recall.                  |
+| Spacing (FSRS)                        | Every concept × dimension has its own memory trace scheduled by FSRS.                                                 |
+| Interleaving                          | Daily sessions mix review of older concepts with new ones and different skills.                                       |
+| Comprehensible input                  | Listening and reading are calibrated slightly above the learner's level; transcripts and speed control are available. |
+| Output & noticing                     | Typed and spoken production with specific feedback (expected form, the difference, why).                              |
+| Perceptual training                   | Pronunciation starts with _hearing_ the contrast (minimal pairs, varied voices) before producing it.                  |
+| Cognitive load                        | New concepts per local day are capped by level, time, recent retention and review backlog; teaching cards stay short. |
+| Desirable difficulty, not frustration | Items are chosen near the learner's estimated level; hints lower the rating instead of blocking progress.             |
 
 ## Lesson design pattern
+
+Intensive study extends the existing daily planner. Additional available time favours listening,
+spoken and written production, pronunciation and prerequisite-safe application rather than
+unlimited teaching. Due reviews stay on the FSRS calendar; extra skill practice does not reschedule
+memory. A beginner applies freshly taught words through dictation, oral response and active recall,
+without padding a ninety-minute goal with recognition drills or unseen example sentences.
+
+Plans above sixty minutes provide resumable groups of roughly twenty-five minutes where there is
+enough material, with an earlier natural break between teaching and application. Shorter initial
+plans are explicitly shown when useful material is limited. Weekly time totals allow uneven days
+and rest; completion and time never prove proficiency. Pace does not independently remove
+Portuguese support. See [INTENSIVE-LEARNING.md](INTENSIVE-LEARNING.md) for safeguards and limits.
 
 A **lesson** is a 5–8 minute chunk built as _present → guided practice → free(r) production_:
 

@@ -124,9 +124,22 @@ validate input (Zod) → load activity from content repository → `grade()` (pu
 traces in one transaction → return feedback.
 
 **Daily session**
-Dashboard → `services/daily-session.ts` → load profile, due traces, skill estimates, recent
+Dashboard → `services/session.ts` → load profile, due traces, skill estimates, recent
 history → `planner.planSession()` (pure) → persist `DailySession` plan → session runner renders
 blocks.
+
+Study pace is an optional enum on `LearnerProfile`; daily time remains `dailyMinutes`.
+Legacy null values infer a pace from the existing time without resetting onboarding or history.
+Version-1 plan JSON adds pace, daily new-concept reservations and learning segments; saved plans
+stay frozen when preferences change. Learner locks serialize plan creation and block completion,
+and planning reads use the same transaction client to avoid exhausting the pool under contention.
+
+Long-session focus blocks use bounded generated production and prerequisite-safe authored tasks.
+Their server submission records attempts, time and eligible skill evidence with
+`scheduleMemory: false`; due review blocks retain FSRS scheduling. The server authorizes the
+current persisted block rather than trusting a client flag. Weekly workload derives from existing
+daily activity totals. The pure deadline comparison refuses insufficient evidence and emits no
+individual ETA. See [INTENSIVE-LEARNING.md](INTENSIVE-LEARNING.md).
 
 ## Security baseline
 

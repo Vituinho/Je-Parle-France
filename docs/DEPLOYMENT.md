@@ -100,7 +100,7 @@ the broad E2E suite is unsuitable for a real production database.
     Railway uses this to gate deployment, not as ongoing monitoring.
     [Railway healthchecks](https://docs.railway.com/deployments/healthchecks).
 11. Run **no seed**. Curriculum, concepts, activities, placement and authentic metadata are
-    versioned content compiled into the app. The five migrations create learner-state tables;
+    versioned content compiled into the app. The six migrations create and extend learner state;
     first sign-up/onboarding creates that learner's rows. Never use migrate dev/reset or
     destructive reseeding in staging/production.
 12. Review staged Railway changes and deploy manually. Inspect install/build, pre-deploy and
@@ -172,8 +172,12 @@ tests against production.
 
 ## Migration recovery and rollback
 
-Current migration history is five committed additive migrations; no seed or new migration was
-added in this staging work. Fresh-database migration and a second idempotent deploy were tested.
+Current migration history is six committed migrations. Intensive learning adds
+`20261009120000_study_pace`, an additive enum and nullable profile column that preserves existing
+users. Apply it through the existing pre-deploy command; no seed is needed. The preceding staging
+readiness work tested fresh-database migration and a second idempotent deploy; the intensive
+migration has also been applied to the local development and integration databases. A real
+Railway rollout of this new migration still requires the manual deployment procedure above.
 Indices cover sessions, per-learner history, due reviews, evidence chronology and unique keys.
 
 Before any future database change, take/verify a recoverable backup and assess old/new app schema
