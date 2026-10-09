@@ -43,7 +43,12 @@ export type OnboardingChoice = "Diagnóstico rápido" | "Diagnóstico completo" 
 
 export async function completeOnboarding(
   page: Page,
-  options: { experience: string; start: OnboardingChoice },
+  options: {
+    experience: string;
+    start: OnboardingChoice;
+    dailyMinutes?: number;
+    pace?: "Sem pressa" | "Equilibrado" | "Acelerado" | "Imersão";
+  },
 ) {
   await page.getByText("Morar no Québec").click();
   await page.getByText("Trabalhar em francês").click();
@@ -52,7 +57,8 @@ export async function completeOnboarding(
   await page.getByRole("button", { name: "Continuar" }).click();
   await page.getByText(options.experience, { exact: true }).click();
   await page.getByRole("button", { name: "Continuar" }).click();
-  await page.getByText("30 minutos").click();
+  if (options.pace) await page.getByText(options.pace, { exact: true }).click();
+  await page.getByText(`${options.dailyMinutes ?? 30} minutos`, { exact: true }).click();
   await page.getByRole("button", { name: "Continuar" }).click();
   await page.getByText("B2", { exact: true }).click();
   await expect(page.getByText(/costuma levar/)).toBeVisible();
