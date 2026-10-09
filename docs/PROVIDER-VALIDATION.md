@@ -36,6 +36,7 @@ network access. Azure also rejects malformed WAV and unsupported locales locally
 
    An optional third argument supplies the authored reference text. Never put private text in
    shell arguments. Both files are validated before the first paid call.
+
 5. Expect a local preflight record followed by one JSON record per locale: `stt: "ok"`,
    `pronunciation: "ok"`, `metricsPresent: true`, `unsupportedProsodyAbsent: true`, `passed: true`.
    Exit `0` means both locales passed STT and scripted assessment. Silence, provider failure or

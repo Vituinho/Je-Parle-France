@@ -111,6 +111,10 @@ behind `<Suspense>`. Static content (grammar library, lesson definitions) is cac
 the machine's PostgreSQL binaries (port 54329, trust auth, localhost only). CI uses a Postgres
 service container. Production targets Neon (or any managed PostgreSQL).
 
+Railway staging uses the same PostgreSQL/Prisma architecture, with a Railpack Node web
+service and a persistent PostgreSQL service. See [DEPLOYMENT.md](DEPLOYMENT.md) for the
+manual release, environment validation, healthcheck and provider validation procedures.
+
 ## Request flow examples
 
 **Completing an activity**

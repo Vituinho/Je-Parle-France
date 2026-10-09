@@ -1,69 +1,191 @@
-# Deployment
+# Railway staging deployment
 
-The app is a standard Next.js 16 server application with a PostgreSQL database. The reference
-setup is **Vercel + a managed PostgreSQL** (Neon, Supabase, RDS…), but any Node.js ≥ 22.12 host
-works (`npm run build && npm start`).
+This repository is prepared for a manual staging deployment. No Railway project or external
+deployment was created by the agent. Use an isolated staging database and synthetic test accounts.
+Live provider availability and human grading calibration still require the operator's checks.
 
-## Checklist
+## Required services and runtime
 
-1. **Database** — PostgreSQL 15+. For LGPD, prefer a region you can justify to learners (e.g.
-   São Paulo or Canada) and enable automated backups with point-in-time recovery.
-2. **Environment variables** (see `.env.example`):
+Use one Railpack Node.js web service and one PostgreSQL service (15+; migrations tested on 18).
+Optional external services are Azure Speech and Anthropic. No Redis, application volume, object
+storage or curriculum seed is required. Learner state and sessions are in PostgreSQL; recordings
+are processed in memory and discarded. Only transcripts/scores are retained. Next's disposable
+build/cache files are not learner storage.
 
-   | Variable                                                     | Required | Notes                                                                                            |
-   | ------------------------------------------------------------ | -------- | ------------------------------------------------------------------------------------------------ |
-   | `DATABASE_URL`                                               | yes      | Pooled connection string when the provider offers one                                            |
-   | `BETTER_AUTH_SECRET`                                         | yes      | ≥ 32 random characters; rotating it signs everyone out                                           |
-   | `BETTER_AUTH_URL`                                            | yes      | The public origin, e.g. `https://jeparlefrancais.app` (requests from other origins are rejected) |
-   | `LLM_PROVIDER`, `ANTHROPIC_API_KEY`, `LLM_MODEL`             | no       | Without them the tutor runs the labelled mock                                                    |
-   | `TUTOR_DAILY_TURNS`, `TUTOR_DAILY_REPORTS`                   | no       | Per-learner daily quotas (cost control)                                                          |
-   | `SPEECH_PROVIDER`, `AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION` | no       | Without them: browser voices, self-rated pronunciation, no STT                                   |
+Keep the working full-server setup: `npm run build`, then `npm start`. The latter runs
+`prestart` → `env:check` before `next start`. Do not replace it with a direct `next start`
+command, which bypasses the fail-fast CLI check. The instrumentation hook also validates runtime
+configuration, but Next can retain a process after an instrumentation error. No Docker or
+standalone packaging is necessary for this setup; Railpack retains the app, dependencies,
+`public/`, `.next/static`, Prisma schema/migrations and generated client.
+[Railpack Node build/start behaviour](https://railpack.com/languages/node/).
 
-   Secrets are read only on the server (`src/lib/env.ts`, validated on first use).
+Next reads injected `PORT` and binds to `0.0.0.0` by default. Do not put `PORT` in an env file.
+Error and global error boundaries already provide recovery UI. Normal Next signal handling is
+preserved; container replacement/draining must still be checked in Railway, not inferred from
+the Windows local test.
 
-3. **Migrations** — run `npm run db:deploy` (`prisma migrate deploy`) against production
-   **before** the new version receives traffic: as a release step in CI, or as the build command
-   (`npm run db:deploy && npm run build`) when the host has no release phase. Migrations are
-   additive by policy; destructive changes ship in two releases (stop using → drop).
-4. **Build** — `npm run build`. `postinstall` generates the Prisma client.
-5. **Smoke test** — sign up with a test account, finish onboarding, open today's session, then
-   delete the account from `/conta`.
+## Variables
 
-## Production behaviour to know
+Set these on the **web service**, using reference variables for database credentials. The
+checked-in `.env.example` is a local template, not a production secret file.
 
-- **Rate limiting**: Better Auth's limiter is on in production (30 requests/min per IP on auth
-  routes). The tutor and speech endpoints add per-learner daily quotas stored in the database
-  (`usage_counters`), plus a short in-memory throttle.
-- **In-memory state is per instance**: the TTS clip cache and the throttle live in memory, so on
-  serverless they are best-effort. Quotas are in the database and hold across instances. A shared
-  cache (object storage or Redis) is planned for TTS audio.
-- **No local file storage**: nothing is written to the filesystem. Voice recordings are assessed
-  in memory and discarded; only transcripts and scores are stored. If recording storage is added
-  later, it must use private object storage with signed URLs — never the ephemeral filesystem or
-  `public/`.
-- **Logs** never contain conversation text, transcripts or recordings.
-- **AI providers**: with `LLM_PROVIDER=anthropic`, tutor messages are sent to Anthropic; with
-  `SPEECH_PROVIDER=azure`, audio is sent to Microsoft Azure. The privacy section of `/conta`
-  states this automatically from the configuration; keep the public privacy policy in sync.
+| Variable                    | Staging requirement                                                                                |
+| --------------------------- | -------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`              | Required PostgreSQL URL; reference the staging Postgres service                                    |
+| `BETTER_AUTH_SECRET`        | Required random secret, at least 32 characters; example placeholders are rejected                  |
+| `BETTER_AUTH_URL`           | Required exact HTTPS public origin, with no path, query or credentials                             |
+| `NODE_ENV`                  | `production`; Railpack supplies this                                                               |
+| `PORT`                      | Railway supplies it; the public domain target must match                                           |
+| `LLM_PROVIDER`              | Start with `mock`; use `anthropic` after manual live validation                                    |
+| `ANTHROPIC_API_KEY`         | Required only when Anthropic is selected                                                           |
+| `LLM_MODEL`                 | Adapter default `claude-opus-5-5`; explicitly choose an accessible compatible model for live smoke |
+| `TUTOR_DAILY_TURNS`         | Positive integer; default 80, lower for staging cost control                                       |
+| `TUTOR_DAILY_REPORTS`       | Positive integer; default 10                                                                       |
+| `WRITING_DAILY_ASSESSMENTS` | Positive integer; default 10                                                                       |
+| `SPEECH_PROVIDER`           | Start with `mock`; use `azure` after manual live validation                                        |
+| `AZURE_SPEECH_KEY`          | Required only when Azure is selected                                                               |
+| `AZURE_SPEECH_REGION`       | Required with Azure; canonical region name, not an endpoint URL                                    |
 
-## Continuous integration
+Optional providers default to labelled mocks/browser audio/self-assessment. Explicit real-provider
+selection with missing credentials fails, rather than silently becoming a mock. There is no
+separate public URL, extra trusted-origin variable, storage credential or Azure endpoint variable.
+Auth uses the configured public origin and the client uses the same origin.
 
-`.github/workflows/ci.yml` runs on every push and pull request: lint, typecheck, content check,
-unit and integration tests (PostgreSQL service container) and a production build. Playwright E2E
-tests run locally (`npm run test:e2e`, which starts the dev server) or against a deployment with
-`E2E_BASE_URL=https://… npm run test:e2e`.
+Builder settings: set `RAILPACK_NODE_VERSION=24` to pin the verified major (the broad
+`engines.node` range otherwise takes priority over `.nvmrc`), and
+`RAILPACK_PRUNE_DEPS=false`. Retain dev dependencies: Prisma CLI is needed by the pre-deploy
+migration, and tsx by prestart. Do not use a production-only install or prune without replacing
+these release tools. These are Railpack settings, not application feature flags.
 
-## Operations
+Do not configure `TEST_DATABASE_URL` on the app service. Integration tests truncate their
+dedicated test database. `E2E_BASE_URL` belongs to local test tooling, not app configuration;
+the broad E2E suite is unsuitable for a real production database.
 
-| Task                        | How                                                                                                              |
-| --------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| Make someone admin          | Verify the person's identity, then update that account's `users.role` to `admin` through trusted database access |
-| Learner asks for their data | They can export it themselves in `/conta` (JSON)                                                                 |
-| Learner asks for deletion   | Self-service in `/conta`; an operator can delete the `users` row — every table cascades                          |
-| Rotate the auth secret      | Change `BETTER_AUTH_SECRET` and redeploy; all sessions end                                                       |
-| Lower AI cost               | Set `LLM_MODEL` to a smaller model and/or lower the daily quotas                                                 |
+## Exact manual setup
 
-`ADMIN_EMAILS` is no longer used. Email addresses supplied at sign-up are unverified and must
-never grant administrative access. Existing admin accounts retain their roles; review any
-accounts previously promoted automatically. Email verification and recovery still need an
-email provider.
+1. Choose the reviewed repository commit, then push it yourself to the GitHub branch you will
+   deploy. No push was performed here.
+2. Create an empty Railway project and a separate environment named `staging`. Keep database,
+   variables and provider resources separate from any production environment.
+3. Add a PostgreSQL service. Confirm its persistent data volume is attached. Choose an appropriate region, configure
+   backup/retention before meaningful data is entered, and verify the service is ready.
+4. Add/connect this GitHub repository as a web service in the same staging environment. Use
+   the repository root. Turn off automatic deploys while configuring it if needed; an initial
+   attempt without required variables is expected to fail safely.
+5. On the web service, add a reference `DATABASE_URL=${{Postgres.DATABASE_URL}}`, replacing
+   `Postgres` with the actual database service name. Keep the supplied private connection
+   reference; do not copy the local `localhost:54329` URL or expose database credentials.
+   [Railway PostgreSQL connections](https://docs.railway.com/databases/postgresql).
+6. Choose Railpack; set build command `npm run build`, start command `npm start`,
+   `RAILPACK_NODE_VERSION=24` and `RAILPACK_PRUNE_DEPS=false`. Let the npm install/postinstall
+   generate the Prisma client; keep `package-lock.json` and Prisma files in the build context.
+7. Set required auth variables and conservative quotas. Generate a new secret locally, for
+   example `node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"`,
+   and paste it only into Railway's secret variable. Never commit it.
+8. In Settings → Networking → Public Networking, generate the Railway domain (or configure
+   your verified custom domain). Set `BETTER_AUTH_URL` to that exact HTTPS origin **before
+   the first successful startup**. If Railway's UI requires an initial build/deploy attempt
+   before domain setup, let the missing-URL prestart fail, generate the domain, then redeploy.
+   Do not temporarily relax validation or trust all Railway domains.
+   [Railway public networking](https://docs.railway.com/networking/public-networking).
+9. In Settings → Deploy, set **Pre-deploy Command** to `npm run db:deploy`. This runs
+   `prisma migrate deploy` after build and before traffic, with access to private Postgres.
+   A failed migration must stop the deployment.
+   [Railway pre-deploy command](https://docs.railway.com/deployments/pre-deploy-command).
+10. Set Healthcheck Path to `/api/health`, timeout 300 seconds, one web replica and an
+    on-failure restart policy. Match the public domain target port to injected `PORT`.
+    The endpoint is public, request-time, uncached, returns exactly `{"status":"ok"}` and
+    calls neither the database nor providers. It accepts Railway's healthcheck hostname.
+    Railway uses this to gate deployment, not as ongoing monitoring.
+    [Railway healthchecks](https://docs.railway.com/deployments/healthchecks).
+11. Run **no seed**. Curriculum, concepts, activities, placement and authentic metadata are
+    versioned content compiled into the app. The five migrations create learner-state tables;
+    first sign-up/onboarding creates that learner's rows. Never use migrate dev/reset or
+    destructive reseeding in staging/production.
+12. Review staged Railway changes and deploy manually. Inspect install/build, pre-deploy and
+    startup logs. Verify `GET https://<your-domain>/api/health` returns HTTP 200 JSON, signup
+    CSS/JS loads, and `/hoje` redirects to login on the same HTTPS origin.
+13. Execute the learner/auth/privacy checklist below using dedicated test accounts. Keep a
+    redacted record of commit, domain, date and outcomes. A green app healthcheck alone does
+    not establish database readiness.
+14. Optionally validate live Azure/Anthropic explicitly using
+    [PROVIDER-VALIDATION.md](PROVIDER-VALIDATION.md), then set their selectors/credentials,
+    review quotas, redeploy and repeat the relevant UI checks. Nothing automatically calls
+    paid APIs from CI.
+15. Begin the internal human comparisons in [CALIBRATION.md](CALIBRATION.md). Record remaining
+    disagreements; do not tune production thresholds from the first small batch.
+
+Railway's legacy config-as-code files are deprecated in the documentation checked 2026-10-09;
+this guide uses dashboard settings and adds no legacy `railway.json`.
+[Railway configuration status](https://docs.railway.com/config-as-code/reference).
+
+## Auth, persistence and operating limits
+
+One configured origin is trusted. HTTPS uses Secure, HttpOnly, SameSite=Lax, host-only session
+cookies. CSRF and callback/origin checking are explicitly enabled. Client post-login redirects
+allow only local paths, rejecting protocol-relative URLs, backslashes and control characters.
+Do not derive the origin from arbitrary proxy headers. A domain change requires updating the
+auth URL and redeploying; cookies remain host-specific, so sign in again on the new domain.
+[Better Auth origin/cookie configuration](https://better-auth.com/docs/reference/options).
+
+Sessions persist in PostgreSQL for 30 days, with daily refresh. Keep the secret stable across
+redeploys; rotation invalidates sessions. Email verification and password recovery are still
+unimplemented pending an email provider. Admin roles require operator identity verification and
+a trusted database update, never an unverified signup email.
+
+Use one staging web replica. Better Auth's 30 requests/minute/IP limiter, request throttles and
+TTS cache are in memory, so reset with a restart and are per instance. Learner daily AI quotas
+are durable in `usage_counters`. Speech STT/assessment share 300 requests/day; uncached TTS
+has 3,000 calls/day per learner (fixed code limits, not env variables). Do not interpret these
+as monetary billing caps; manual provider smoke bypasses app quotas.
+
+The Prisma/pg pool is a lazy singleton, max 10 connections, 5-second connection deadline and
+30-second idle timeout. Allow overlap of old/new deployments in the database connection budget.
+More replicas require shared throttling/cache planning and a coordinated connection budget;
+no extra infrastructure is needed for the current single-instance staging scope.
+
+## Manual post-deploy checklist
+
+Use synthetic answers and a disposable account you control; do not run destructive automated
+tests against production.
+
+- Signup → onboarding → objective placement → recommendation → daily session → activity →
+  mastery update. Compare Hoje/Progresso/Caderno and relevant account-export evidence.
+- Logout → login → revisit the lesson/session and confirm answers, profile and skill state
+  persist. Refresh and, after a controlled redeploy, sign in again and verify the same data.
+- Inspect the HTTPS session cookie's Secure/HttpOnly/SameSite flags. Check that auth redirects
+  and callbacks remain on the configured origin; a foreign callback/origin must be rejected.
+- With speech unconfigured, confirm browser audio and self-rated production are labelled,
+  with no fabricated provider scores. With Azure, test STT and pronunciation separately in
+  fr-FR/fr-CA, confirm unsupported prosody is absent, and inspect failure/timeout messages.
+- With tutor unconfigured, confirm the mock label and exclusion from proficiency evidence.
+  With Anthropic, check a synthetic turn, bounded corrections, report and rubric-based writing;
+  do not equate successful schema parsing with pedagogical accuracy.
+- With an ordinary learner, confirm `/admin` exposes no inventory. With a separately verified
+  operator account provisioned through trusted DB access, confirm authorized admin access.
+- Export the disposable account from `/conta` and inspect persistence without auth tokens or
+  password hashes. Finally delete **only that disposable account**, then verify login fails.
+  Do not automate production account deletion.
+- Review redacted provider failure categories, build/start logs and database readiness.
+  Attach no private audio, conversations or exports to public tickets.
+
+## Migration recovery and rollback
+
+Current migration history is five committed additive migrations; no seed or new migration was
+added in this staging work. Fresh-database migration and a second idempotent deploy were tested.
+Indices cover sessions, per-learner history, due reviews, evidence chronology and unique keys.
+
+Before any future database change, take/verify a recoverable backup and assess old/new app schema
+compatibility. A web rollback does **not** roll back the database. Prefer additive changes and
+expand/contract across releases. If pre-deploy fails, keep the prior working deployment and
+inspect `prisma migrate status` plus `_prisma_migrations` in the staging private environment.
+Fix forward after review. Use `prisma migrate resolve` only after an operator has reconciled
+the actual schema with the intended migration; never mark a partly applied migration successful
+just to unblock startup. Do not delete migration history or run migrate reset/dev.
+
+If a data-damaging migration has already run, stop writes and restore to a separate database from
+the verified backup/PITR point, validate it, then change the database reference and deploy a
+schema-compatible app version. Preserve the failed database for diagnosis. Review domains,
+auth URL/secret and provider variables when rolling back app configuration. Repeat the manual
+health, signup, persistence and provider checks after recovery.
