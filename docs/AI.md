@@ -145,9 +145,10 @@ the answer and must skip evidence when its score is null.
 
 Placement activation is limited to the existing reviewed A2 and B1 tasks, with original answers
 and evaluations persisted in placement responses and shown in the final report. Invalid or
-low-confidence results remain unscored. Practice tasks without rubrics stay deterministic.
+low-confidence results remain unscored. Constrained practice stays deterministic; open writing
+without a reviewed rubric remains ungraded.
 
 ## Planned
 
-Streaming (full-duplex) voice conversation, shadowing with prosody comparison, AI feedback on open
-an OpenAI/Google adapter set, persistent TTS cache in object storage.
+Streaming (full-duplex) voice conversation, shadowing with prosody comparison, additional
+OpenAI/Google adapters, persistent TTS cache in object storage.

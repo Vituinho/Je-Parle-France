@@ -18,6 +18,8 @@ to ongoing estimation yet.
 The existing Hoje and Progresso pages show stable bands, confidence and explanations. Unmeasured
 production says “a confirmar”; perception is labelled separately. Practice confidence is at most
 medium, and evidence older than 90 days lowers displayed confidence without demoting a band.
+Only substantial deterministic/provider evidence with confidence and quality at least 0.5
+refreshes measured recency; hinted/weak fragments cannot make an old calibration look newly confirmed.
 The overall level uses stable receptive/knowledge bands. Exam readiness excludes AI-only and
 unmeasured estimates. Account export includes evidence; deleting speech assessments removes their
 derived evidence and resets affected practice estimates to their retained calibration.
@@ -29,6 +31,18 @@ is weighted by confidence (high 1, medium 0.75, low 0.35), so an unmeasured prod
 does not overwhelm measured gaps. Low-confidence focus is described as practice/confirmation.
 Goals, destination tracks, due FSRS reviews, recent focus penalties and time budgets remain in place.
 An already saved daily session stays stable; the next day or extra session uses the updated profile.
+
+## Coverage limits and verification
+
+The published course currently has four broad B1 listening activities. The six-distinct-task
+promotion gate can therefore limit A2 → B1 listening promotion through these lessons alone.
+The integration fixture uses those four activities plus two existing B1 placement-bank tasks as
+practice fixtures across controlled dates; it does not add them to the product curriculum or weaken
+the gate. It covers real placement calibration, activity grading, memory/review, repeated evidence,
+promotion, independent skills, planner input, saved-session stability and export. Browser E2E
+verifies a real single-session latent update, stable bands, both dashboards and logout/login
+persistence. Live provider quality and these authored difficulty/weight thresholds still need
+evaluation with real learners and human-rated samples.
 
 ## Statistical engine
 

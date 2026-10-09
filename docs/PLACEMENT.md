@@ -162,7 +162,8 @@ difficulties) rather than raw item count.
 
 Every skill estimate stores its **method** (`skill_estimates.method`): `objective` (scored
 items), `perception` (pronunciation heard but not produced), `self_assessment` (the learner's
-own judgement at the end of the test), `self_report` (onboarding answers) or `not_assessed`.
+own judgement at the end of the test), `self_report` (onboarding answers), `ai_assessment`
+(reviewed semantic writing with capped confidence) or `not_assessed`.
 Screens that make claims about ability use only measured evidence: the exam readiness page
 (`/provas`) computes the probability that a skill is at or above a target level — from the
 estimate and its uncertainty, 1 − Φ((target − θ)/σ) — only for `objective` skills, shows
