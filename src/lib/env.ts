@@ -11,6 +11,11 @@ const emptyToUndefined = (value: unknown) =>
   typeof value === "string" && value.trim() === "" ? undefined : value;
 
 const optionalString = z.preprocess(emptyToUndefined, z.string().optional());
+const featureFlag = z
+  .enum(["true", "false"])
+  .default("true")
+  .transform((v) => v === "true");
+const quota = (fallback: number) => z.coerce.number().int().min(1).max(100_000).default(fallback);
 
 const serverEnvSchema = z
   .object({
@@ -19,14 +24,27 @@ const serverEnvSchema = z
     BETTER_AUTH_SECRET: z.string().min(32, "BETTER_AUTH_SECRET must be at least 32 characters"),
     BETTER_AUTH_URL: z.preprocess(emptyToUndefined, z.string().url().optional()),
     LLM_PROVIDER: z.enum(["anthropic", "mock"]).default("mock"),
+    TUTOR_ENABLED: featureFlag,
+    WRITING_AI_ENABLED: featureFlag,
+    PILOT_ENABLED: z
+      .enum(["true", "false"])
+      .default("false")
+      .transform((v) => v === "true"),
     ANTHROPIC_API_KEY: optionalString,
     /** Claude model for the tutor. Defaults to the current Opus; set a cheaper model to reduce cost. */
     LLM_MODEL: z.preprocess(emptyToUndefined, z.string().default("claude-opus-5-5")),
     /** Daily per-learner limits that keep a free product affordable. */
-    TUTOR_DAILY_TURNS: z.coerce.number().int().positive().default(80),
-    TUTOR_DAILY_REPORTS: z.coerce.number().int().positive().default(10),
-    WRITING_DAILY_ASSESSMENTS: z.coerce.number().int().positive().default(10),
+    TUTOR_DAILY_TURNS: quota(80),
+    TUTOR_DAILY_REPORTS: quota(10),
+    TUTOR_DAILY_CONVERSATIONS: quota(12),
+    WRITING_DAILY_ASSESSMENTS: quota(10),
     SPEECH_PROVIDER: z.enum(["azure", "mock"]).default("mock"),
+    SPEECH_STT_ENABLED: featureFlag,
+    SPEECH_PRONUNCIATION_ENABLED: featureFlag,
+    SPEECH_TTS_ENABLED: featureFlag,
+    SPEECH_DAILY_REQUESTS: quota(300),
+    SPEECH_DAILY_MINUTES: z.coerce.number().int().min(1).max(1440).default(20),
+    TTS_DAILY_REQUESTS: quota(1000),
     AZURE_SPEECH_KEY: optionalString,
     AZURE_SPEECH_REGION: optionalString,
   })

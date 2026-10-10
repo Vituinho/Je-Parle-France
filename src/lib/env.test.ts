@@ -9,6 +9,30 @@ const base = {
 };
 
 describe("staging environment validation", () => {
+  it("validates independent flags and bounded numeric quotas", () => {
+    expect(
+      validateServerEnv({
+        ...base,
+        TUTOR_ENABLED: "false",
+        WRITING_AI_ENABLED: "true",
+        SPEECH_STT_ENABLED: "false",
+      }),
+    ).toMatchObject({
+      TUTOR_ENABLED: false,
+      WRITING_AI_ENABLED: true,
+      SPEECH_STT_ENABLED: false,
+      SPEECH_PRONUNCIATION_ENABLED: true,
+      PILOT_ENABLED: false,
+    });
+    for (const change of [
+      { TUTOR_ENABLED: "0" },
+      { SPEECH_DAILY_MINUTES: "NaN" },
+      { SPEECH_DAILY_MINUTES: "0" },
+      { SPEECH_DAILY_REQUESTS: "1.5" },
+      { TTS_DAILY_REQUESTS: "100001" },
+    ])
+      expect(() => validateServerEnv({ ...base, ...change })).toThrow("Invalid server environment");
+  });
   it("defaults optional providers to mocks and keeps quotas", () => {
     expect(validateServerEnv(base)).toMatchObject({
       LLM_PROVIDER: "mock",

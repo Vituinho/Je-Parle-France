@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { openWritingActivitySchema } from "@/lib/content/schema";
 import { WRITING_CRITERIA } from "@/lib/learning/writing/assessment";
 import { LLMUnavailableError } from "@/lib/ai/llm/types";
+import { QuotaError } from "@/server/quota";
 vi.mock("./provider-telemetry", () => ({
   observeProvider: <T>(_user: string, _metadata: unknown, call: () => Promise<T>) => call(),
 }));
@@ -9,16 +10,20 @@ const mocks = vi.hoisted(() => ({
   generateObject: vi.fn(),
   consumeQuota: vi.fn(),
   simulated: false,
+  enabled: true,
 }));
 vi.mock("@/lib/ai/llm", async () => ({
   ...(await vi.importActual("@/lib/ai/llm/types")),
   getLLM: () => ({ simulated: mocks.simulated, generateObject: mocks.generateObject }),
 }));
-vi.mock("@/lib/env", () => ({ serverEnv: () => ({ WRITING_DAILY_ASSESSMENTS: 10 }) }));
+vi.mock("@/lib/env", () => ({
+  serverEnv: () => ({ WRITING_DAILY_ASSESSMENTS: 10, WRITING_AI_ENABLED: mocks.enabled }),
+}));
 vi.mock("@/server/quota", () => ({
   consumeQuota: mocks.consumeQuota,
   addUsageUnits: vi.fn(),
   throttle: () => true,
+  QuotaError: class extends Error {},
 }));
 import { evaluateWriting } from "./writing";
 const activity = openWritingActivitySchema.parse({
@@ -33,8 +38,28 @@ const activity = openWritingActivitySchema.parse({
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.simulated = false;
+  mocks.enabled = true;
 });
 describe("writing provider orchestration", () => {
+  it("keeps a quota-limited answer unassessed without buying a call", async () => {
+    mocks.consumeQuota.mockRejectedValueOnce(new QuotaError("Limite diário de escrita."));
+    expect(await evaluateWriting("user", activity, "Bonjour je suis Ana")).toMatchObject({
+      original: "Bonjour je suis Ana",
+      score: null,
+      limitations: ["Limite diário de escrita."],
+    });
+    expect(mocks.generateObject).not.toHaveBeenCalled();
+  });
+  it("preserves writing without a provider call when disabled", async () => {
+    mocks.enabled = false;
+    expect(await evaluateWriting("user", activity, "Bonjour je suis Ana")).toMatchObject({
+      original: "Bonjour je suis Ana",
+      score: null,
+      method: "not_assessed",
+    });
+    expect(mocks.generateObject).not.toHaveBeenCalled();
+    expect(mocks.consumeQuota).not.toHaveBeenCalled();
+  });
   it("does not call a mock for assessment", async () => {
     mocks.simulated = true;
     expect(await evaluateWriting("user", activity, "Bonjour je suis Ana")).toMatchObject({

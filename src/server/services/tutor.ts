@@ -138,11 +138,19 @@ export async function startConversation(
   userId: string,
   options: { scenarioId?: string; correctionMode?: CorrectionMode },
 ) {
+  if (!serverEnv().TUTOR_ENABLED)
+    throw new TutorError("Tutor pausado neste ambiente. Você pode continuar as lições e revisões.");
   const profile = await profileOf(userId);
   const level = await getLearnerLevel(userId);
   const scenario = options.scenarioId ? getContent().scenarios.get(options.scenarioId) : undefined;
   if (options.scenarioId && !scenario) throw new TutorError("Cenário não encontrado.");
   const opening = scenario?.openingLine ?? DEFAULT_OPENINGS[level.level] ?? DEFAULT_OPENINGS.A1!;
+  await consumeQuota(
+    userId,
+    "tutor-conversation",
+    today(profile),
+    serverEnv().TUTOR_DAILY_CONVERSATIONS,
+  );
   const conversation = await db.conversation.create({
     data: {
       userId,
@@ -193,6 +201,8 @@ export async function sendLearnerMessage(
   rawText: string,
   options: { spoken?: boolean } = {},
 ): Promise<TurnResult> {
+  if (!serverEnv().TUTOR_ENABLED)
+    throw new TutorError("Tutor pausado. Você pode encerrar esta conversa e continuar estudando.");
   const text = rawText.trim();
   if (!text) throw new TutorError("Escreva uma mensagem.");
   if (text.length > MAX_MESSAGE_LENGTH)
@@ -320,10 +330,12 @@ export async function endConversation(
       learnerTurns: 0,
     };
   } else {
-    await consumeQuota(userId, "tutor-report", date, serverEnv().TUTOR_DAILY_REPORTS);
     const level = await getLearnerLevel(userId);
     const llm = getLLM();
     try {
+      if (!serverEnv().TUTOR_ENABLED)
+        throw new LLMUnavailableError("Tutor pausado.", "unavailable");
+      await consumeQuota(userId, "tutor-report", date, serverEnv().TUTOR_DAILY_REPORTS);
       const result = await observeProvider(
         userId,
         { provider: llm.id, operation: "tutor_report", simulated: llm.simulated },
@@ -359,7 +371,7 @@ export async function endConversation(
         learnerTurns: learnerTurns.length,
       };
     } catch (error) {
-      if (!(error instanceof LLMUnavailableError)) throw error;
+      if (!(error instanceof LLMUnavailableError) && !(error instanceof QuotaError)) throw error;
       // Fall back to what was collected during the conversation.
       report = {
         scores: { fluency: 0, vocabulary: 0, grammar: 0, comprehension: 0 },

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useActionState, useState } from "react";
 import { startConversationAction } from "@/app/(app)/tutor/actions";
 import { ChoiceTile } from "@/components/choice-tile";
 import { Badge } from "@/components/ui/badge";
@@ -37,10 +37,10 @@ export function TutorStartForm({
 }) {
   const [scenario, setScenario] = useState(defaultScenario ?? scenarios[0]?.id ?? FREE);
   const [mode, setMode] = useState<CorrectionMode>(defaultMode);
-  const [pending, setPending] = useState(false);
+  const [state, action, pending] = useActionState(startConversationAction, null);
 
   return (
-    <form action={startConversationAction} onSubmit={() => setPending(true)} className="space-y-10">
+    <form action={action} className="space-y-10">
       <input type="hidden" name="scenarioId" value={scenario === FREE ? "" : scenario} />
       <input type="hidden" name="correctionMode" value={mode} />
       {sessionId && <input type="hidden" name="sessionId" value={sessionId} />}
@@ -96,6 +96,7 @@ export function TutorStartForm({
         </div>
       </fieldset>
 
+      {state?.error && <p role="alert">{state.error}</p>}
       <Button
         type="submit"
         disabled={pending}

@@ -22,14 +22,24 @@ const startSchema = z.object({
   sessionId: z.string().max(64).optional(),
 });
 
-export async function startConversationAction(formData: FormData) {
+export async function startConversationAction(
+  _previous: { error: string } | null,
+  formData: FormData,
+) {
   const { user } = await requireLearner();
   const parsed = startSchema.parse({
     scenarioId: formData.get("scenarioId") || undefined,
     correctionMode: formData.get("correctionMode") || undefined,
     sessionId: formData.get("sessionId") || undefined,
   });
-  const conversation = await startConversation(user.id, parsed);
+  let conversation;
+  try {
+    conversation = await startConversation(user.id, parsed);
+  } catch (error) {
+    const message = friendly(error);
+    if (message) return { error: message };
+    throw error;
+  }
   redirect(`/conversa/${conversation.id}${parsed.sessionId ? `?sessao=${parsed.sessionId}` : ""}`);
 }
 

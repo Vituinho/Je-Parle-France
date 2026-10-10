@@ -6,6 +6,7 @@ import { TutorStartForm } from "@/components/tutor/tutor-start-form";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getLLM } from "@/lib/ai/llm";
 import { getContent } from "@/lib/content";
+import { serverEnv } from "@/lib/env";
 import { levelIndex } from "@/lib/learning/cefr";
 import { getLearnerLevel } from "@/server/services/learner";
 import { listConversations } from "@/server/services/tutor";
@@ -69,13 +70,20 @@ async function Tutor({
         </p>
       )}
 
-      <TutorStartForm
-        scenarios={scenarios}
-        trackLabels={TRACK_LABEL}
-        defaultScenario={preselected}
-        defaultMode={profile.correctionMode}
-        sessionId={sessionId}
-      />
+      {!serverEnv().TUTOR_ENABLED ? (
+        <p role="status">
+          Tutor pausado neste ambiente. Continue pelas lições e revisões; suas conversas anteriores
+          estão disponíveis abaixo.
+        </p>
+      ) : (
+        <TutorStartForm
+          scenarios={scenarios}
+          trackLabels={TRACK_LABEL}
+          defaultScenario={preselected}
+          defaultMode={profile.correctionMode}
+          sessionId={sessionId}
+        />
+      )}
 
       {conversations.length > 0 && (
         <section aria-labelledby="history" className="border-border border-t pt-8">

@@ -11,7 +11,7 @@ import {
   writingJudgmentSchema,
   writingPrompt,
 } from "@/lib/learning/writing/assessment";
-import { consumeQuota, addUsageUnits, throttle } from "@/server/quota";
+import { consumeQuota, addUsageUnits, throttle, QuotaError } from "@/server/quota";
 import { localDate } from "@/lib/learning/time";
 import { observeProvider } from "./provider-telemetry";
 
@@ -24,6 +24,12 @@ export async function evaluateWriting(
   if (!activity.rubric || original.length > 2000)
     throw new Error("Invalid writing task or answer.");
   const level = activity.rubric.expectedLevel;
+  if (serverEnv().WRITING_AI_ENABLED === false)
+    return unassessedWriting(
+      original,
+      level,
+      "Avaliação por IA pausada. Seu texto foi preservado; continue a atividade.",
+    );
   if (writingAnalysis(original).wordCount < 3)
     return unassessedWriting(
       original,
@@ -43,9 +49,9 @@ export async function evaluateWriting(
       "rate_limited",
     );
   const date = localDate(new Date(), "UTC");
-  await consumeQuota(userId, "writing", date, serverEnv().WRITING_DAILY_ASSESSMENTS);
   const prompt = writingPrompt(activity, original);
   try {
+    await consumeQuota(userId, "writing", date, serverEnv().WRITING_DAILY_ASSESSMENTS);
     const result = await observeProvider(
       userId,
       { provider: llm.id, operation: "writing_feedback", simulated: llm.simulated },
@@ -76,7 +82,7 @@ export async function evaluateWriting(
       concepts: getContent().concepts,
     });
   } catch (error) {
-    if (error instanceof LLMUnavailableError)
+    if (error instanceof LLMUnavailableError || error instanceof QuotaError)
       return unassessedWriting(original, level, error.message);
     // Malformed or invented output is not learning evidence. Do not expose provider output.
     if (llm.id === "anthropic")

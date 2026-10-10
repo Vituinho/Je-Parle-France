@@ -13,17 +13,43 @@ export async function consumeQuota(
   date: string,
   limit: number,
   units = 0,
+  unitLimit?: number,
 ) {
+  if (
+    ![limit, units, ...(unitLimit === undefined ? [] : [unitLimit])].every(Number.isSafeInteger) ||
+    limit < 1 ||
+    units < 0 ||
+    (unitLimit !== undefined && unitLimit < 1)
+  )
+    throw new Error("Invalid quota configuration");
   const key = `${feature}:${date}`;
-  const counter = await db.usageCounter.upsert({
-    where: { userId_key: { userId, key } },
-    create: { userId, key, count: 1, units },
-    update: { count: { increment: 1 }, units: { increment: units } },
+  return db.$transaction(async (tx) => {
+    // Serialize reservations for this learner. Refused calls do not spend units or inflate counts.
+    await tx.$queryRaw`SELECT id FROM users WHERE id = ${userId} FOR UPDATE`;
+    const previous = await tx.usageCounter.findUnique({ where: { userId_key: { userId, key } } });
+    if (
+      (previous?.count ?? 0) >= limit ||
+      (unitLimit !== undefined && (previous?.units ?? 0) + units > unitLimit)
+    ) {
+      const resource =
+        feature === "speech"
+          ? "fala"
+          : feature === "writing"
+            ? "avaliação de escrita"
+            : feature === "tts"
+              ? "áudio"
+              : "tutor";
+      throw new QuotaError(
+        `Você chegou ao limite diário de ${resource}. Ele volta amanhã; você pode continuar as outras atividades.`,
+      );
+    }
+    const counter = await tx.usageCounter.upsert({
+      where: { userId_key: { userId, key } },
+      create: { userId, key, count: 1, units },
+      update: { count: { increment: 1 }, units: { increment: units } },
+    });
+    return counter.count;
   });
-  if (counter.count > limit) {
-    throw new QuotaError("Você chegou ao limite diário do tutor. Ele volta amanhã!");
-  }
-  return counter.count;
 }
 
 export async function addUsageUnits(userId: string, feature: string, date: string, units: number) {

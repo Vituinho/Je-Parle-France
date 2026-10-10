@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { serverEnv } from "@/lib/env";
 import { getSpeech } from "@/lib/ai/speech";
 import { hashString } from "@/lib/learning/random";
 import { localDate } from "@/lib/learning/time";
@@ -21,7 +22,8 @@ export async function GET(request: Request) {
   const user = await getCurrentUser();
   if (!user) return new Response("Unauthorized", { status: 401 });
   const speech = getSpeech();
-  if (!speech) return new Response("Server TTS not configured", { status: 501 });
+  if (!speech || !serverEnv().SPEECH_TTS_ENABLED)
+    return new Response("Server TTS unavailable", { status: 501 });
 
   const parsed = querySchema.safeParse(Object.fromEntries(new URL(request.url).searchParams));
   if (!parsed.success) return new Response("Bad request", { status: 400 });
@@ -30,7 +32,12 @@ export async function GET(request: Request) {
   let entry = cache.get(key);
   if (!entry) {
     try {
-      await consumeQuota(user.id, "tts", localDate(new Date(), "UTC"), 3000);
+      await consumeQuota(
+        user.id,
+        "tts",
+        localDate(new Date(), "UTC"),
+        serverEnv().TTS_DAILY_REQUESTS,
+      );
     } catch (error) {
       if (error instanceof QuotaError) return new Response(error.message, { status: 429 });
       throw error;

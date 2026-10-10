@@ -17,10 +17,10 @@ export function getCapabilities(): Capabilities {
   const env = serverEnv();
   const azure = env.SPEECH_PROVIDER === "azure";
   return {
-    speechRecognition: azure,
-    pronunciationAssessment: azure,
-    serverTts: azure,
-    llm: env.LLM_PROVIDER === "anthropic",
+    speechRecognition: azure && env.SPEECH_STT_ENABLED,
+    pronunciationAssessment: azure && env.SPEECH_PRONUNCIATION_ENABLED,
+    serverTts: azure && env.SPEECH_TTS_ENABLED,
+    llm: env.LLM_PROVIDER === "anthropic" && env.WRITING_AI_ENABLED,
   };
 }
 

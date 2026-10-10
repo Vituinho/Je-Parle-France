@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { serverEnv } from "@/lib/env";
+import { observeProvider } from "@/server/services/provider-telemetry";
 import { getSpeech, SpeechProviderError } from "@/lib/ai/speech";
 import { getContent } from "@/lib/content";
 import { localDate } from "@/lib/learning/time";
@@ -25,15 +27,33 @@ export async function GET(request: Request) {
   const activity = getContent().placementItems.get(itemId)?.activity;
   if (!attempt || activity?.type !== "minimal_pair") return new Response(null, { status: 404 });
   const speech = getSpeech();
-  if (!speech) return new Response("Áudio do diagnóstico indisponível.", { status: 501 });
+  if (!speech || !serverEnv().SPEECH_TTS_ENABLED)
+    return new Response("Áudio do diagnóstico indisponível.", { status: 501 });
   try {
-    await consumeQuota(user.id, "tts", localDate(new Date(), "UTC"), 3000);
-    const result = await speech.tts.synthesize({
-      text: activity.pair[activity.answer].word,
-      locale: activity.region,
-      gender: "f",
-      rate: "normal",
-    });
+    await consumeQuota(
+      user.id,
+      "tts",
+      localDate(new Date(), "UTC"),
+      serverEnv().TTS_DAILY_REQUESTS,
+    );
+    const text = activity.pair[activity.answer].word;
+    const result = await observeProvider(
+      user.id,
+      {
+        provider: "azure",
+        operation: "tts",
+        simulated: false,
+        locale: activity.region,
+        textCharacters: text.length,
+      },
+      () =>
+        speech.tts.synthesize({
+          text,
+          locale: activity.region,
+          gender: "f",
+          rate: "normal",
+        }),
+    );
     return new Response(result.audio, {
       headers: {
         "Content-Type": result.contentType,

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { serverEnv } from "@/lib/env";
 import { getSpeech, SpeechProviderError } from "@/lib/ai/speech";
 import { validateSpeechWav } from "@/lib/ai/speech/audio";
 import { localDate } from "@/lib/learning/time";
@@ -19,7 +20,7 @@ export async function POST(request: Request) {
   const user = await getCurrentUser();
   if (!user) return Response.json({ error: "Faça login para continuar." }, { status: 401 });
   const speech = getSpeech();
-  if (!speech)
+  if (!speech || !serverEnv().SPEECH_STT_ENABLED)
     return Response.json({ error: "Reconhecimento de fala não configurado." }, { status: 501 });
   if (!throttle(user.id, "speech-transcribe", 1000)) {
     return Response.json({ error: "Espere um instante." }, { status: 429 });
@@ -43,7 +44,15 @@ export async function POST(request: Request) {
   try {
     const wav = await audio.arrayBuffer();
     const durationMs = validateSpeechWav(wav);
-    await consumeQuota(user.id, "speech", localDate(new Date(), "UTC"), 300);
+    const env = serverEnv();
+    await consumeQuota(
+      user.id,
+      "speech",
+      localDate(new Date(), "UTC"),
+      env.SPEECH_DAILY_REQUESTS,
+      durationMs,
+      env.SPEECH_DAILY_MINUTES * 60_000,
+    );
     const result = await observeProvider(
       user.id,
       {
