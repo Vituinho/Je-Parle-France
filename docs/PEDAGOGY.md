@@ -123,6 +123,14 @@ and every explanation offers **Explicar em português**.
 
 ## Assessment honesty
 
+Educational diagnostics distinguish immediate success from later unassisted FSRS recall. Small
+samples, hints, self-ratings and unknown legacy metadata cannot become a retention percentage or
+measured proficiency gain. Weekly evidence counts and mastery/estimate changes describe observations;
+they do not prove that a lesson caused improvement. Possible late-session fatigue requires matched
+type/difficulty, sufficient first attempts, both lower accuracy and longer active response latency;
+it is not a health/attention diagnosis. Routine advice needs repeated sessions on multiple days and
+does not automatically change time or scoring. See [LEARNING-TELEMETRY.md](LEARNING-TELEMETRY.md).
+
 Internal placement and readiness estimates are **learning tools**, never official results. Exam
 tracks always distinguish _platform estimate_ from _official certification_, and immigration
 score conversions (NCLC/CLB) are taken from current official IRCC/MIFI documentation.

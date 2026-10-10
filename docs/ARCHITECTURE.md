@@ -141,6 +141,16 @@ current persisted block rather than trusting a client flag. Weekly workload deri
 daily activity totals. The pure deadline comparison refuses insufficient evidence and emits no
 individual ETA. See [INTENSIVE-LEARNING.md](INTENSIVE-LEARNING.md).
 
+Educational telemetry extends `StudyEvent` rather than introducing an analytics store. Normalized
+attempt/review/evidence records supply outcomes; new events have a strict metadata allowlist.
+Active-window seconds are distinct from historical interaction credit. Authenticated timing APIs
+authorize current activities/conversations and serialize bounded, deduplicated credits with the
+learner lock. Pure metrics produce conservative deterministic advice; new saved plans carry
+advisory `studyAdvice` without overriding time, task budgets or scoring. `/admin/piloto` independently
+validates the durable admin role and returns bounded metadata reports. Provider wrappers observe
+existing calls and isolate telemetry failure from their results. See [LEARNING-TELEMETRY.md](LEARNING-TELEMETRY.md)
+for architecture, gates, retention, calibration and validation.
+
 ## Security baseline
 
 - Every Server Action / Route Handler re-checks the session (`requireUser()`) and authorises by

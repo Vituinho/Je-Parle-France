@@ -7,6 +7,12 @@ provider calls were added in this task.
 
 ## 1–7. Implementation matrix
 
+Subsequent telemetry phase (9 October 2026): active-window time, recall diagnostics, conservative
+fatigue/routine advice, weekly learning summaries, protected pilot views and provider/calibration
+metadata now extend this baseline. Historical time remains distinct; saved plans and chosen pace
+are preserved. The original results/limitations below describe the intensive implementation at its
+delivery. Current telemetry behavior and validation are in [LEARNING-TELEMETRY.md](LEARNING-TELEMETRY.md).
+
 | Area                       | Implementation and practical limit                                                                                                                                                                                                                                           |
 | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1. Study pace              | `light`, `balanced`, `accelerated`, `immersion`; PT-BR labels Sem pressa, Equilibrado, Acelerado, Imersão. Available time, evidence, goals and capability checks still drive planning.                                                                                       |

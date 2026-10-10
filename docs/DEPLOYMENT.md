@@ -172,12 +172,25 @@ tests against production.
 
 ## Migration recovery and rollback
 
-Current migration history is six committed migrations. Intensive learning adds
+Current migration history is seven committed migrations. Intensive learning adds
 `20261009120000_study_pace`, an additive enum and nullable profile column that preserves existing
 users. Apply it through the existing pre-deploy command; no seed is needed. The preceding staging
 readiness work tested fresh-database migration and a second idempotent deploy; the intensive
 migration has also been applied to the local development and integration databases. A real
 Railway rollout of this new migration still requires the manual deployment procedure above.
+
+Learning telemetry adds `20261009170000_learning_telemetry`: nullable review/attempt metadata,
+active daily seconds and event session/dedupe indexes, applied locally to development/integration
+databases without a development reset. Deploy it through the existing pre-deploy command; it needs
+no seed or additional service. The protected pilot is `/admin/piloto`. Provider invocations now record
+metadata/units, without billing secrets, extra requests or monetary estimates.
+
+Review operational-detail retention with `npm run telemetry:prune` (dry run), then use `-- --apply`
+only for the reviewed deployment/database. The tool preserves normalized learning state and legacy
+payloads; an operator must schedule it and check batch limits. Do not run destructive tests or use
+E2E role-promotion fixtures against staging/production. See [LEARNING-TELEMETRY.md](LEARNING-TELEMETRY.md)
+for the pilot workflow, minimum evidence, privacy and limits.
+
 Indices cover sessions, per-learner history, due reviews, evidence chronology and unique keys.
 
 Before any future database change, take/verify a recoverable backup and assess old/new app schema

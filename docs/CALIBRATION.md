@@ -4,6 +4,12 @@ This local kit collects comparisons for a later validation study. It makes no pr
 writes no learner database state and changes no production thresholds. It is not an exam or a
 new public feature. Live provider authentication and human validity are separate checks.
 
+Verified administrators can import this same private JSON kit at `/admin/piloto` for an in-memory
+comparison, limited to 1 MB/200 records. The report groups speech agreement by fr-FR/fr-CA and
+writing differences by the seven criteria; it returns no notes, reviewer identity or target text.
+The private local kit remains the editable record, and importing it changes no production scoring.
+See [LEARNING-TELEMETRY.md](LEARNING-TELEMETRY.md) for pilot metrics, privacy and validation results.
+
 ```sh
 npm run calibration -- init
 npm run calibration -- check .data/calibration/records.json
