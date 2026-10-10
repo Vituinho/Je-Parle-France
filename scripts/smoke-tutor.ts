@@ -1,55 +1,50 @@
 import { config } from "dotenv";
 import { AnthropicProvider } from "../src/lib/ai/llm/anthropic";
-import { LLMUnavailableError } from "../src/lib/ai/llm/types";
-import { buildTutorSystemPrompt, tutorTurnSchema } from "../src/lib/learning/tutor/tutor";
+import { runTutorSmoke, TUTOR_SMOKE_CASES, type TutorSmokeCase } from "./provider-smoke";
 
 config({ quiet: true });
 async function main() {
   const key = process.env.ANTHROPIC_API_KEY;
   const model = process.env.LLM_MODEL;
-  if (!key || !model) {
+  const args = process.argv.slice(2);
+  const cases: TutorSmokeCase[] =
+    args.length === 0
+      ? ["intermediate"]
+      : args.length === 1 && args[0] === "--suite"
+        ? [...TUTOR_SMOKE_CASES]
+        : args.length === 2 &&
+            args[0] === "--case" &&
+            TUTOR_SMOKE_CASES.includes(args[1] as TutorSmokeCase)
+          ? [args[1] as TutorSmokeCase]
+          : [];
+  if (!key || !model || cases.length === 0) {
     console.error(
-      "Required: ANTHROPIC_API_KEY and LLM_MODEL. npm run smoke:tutor makes one paid structured tutor call; no secrets, prompts or learner data are printed.",
+      JSON.stringify({
+        stage: "preflight",
+        passed: false,
+        reason: !key || !model ? "missing_credentials_or_model" : "invalid_arguments",
+        instruction:
+          "Set ANTHROPIC_API_KEY and LLM_MODEL. Use no arguments (one call), --case beginner|intermediate|correction|roleplay|writing, or --suite (five paid calls).",
+      }),
     );
     process.exitCode = 1;
     return;
   }
   try {
     const provider = new AnthropicProvider(key, model);
-    const result = await provider.generateObject({
-      system: buildTutorSystemPrompt({
-        level: "A2",
-        theta: 2.5,
-        destination: "canada_quebec",
-        correctionMode: "important_only",
-        knownVocabulary: ["bonjour", "travail"],
-        weakItems: ["avoir besoin de"],
-        recentMistakes: [],
-      }),
-      messages: [
-        { role: "user", content: "Bonjour, je besoin d'aide pour trouver un travail à Montréal." },
-      ],
-      schema: tutorTurnSchema,
-      purpose: "tutor_turn",
-      maxTokens: 800,
-    });
-    console.log(
-      JSON.stringify({
-        passed: !result.simulated,
-        provider: provider.id,
-        model: result.model,
-        scenario: "synthetic-a2-quebec",
-        maxOutputTokens: 800,
-        structuredOutputValid: true,
-        usage: result.usage,
-      }),
-    );
-    if (result.simulated) process.exitCode = 1;
-  } catch (error) {
+    for (const kind of cases) {
+      const result = await runTutorSmoke(provider, kind);
+      console.log(JSON.stringify(result));
+      if (!result.passed) {
+        process.exitCode = 1;
+        break;
+      } // Never buy the rest of a failing suite.
+    }
+  } catch {
     console.error(
       JSON.stringify({
         passed: false,
-        reason: error instanceof LLMUnavailableError ? error.reason : "smoke_failed",
+        reason: "smoke_failed",
       }),
     );
     process.exitCode = 1;

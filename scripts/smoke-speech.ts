@@ -3,16 +3,33 @@ import { readFile } from "node:fs/promises";
 import { AzureSpeechProvider } from "../src/lib/ai/speech/azure";
 import { SpeechProviderError } from "../src/lib/ai/speech/types";
 import { validateSpeechWav } from "../src/lib/ai/speech/audio";
+import { runSpeechSmoke, type SpeechSmokeCase } from "./provider-smoke";
 
 config({ quiet: true });
 async function main() {
-  const [frPath, caPath, reference = "Bonjour, je voudrais un café, s’il vous plaît."] =
-    process.argv.slice(2);
+  const args = process.argv.slice(2);
+  const caseIndex = args.indexOf("--case");
+  const kind = (caseIndex === -1 ? "speech" : args[caseIndex + 1]) as SpeechSmokeCase;
+  if (caseIndex !== -1) args.splice(caseIndex, 2);
+  const [frPath, caPath, reference = "Bonjour, je voudrais un café, s’il vous plaît."] = args;
   const key = process.env.AZURE_SPEECH_KEY;
   const region = process.env.AZURE_SPEECH_REGION;
-  if (!key || !region || !frPath || !caPath) {
+  if (
+    !key ||
+    !region ||
+    !frPath ||
+    !caPath ||
+    args.length > 3 ||
+    !["speech", "silence", "short"].includes(kind)
+  ) {
     console.error(
-      "Required: AZURE_SPEECH_KEY, AZURE_SPEECH_REGION; npm run smoke:speech -- <fr-FR.wav> <fr-CA.wav> [reference text]. Two local recordings, WAV PCM16 mono 16 kHz, <=30 seconds. Makes four paid calls; prints no transcript or secrets.",
+      JSON.stringify({
+        stage: "preflight",
+        passed: false,
+        reason: !key || !region ? "missing_credentials" : "invalid_arguments",
+        instruction:
+          "Set AZURE_SPEECH_KEY/REGION; pass two PCM16 mono 16kHz WAV files <=30 seconds, optional generic reference and --case speech|silence|short. Up to four paid calls.",
+      }),
     );
     process.exitCode = 1;
   } else {
@@ -26,7 +43,13 @@ async function main() {
         ].map(async ([locale, path]) => {
           const bytes = await readFile(path!);
           const wav = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
-          validateSpeechWav(wav);
+          const duration = validateSpeechWav(wav);
+          if (
+            (kind === "short" && duration >= 1000) ||
+            reference.trim().length < 1 ||
+            reference.length > 300
+          )
+            throw new Error("Invalid fixture or reference");
           return { locale: locale as "fr-FR" | "fr-CA", wav };
         }),
       );
@@ -39,25 +62,12 @@ async function main() {
         console.log(JSON.stringify({ preflight: "passed", malformedAudioRejectedLocally: true }));
       }
       for (const { locale, wav } of recordings) {
-        const stt = await provider.transcribe(wav, locale);
-        const assessment = await provider.assess(wav, reference, locale);
-        const passed =
-          stt.status === "ok" &&
-          assessment.status === "ok" &&
-          assessment.scores !== null &&
-          assessment.scores.prosody === null;
-        console.log(
-          JSON.stringify({
-            locale,
-            stt: stt.status,
-            pronunciation: assessment.status,
-            metricsPresent: assessment.scores !== null,
-            unsupportedProsodyAbsent: assessment.scores?.prosody === null,
-            capabilities: provider.features(locale),
-            passed,
-          }),
-        );
-        if (!passed) process.exitCode = 1;
+        const results = await runSpeechSmoke(provider, wav, locale, reference, kind);
+        results.forEach((result) => console.log(JSON.stringify(result)));
+        if (results.some((r) => !r.passed)) {
+          process.exitCode = 1;
+          break;
+        }
       }
     } catch (error) {
       console.error(
