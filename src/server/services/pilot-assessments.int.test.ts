@@ -97,6 +97,31 @@ describe.skipIf(!hasTestDatabase)("authorized human calibration from real produc
     flags.enabled = true;
   });
   afterAll(() => db.$disconnect());
+  it("keeps an uncertain writing score null while allowing human review of validated bands", async () => {
+    const { admin, user } = await setup(),
+      source = await writing(user.id);
+    const answer = source.answer as unknown as { writingAssessment: Record<string, unknown> };
+    await db.placementResponse.update({
+      where: { id: source.id },
+      data: {
+        answer: {
+          writingAssessment: { ...answer.writingAssessment, score: null, confidence: 0.4 },
+        } as Prisma.InputJsonValue,
+        scored: false,
+      },
+    });
+    const preview = await previewPilotAssessment(
+      admin.id,
+      user.id,
+      { kind: "writing_placement", id: source.id },
+      now,
+    );
+    expect(preview.record).toMatchObject({
+      kind: "writing",
+      systemScore: null,
+      systemConfidence: 0.4,
+    });
+  });
   it("requires admin, consent, ownership, post-consent timing and known speech locale", async () => {
     const { admin, user } = await setup(),
       other = await createTestUser();

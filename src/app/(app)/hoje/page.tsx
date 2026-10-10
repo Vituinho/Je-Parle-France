@@ -18,6 +18,8 @@ import { requireLearner } from "@/server/session";
 import { STUDY_PACE_OPTIONS } from "@/lib/learning/study-pace";
 import { getLearningTelemetry } from "@/server/services/learning-telemetry";
 import { WeeklyLearning } from "@/components/progress/weekly-learning";
+import { getPilotParticipation } from "@/server/services/pilot-participation";
+import { serverEnv } from "@/lib/env";
 
 export const metadata: Metadata = { title: "Hoje" };
 
@@ -252,10 +254,11 @@ function StatsPanel({ data }: { data: Dashboard }) {
 
 async function Today() {
   const { user, profile } = await requireLearner();
-  const [data, achievements, metrics] = await Promise.all([
+  const [data, achievements, metrics, pilot] = await Promise.all([
     getDashboard(user.id, profile),
     recentAchievements(user.id, profile),
     getLearningTelemetry(user.id),
+    serverEnv().PILOT_ENABLED ? getPilotParticipation(user.id) : Promise.resolve(null),
   ]);
   const firstName = user.name.split(" ")[0] ?? user.name;
   const authentic = dailyAuthentic(getContent().course.authentic, {
@@ -279,6 +282,17 @@ async function Today() {
           })}
         </p>
       </header>
+
+      {pilot && pilot.status !== "withdrawn" && (
+        <aside className="bg-accent rounded-xl p-4 text-sm">
+          {pilot.status === "invited"
+            ? "Você recebeu um convite opcional para o piloto."
+            : "Você está participando de uma versão de teste do Je Parle Français. Estimativas não são certificação oficial."}{" "}
+          <Link href="/piloto" className="text-primary underline">
+            Ver participação e feedback
+          </Link>
+        </aside>
+      )}
 
       {needsPlacement && (
         <div className="bg-accent flex flex-wrap items-center justify-between gap-4 rounded-2xl px-5 py-4">

@@ -1,6 +1,12 @@
 import { z } from "zod";
 
 export const PILOT_CONSENT_VERSION = "pilot-2026-10-10-v1";
+export const PILOT_STATUS_LABELS = {
+  invited: "Convite pendente",
+  active: "Participando",
+  withdrawn: "Aceite retirado",
+  finished: "Coleta encerrada",
+} as const;
 export const PILOT_NOTICE = [
   "Você está participando de uma versão de teste do Je Parle Français por cerca de 14 dias. Algumas funções podem mudar; suas estimativas não são certificação oficial.",
   "Usaremos dados educacionais: atividades, revisões, desempenho por habilidade, estimativas e tempo ativo aproximado. Abrir uma página não prova atenção ou aprendizagem.",

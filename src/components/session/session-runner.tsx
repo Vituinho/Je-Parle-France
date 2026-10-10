@@ -20,6 +20,7 @@ import type { PreparedReviewItem } from "@/server/services/review";
 import type { LearningSegment } from "@/lib/learning/planner/planner";
 import { sendSessionTransition } from "@/components/lesson/use-active-study-time";
 import type { StudyAdvice } from "@/lib/learning/telemetry/metrics";
+import { PilotFeedbackForm } from "@/components/pilot/forms";
 
 export type BlockPayload = { title: string; reason: string; seconds: number } & (
   | { kind: "review" | "focus"; items: PreparedReviewItem[]; authored?: boolean }
@@ -55,6 +56,7 @@ export function SessionRunner({
   targetMinutes,
   recordedSeconds,
   studyAdvice,
+  pilotFeedback = false,
 }: {
   sessionId: string;
   date: string;
@@ -67,6 +69,7 @@ export function SessionRunner({
   targetMinutes: number;
   recordedSeconds: number;
   studyAdvice?: StudyAdvice[];
+  pilotFeedback?: boolean;
 }) {
   const [cursor, setCursor] = useState(initialCursor);
   const [playing, setPlaying] = useState(false);
@@ -202,6 +205,7 @@ export function SessionRunner({
             Seu progresso ficou salvo. As revisões seguem seu calendário; a prática extra não
             antecipa revisões. Amanhã o plano considera suas respostas.
           </p>
+          {pilotFeedback && <PilotFeedbackForm context="session" sourceId={sessionId} />}
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Button asChild className="h-12 rounded-xl px-6 text-base">
               <Link href="/hoje">Voltar para hoje</Link>

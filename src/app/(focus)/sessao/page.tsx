@@ -18,6 +18,7 @@ import {
 import { requireLearner } from "@/server/session";
 import { learningSegments, lessonWindow } from "@/lib/learning/planner/planner";
 import { notFound } from "next/navigation";
+import { canOfferPilotFeedback } from "@/server/services/pilot-participation";
 
 export const metadata: Metadata = { title: "Sessão de hoje" };
 
@@ -133,6 +134,7 @@ async function Session({
       initialCursor={session.cursor}
       support={supportFor(level.level, profile)}
       extra={typeof id === "string"}
+      pilotFeedback={await canOfferPilotFeedback(user.id)}
     />
   );
 }

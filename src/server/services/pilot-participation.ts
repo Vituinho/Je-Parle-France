@@ -146,3 +146,53 @@ export async function recordPilotFeedback(userId: string, input: unknown, now = 
     });
   });
 }
+
+/** Offer at most once per UTC day; the completion UI decides the meaningful moment. */
+export async function canOfferPilotFeedback(
+  userId: string,
+  now = new Date(),
+  requireActivity = false,
+) {
+  if (!serverEnv().PILOT_ENABLED) return false;
+  const member = await getPilotParticipation(userId);
+  if (
+    !member?.consentedAt ||
+    member.status !== "active" ||
+    member.consentVersion !== PILOT_CONSENT_VERSION
+  )
+    return false;
+  const midnight = new Date(`${now.toISOString().slice(0, 10)}T00:00:00Z`);
+  if (await db.pilotFeedback.count({ where: { userId, createdAt: { gte: midnight } } }))
+    return false;
+  if (!requireActivity) return true;
+  const createdAt = { gte: member.consentedAt };
+  const counts = await Promise.all([
+    db.activityAttempt.count({ where: { userId, createdAt } }),
+    db.placementResponse.count({ where: { attempt: { userId }, createdAt } }),
+    db.conversation.count({ where: { userId, status: "ended", createdAt } }),
+    db.speechAttempt.count({ where: { userId, createdAt } }),
+    db.reviewLog.count({ where: { userId, reviewedAt: createdAt } }),
+  ]);
+  return counts.some((count) => count > 0);
+}
+
+/** Explicit participant selection permits admins to read short, consented comments. */
+export async function getPilotFeedbackComments(adminId: string, userId: string, now = new Date()) {
+  await assertPilotAdmin(adminId);
+  return db.$transaction(async (tx) => {
+    await lockLearner(tx, userId);
+    const member = await requirePilotConsent(tx, userId, true);
+    return tx.pilotFeedback.findMany({
+      where: {
+        userId,
+        createdAt: {
+          gte: new Date(Math.max(member.consentedAt!.getTime(), now.getTime() - 90 * 86400000)),
+          lte: member.finishedAt ?? now,
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 14,
+      select: { context: true, difficulty: true, text: true, createdAt: true },
+    });
+  });
+}

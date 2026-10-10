@@ -14,6 +14,8 @@ import {
   recordPilotFeedback,
   withdrawPilotConsent,
   finishPilotParticipant,
+  canOfferPilotFeedback,
+  getPilotFeedbackComments,
 } from "./pilot-participation";
 import { PILOT_CONSENT_VERSION } from "@/lib/pilot/schema";
 const now = new Date("2026-10-10T12:00:00Z");
@@ -53,6 +55,45 @@ describe.skipIf(!hasTestDatabase)("consented controlled pilot", () => {
     flags.enabled = true;
   });
   afterAll(() => db.$disconnect());
+  it("offers feedback only to active volunteers and protects selected private comments", async () => {
+    const admin = await operator(),
+      user = await learner(),
+      other = await learner();
+    expect(await canOfferPilotFeedback(user.id, now)).toBe(false);
+    await invitePilotParticipant(admin.id, user.id, now);
+    await acceptPilotConsent(user.id, consent, now);
+    expect(await canOfferPilotFeedback(user.id, now)).toBe(true);
+    expect(await canOfferPilotFeedback(user.id, now, true)).toBe(false);
+    await db.activityAttempt.create({
+      data: {
+        userId: user.id,
+        activityId: "task",
+        type: "open_writing",
+        context: "lab",
+        score: 0,
+        correct: false,
+        createdAt: now,
+      },
+    });
+    expect(await canOfferPilotFeedback(user.id, now, true)).toBe(true);
+    await recordPilotFeedback(
+      user.id,
+      { context: "weekly", sourceId: "2026-10-05", difficulty: "hard", text: "PRIVATE COMMENT" },
+      now,
+    );
+    expect(await canOfferPilotFeedback(user.id, now)).toBe(false);
+    await expect(getPilotFeedbackComments(user.id, other.id, now)).rejects.toThrow(
+      "Admin authorization",
+    );
+    expect(await getPilotFeedbackComments(admin.id, user.id, now)).toMatchObject([
+      { text: "PRIVATE COMMENT" },
+    ]);
+    await expect(getPilotFeedbackComments(admin.id, other.id, now)).rejects.toThrow("aceite");
+    flags.enabled = false;
+    expect(await canOfferPilotFeedback(user.id, new Date(now.getTime() + 86400000))).toBe(false);
+    await withdrawPilotConsent(user.id, now);
+    await expect(getPilotFeedbackComments(admin.id, user.id, now)).rejects.toThrow("aceite");
+  });
   it("requires durable admin enrollment and the learner's current, repeat-safe consent", async () => {
     const admin = await operator(),
       user = await learner();

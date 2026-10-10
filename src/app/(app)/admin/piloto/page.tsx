@@ -12,6 +12,7 @@ import { STUDY_PACE_OPTIONS } from "@/lib/learning/study-pace";
 import { addDays } from "@/lib/learning/time";
 import { getPilotReport, PilotAuthorizationError } from "@/server/services/pilot";
 import { requireAdmin } from "@/server/session";
+import { ControlledPilotPanel } from "@/components/pilot/controlled-panel";
 
 export const metadata: Metadata = { title: "Piloto de aprendizagem" };
 async function Pilot({ searchParams }: Pick<PageProps<"/admin/piloto">, "searchParams">) {
@@ -22,7 +23,7 @@ async function Pilot({ searchParams }: Pick<PageProps<"/admin/piloto">, "searchP
   const read = (key: string) =>
     typeof params[key] === "string" && params[key] !== "" ? (params[key] as string) : undefined;
   const filters = {
-    from: read("from") ?? addDays(date, -14),
+    from: read("from") ?? addDays(date, -13),
     through: read("through") ?? date,
     pace: read("pace"),
     level: read("level"),
@@ -57,9 +58,9 @@ async function Pilot({ searchParams }: Pick<PageProps<"/admin/piloto">, "searchP
         </Link>
         <h1 className="text-3xl font-bold">Piloto de aprendizagem</h1>
         <p className="text-muted-foreground max-w-3xl">
-          Diagnósticos educacionais para revisão humana. Identificadores pseudônimos; nenhum texto
-          de resposta, conversa ou áudio é exibido. Minutos e estimativas não demonstram
-          causalidade.
+          Diagnósticos educacionais para revisão humana. Relatórios usam metadados; respostas de
+          escrita e comentários aparecem apenas na seleção consentida do participante. Minutos e
+          estimativas não demonstram causalidade.
         </p>
       </header>
       <form className="flex flex-wrap items-end gap-3" method="get">
@@ -274,6 +275,13 @@ async function Pilot({ searchParams }: Pick<PageProps<"/admin/piloto">, "searchP
           </ol>
         </section>
       )}
+      <ControlledPilotPanel
+        adminId={admin.id}
+        from={filters.from}
+        through={filters.through}
+        learner={filters.learner}
+        sample={read("sample")}
+      />
       <PilotCalibration />
     </div>
   );

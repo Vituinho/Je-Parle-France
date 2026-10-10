@@ -40,7 +40,7 @@ const writingSchema = z.object({
   expectedLevel: z.enum(CEFR_LEVELS),
   criteria: writingJudgmentSchema.shape.criteria,
   confidence: z.number().min(0).max(1),
-  score: z.number().min(0).max(1),
+  score: z.number().min(0).max(1).nullable(),
   model: z.string().min(1).max(100),
 });
 const speechSchema = z.object({
@@ -319,6 +319,12 @@ export async function savePilotHumanReview(
     });
     if (!row) throw new PilotParticipationError("Amostra deste participante não encontrada.");
     const record = calibrationSchema.parse({ version: 1, records: [row.record] }).records[0]!;
+    await selectedAssessment(
+      tx,
+      userId,
+      assessmentSourceSchema.parse({ kind: row.sourceKind, id: row.sourceId }),
+      now,
+    );
     if (record.kind !== human.kind)
       throw new PilotParticipationError("Tipo de revisão incompatível.");
     const updated =
@@ -361,9 +367,14 @@ export async function getPilotCalibrationReport(
   range?: { from: string; through: string },
 ) {
   await assertPilotAdmin(adminId);
-  await requirePilotConsent(client, userId, true);
+  const member = await requirePilotConsent(client, userId, true);
   const rows = await client.pilotCalibration.findMany({
-    where: { userId, createdAt: { gte: new Date(now.getTime() - 90 * 86400000) } },
+    where: {
+      userId,
+      createdAt: {
+        gte: new Date(Math.max(member.consentedAt!.getTime(), now.getTime() - 90 * 86400000)),
+      },
+    },
     orderBy: { createdAt: "desc" },
     take: 201,
     select: {
