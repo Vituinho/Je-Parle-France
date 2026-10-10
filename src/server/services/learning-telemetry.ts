@@ -12,26 +12,37 @@ export async function getLearningTelemetry(
   now = new Date(),
   client: Prisma.TransactionClient = db,
   range?: { from: string; through: string },
+  consentWindow?: { from: Date; through: Date },
 ) {
   const profile = await client.learnerProfile.findUnique({
     where: { userId },
     select: { timezone: true, dailyMinutes: true, weeklyGoalDays: true },
   });
   const timezone = profile?.timezone ?? "America/Sao_Paulo";
-  const since = range
+  const rangeSince = range
     ? new Date(`${addDays(range.from, -1)}T00:00:00Z`)
     : new Date(now.getTime() - 90 * 86400000);
-  const until = range
+  const rangeUntil = range
     ? new Date(
         Math.min(now.getTime(), new Date(`${addDays(range.through, 2)}T00:00:00Z`).getTime()),
       )
     : now;
+  const since = new Date(Math.max(rangeSince.getTime(), consentWindow?.from.getTime() ?? 0));
+  const until = new Date(
+    Math.min(rangeUntil.getTime(), consentWindow?.through.getTime() ?? now.getTime()),
+  );
   const inRange = (at: Date) =>
     !range || (localDate(at, timezone) >= range.from && localDate(at, timezone) <= range.through);
   const [sessions, attempts, reviews, evidence, events, days] = await Promise.all([
     client.dailySession.findMany({
       where: {
         userId,
+        ...(consentWindow
+          ? {
+              startedAt: { gte: since, lte: until },
+              ...(consentWindow.through < now ? { completedAt: { lte: until } } : {}),
+            }
+          : {}),
         localDate: {
           gte: range?.from ?? addDays(localDate(now, timezone), -90),
           lte: range?.through ?? localDate(now, timezone),
@@ -117,7 +128,9 @@ export async function getLearningTelemetry(
         return parsed.success ? [parsed.data] : [];
       }),
     events: events.slice(0, 5000).filter((e) => inRange(e.createdAt)),
-    days,
+    // Daily counters cannot be split at an exact consent timestamp. The pilot reader
+    // derives its period time from accepted active slices instead of these weekly totals.
+    days: consentWindow ? [] : days,
     truncated:
       sessions.length > 300 ||
       [attempts, reviews, evidence, events].some((rows) => rows.length > 5000),

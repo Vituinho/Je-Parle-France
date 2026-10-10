@@ -353,10 +353,16 @@ export async function savePilotHumanReview(
     return calibrationReport(parsed);
   });
 }
-export async function getPilotCalibrationReport(adminId: string, userId: string, now = new Date()) {
+export async function getPilotCalibrationReport(
+  adminId: string,
+  userId: string,
+  now = new Date(),
+  client: Prisma.TransactionClient = db,
+  range?: { from: string; through: string },
+) {
   await assertPilotAdmin(adminId);
-  await requirePilotConsent(db, userId, true);
-  const rows = await db.pilotCalibration.findMany({
+  await requirePilotConsent(client, userId, true);
+  const rows = await client.pilotCalibration.findMany({
     where: { userId, createdAt: { gte: new Date(now.getTime() - 90 * 86400000) } },
     orderBy: { createdAt: "desc" },
     take: 201,
@@ -371,13 +377,25 @@ export async function getPilotCalibrationReport(adminId: string, userId: string,
   });
   const records: Calibration["records"] = rows.slice(0, 200).flatMap((r) => {
     const parsed = calibrationSchema.safeParse({ version: 1, records: [r.record] });
-    return parsed.success ? parsed.data.records : [];
+    return parsed.success
+      ? parsed.data.records.filter(
+          (record) =>
+            !range || (record.recordedAt >= range.from && record.recordedAt <= range.through),
+        )
+      : [];
   });
   return {
-    truncated: rows.length > 200 || records.length < Math.min(rows.length, 200),
-    samples: rows.slice(0, 200).map(({ record, ...row }) => {
+    truncated:
+      rows.length > 200 ||
+      rows.some(
+        (row) => !calibrationSchema.safeParse({ version: 1, records: [row.record] }).success,
+      ),
+    samples: rows.slice(0, 200).flatMap(({ record, ...row }) => {
       const parsed = calibrationSchema.safeParse({ version: 1, records: [record] });
-      return { ...row, kind: parsed.success ? parsed.data.records[0]!.kind : "unknown" };
+      const item = parsed.success ? parsed.data.records[0]! : null;
+      if (range && (!item || item.recordedAt < range.from || item.recordedAt > range.through))
+        return [];
+      return [{ ...row, kind: item?.kind ?? "unknown" }];
     }),
     report: records.length
       ? calibrationReport({ version: 1, records })
