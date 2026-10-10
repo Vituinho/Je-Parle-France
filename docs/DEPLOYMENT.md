@@ -1,8 +1,11 @@
 # Railway staging deployment
 
-This repository is prepared for a manual staging deployment. No Railway project or external
-deployment was created by the agent. Use an isolated staging database and synthetic test accounts.
-Live provider availability and human grading calibration still require the operator's checks.
+This repository is prepared for manual staging deployment and the controlled pilot in
+[PILOT.md](PILOT.md). Read-only inspection on 2026-10-10 found the user's **Je parle France**
+Railway project with only a `production` environment, mock providers and no live provider
+credentials; no isolated staging was present. No external deployment was created or changed by
+the agent. Use an isolated staging database and synthetic test accounts. Live provider quality,
+cloud migrations, backup/restore and scheduled maintenance require operator checks.
 
 ## Required services and runtime
 
@@ -30,22 +33,29 @@ the Windows local test.
 Set these on the **web service**, using reference variables for database credentials. The
 checked-in `.env.example` is a local template, not a production secret file.
 
-| Variable                    | Staging requirement                                                                                |
-| --------------------------- | -------------------------------------------------------------------------------------------------- |
-| `DATABASE_URL`              | Required PostgreSQL URL; reference the staging Postgres service                                    |
-| `BETTER_AUTH_SECRET`        | Required random secret, at least 32 characters; example placeholders are rejected                  |
-| `BETTER_AUTH_URL`           | Required exact HTTPS public origin, with no path, query or credentials                             |
-| `NODE_ENV`                  | `production`; Railpack supplies this                                                               |
-| `PORT`                      | Railway supplies it; the public domain target must match                                           |
-| `LLM_PROVIDER`              | Start with `mock`; use `anthropic` after manual live validation                                    |
-| `ANTHROPIC_API_KEY`         | Required only when Anthropic is selected                                                           |
-| `LLM_MODEL`                 | Adapter default `claude-opus-5-5`; explicitly choose an accessible compatible model for live smoke |
-| `TUTOR_DAILY_TURNS`         | Positive integer; default 80, lower for staging cost control                                       |
-| `TUTOR_DAILY_REPORTS`       | Positive integer; default 10                                                                       |
-| `WRITING_DAILY_ASSESSMENTS` | Positive integer; default 10                                                                       |
-| `SPEECH_PROVIDER`           | Start with `mock`; use `azure` after manual live validation                                        |
-| `AZURE_SPEECH_KEY`          | Required only when Azure is selected                                                               |
-| `AZURE_SPEECH_REGION`       | Required with Azure; canonical region name, not an endpoint URL                                    |
+| Variable                                                                   | Staging requirement                                                                                |
+| -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`                                                             | Required PostgreSQL URL; reference the staging Postgres service                                    |
+| `BETTER_AUTH_SECRET`                                                       | Required random secret, at least 32 characters; example placeholders are rejected                  |
+| `BETTER_AUTH_URL`                                                          | Required exact HTTPS public origin, with no path, query or credentials                             |
+| `NODE_ENV`                                                                 | `production`; Railpack supplies this                                                               |
+| `PORT`                                                                     | Railway supplies it; the public domain target must match                                           |
+| `LLM_PROVIDER`                                                             | Start with `mock`; use `anthropic` after manual live validation                                    |
+| `ANTHROPIC_API_KEY`                                                        | Required only when Anthropic is selected                                                           |
+| `LLM_MODEL`                                                                | Adapter default `claude-opus-5-5`; explicitly choose an accessible compatible model for live smoke |
+| `TUTOR_DAILY_TURNS`                                                        | Positive integer; default 80, lower for staging cost control                                       |
+| `TUTOR_DAILY_REPORTS`                                                      | Positive integer; default 10                                                                       |
+| `WRITING_DAILY_ASSESSMENTS`                                                | Positive integer; default 10                                                                       |
+| `SPEECH_PROVIDER`                                                          | Start with `mock`; use `azure` after manual live validation                                        |
+| `AZURE_SPEECH_KEY`                                                         | Required only when Azure is selected                                                               |
+| `AZURE_SPEECH_REGION`                                                      | Required with Azure; canonical region name, not an endpoint URL                                    |
+| `PILOT_ENABLED`                                                            | Default `false`; enable only after live staging checks; withdrawal always works                    |
+| `TUTOR_ENABLED`, `WRITING_AI_ENABLED`                                      | Independent `true`/`false` flags, default `true`                                                   |
+| `SPEECH_STT_ENABLED`, `SPEECH_PRONUNCIATION_ENABLED`, `SPEECH_TTS_ENABLED` | Independent flags, default `true`; browser audio fallback remains                                  |
+| `TUTOR_DAILY_CONVERSATIONS`                                                | Positive integer, default 12 new conversations per learner/day                                     |
+| `SPEECH_DAILY_REQUESTS`                                                    | Positive integer, default 300 shared STT/assessment requests per learner/UTC day                   |
+| `SPEECH_DAILY_MINUTES`                                                     | Positive integer 1–1,440, default 20 shared submitted audio minutes per learner/UTC day            |
+| `TTS_DAILY_REQUESTS`                                                       | Positive integer, default 1,000 uncached TTS requests per learner/UTC day                          |
 
 Optional providers default to labelled mocks/browser audio/self-assessment. Explicit real-provider
 selection with missing credentials fails, rather than silently becoming a mock. There is no
@@ -64,10 +74,14 @@ the broad E2E suite is unsuitable for a real production database.
 
 ## Exact manual setup
 
-1. Choose the reviewed repository commit, then push it yourself to the GitHub branch you will
-   deploy. No push was performed here.
-2. Create an empty Railway project and a separate environment named `staging`. Keep database,
-   variables and provider resources separate from any production environment.
+1. Choose the reviewed repository commit/branch. Before pushing, check the existing production
+   auto-deploy and pause it while preparing isolated staging; this code expects the eight-migration
+   schema even when pilot collection is off. Configure the target pre-deploy command before
+   releasing the new code. Push yourself after that setup; no push was performed here.
+2. Use the existing **Je parle France** project (`f2455502-26f9-4fbb-925a-bd404bc21d1a`) and create
+   a separate environment named `staging`. Keep database, credentials, variables and provider
+   resources separate from production. The locally linked CLI was an unrelated project; use
+   explicit project/environment/service identifiers as shown in PILOT.md.
 3. Add a PostgreSQL service. Confirm its persistent data volume is attached. Choose an appropriate region, configure
    backup/retention before meaningful data is entered, and verify the service is ready.
 4. Add/connect this GitHub repository as a web service in the same staging environment. Use
@@ -100,7 +114,7 @@ the broad E2E suite is unsuitable for a real production database.
     Railway uses this to gate deployment, not as ongoing monitoring.
     [Railway healthchecks](https://docs.railway.com/deployments/healthchecks).
 11. Run **no seed**. Curriculum, concepts, activities, placement and authentic metadata are
-    versioned content compiled into the app. The six migrations create and extend learner state;
+    versioned content compiled into the app. The eight migrations create and extend learner state;
     first sign-up/onboarding creates that learner's rows. Never use migrate dev/reset or
     destructive reseeding in staging/production.
 12. Review staged Railway changes and deploy manually. Inspect install/build, pre-deploy and
@@ -136,9 +150,12 @@ a trusted database update, never an unverified signup email.
 
 Use one staging web replica. Better Auth's 30 requests/minute/IP limiter, request throttles and
 TTS cache are in memory, so reset with a restart and are per instance. Learner daily AI quotas
-are durable in `usage_counters`. Speech STT/assessment share 300 requests/day; uncached TTS
-has 3,000 calls/day per learner (fixed code limits, not env variables). Do not interpret these
-as monetary billing caps; manual provider smoke bypasses app quotas.
+are durable in `usage_counters`. Speech STT/assessment share configurable requests and submitted
+audio limits; uncached TTS requests and tutor starts are configurable too. Numeric request quotas
+are bounded at 100,000. Tutor quotas use the existing learner-local day; speech/writing/TTS use
+UTC. STT and assessment separately consume audio units for their invocations. Do not interpret
+quotas as monetary billing caps; manual provider smoke bypasses app quotas. `PILOT_ENABLED=false`
+pauses pilot collection, not paid providers; use the independent provider flags to pause those.
 
 The Prisma/pg pool is a lazy singleton, max 10 connections, 5-second connection deadline and
 30-second idle timeout. Allow overlap of old/new deployments in the database connection budget.
@@ -172,7 +189,7 @@ tests against production.
 
 ## Migration recovery and rollback
 
-Current migration history is seven committed migrations. Intensive learning adds
+Current migration history is eight committed migrations. Intensive learning adds
 `20261009120000_study_pace`, an additive enum and nullable profile column that preserves existing
 users. Apply it through the existing pre-deploy command; no seed is needed. The preceding staging
 readiness work tested fresh-database migration and a second idempotent deploy; the intensive
@@ -185,9 +202,18 @@ databases without a development reset. Deploy it through the existing pre-deploy
 no seed or additional service. The protected pilot is `/admin/piloto`. Provider invocations now record
 metadata/units, without billing secrets, extra requests or monetary estimates.
 
-Review operational-detail retention with `npm run telemetry:prune` (dry run), then use `-- --apply`
-only for the reviewed deployment/database. The tool preserves normalized learning state and legacy
-payloads; an operator must schedule it and check batch limits. Do not run destructive tests or use
+Controlled pilot adds `20261010120000_controlled_pilot`: consented participation, separate subjective
+feedback, human calibration snapshots and nullable speech locale. It is additive; no seed, reset,
+historical locale inference or backfilled consent is required.
+
+Review operational-detail retention with `npm run telemetry:prune` (dry run), then use
+`-- --apply --max-batches 20` only for the reviewed deployment/database. It expires validated
+operational detail and feedback/calibration older than 90 days from creation, preserving normalized
+learning state, consent and unknown legacy payloads. Bounded chronological batches walk past
+invalid rows; inspect `more=true`. Schedule the optional daily Railway cron exactly as described
+in [PILOT.md](PILOT.md#10-retention-and-railway-cron): same repo, staging DB, build `npm run db:generate`,
+start `npm run telemetry:prune -- --apply --max-batches 20`, schedule `0 6 * * *` UTC. The CLI closes
+its database pool and exits. Do not run destructive tests or use
 E2E role-promotion fixtures against staging/production. See [LEARNING-TELEMETRY.md](LEARNING-TELEMETRY.md)
 for the pilot workflow, minimum evidence, privacy and limits.
 
@@ -206,3 +232,12 @@ the verified backup/PITR point, validate it, then change the database reference 
 schema-compatible app version. Preserve the failed database for diagnosis. Review domains,
 auth URL/secret and provider variables when rolling back app configuration. Repeat the manual
 health, signup, persistence and provider checks after recovery.
+
+Configure volume backups before meaningful pilot data. Verify recovery into an isolated service/
+database, checking migration history, auth/progress, consent/status and calibration/feedback counts.
+If using Railway PITR, enable it before the incident and verify the adjacent restored service;
+preserve the original while reviewing the recovery. Record the backup/time, recovery duration and
+observed loss window. Local fresh migration checks do not prove cloud backup readiness.
+Reconcile withdrawals and account deletions after the backup before reopening traffic to a
+restored copy, which can otherwise recover old personal rows.
+[Railway PostgreSQL backup and restore](https://docs.railway.com/guides/postgres-backups-restores).

@@ -30,6 +30,15 @@ Dependency direction: `app → server → lib`, `components → lib`. `lib/learn
 
 ## Key decisions
 
+Controlled pilot membership/consent, subjective feedback and human calibration use three small
+PostgreSQL models (`PilotParticipant`, `PilotFeedback`, `PilotCalibration`). They reuse the existing
+protected admin page and calibration-kit schema. Feedback never becomes mastery/skill evidence;
+snapshots contain rubric/system/human scores, not duplicated learner writing/audio/transcripts.
+Source writing and short comments require an explicit protected selection. Period analytics are
+bounded reads of existing records clipped at current consent; normalized learning engines and
+planner gates are unchanged. The existing pruning CLI can run as one optional Railway cron
+process and exits after bounded work, without a queue or resident worker. See [PILOT.md](PILOT.md).
+
 Continuous skill estimation lives in `lib/learning/skill-estimation`, reusing placement likelihoods.
 The server service persists bounded evidence metadata and stable display bands. Practice updates
 memory, attempts and skill estimates atomically under a learner row lock; placement retakes preserve

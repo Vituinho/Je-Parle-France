@@ -1,5 +1,12 @@
 # Learning telemetry and pilot calibration
 
+This is the completed 2026-10-09 phase report. The subsequent real-provider controls, consented
+pilot, human review UI, two-week report and scheduled cleanup preparation are documented in
+[PILOT.md](PILOT.md) (2026-10-10). Its additive migration brings the history to eight. Feedback/
+human calibration now live in owner-scoped pilot tables and expire after 90 days from creation;
+the old kit remains supported. Railway cron configuration is documented, but live provider and
+cloud recovery/scheduling checks remain operator work. The historical results below are retained.
+
 Implementation and validation report — 9 October 2026. This phase continues the intensive-learning
 baseline `d477b87`, preserving placement, mastery, FSRS, continuous skill estimation, saved plans
 and published curriculum. No B1.2, paid call, deployment or new analytics infrastructure was added.

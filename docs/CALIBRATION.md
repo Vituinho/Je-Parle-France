@@ -1,6 +1,6 @@
 # Internal speech and writing calibration
 
-This local kit collects comparisons for a later validation study. It makes no provider calls,
+The local kit collects comparisons for a later validation study. It makes no provider calls,
 writes no learner database state and changes no production thresholds. It is not an exam or a
 new public feature. Live provider authentication and human validity are separate checks.
 
@@ -8,7 +8,14 @@ Verified administrators can import this same private JSON kit at `/admin/piloto`
 comparison, limited to 1 MB/200 records. The report groups speech agreement by fr-FR/fr-CA and
 writing differences by the seven criteria; it returns no notes, reviewer identity or target text.
 The private local kit remains the editable record, and importing it changes no production scoring.
-See [LEARNING-TELEMETRY.md](LEARNING-TELEMETRY.md) for pilot metrics, privacy and validation results.
+The controlled pilot also supports selecting actual consented assessments and saving one
+canonical human review per source in PostgreSQL. The current-version acceptance, ownership,
+90-day source window and durable admin role are verified on each action; withdrawal deletes the
+pilot reviews. Only an explicit selected view reads original writing from its existing attempt;
+snapshots do not duplicate writing/excerpts/transcripts/audio. Course writing without a reviewed
+rubric remains unassessed; current real AI writing rubrics are in placement. See
+[PILOT.md](PILOT.md) for the operational workflow and period report. The older in-memory kit import
+remains available and does not persist rows.
 
 ```sh
 npm run calibration -- init
@@ -38,7 +45,8 @@ at 200 samples/1 MB. Schema/JSON failures exit `1` without echoing potentially p
 4. Collect system feedback in the staging app. Use `/conta` export for your dedicated test account
    to inspect `speechAttempts` and placement `writingAssessment`; copy only the fields needed
    below into the kit. Speech provider metrics are at `speechAttempts[].scores.scores`; record
-   locale from the selected UI/fixture, since the stored attempt has no locale field. Copy the
+   locale from the stored attempt for new assessments; old `locale=null` remains unknown and
+   must not be guessed. Copy the
    actual system interpretation from the UI. Do not commit the full export. Never manufacture a system assessment
    when the provider is missing, simulated or failed.
 
@@ -54,6 +62,13 @@ with substantial effort; **3** generally clear with occasional difficulty; **4**
 for the task. Assess intelligibility separately from accent similarity. These ordinal judgments
 are not percentages: the tool flags qualitative disagreement and does not subtract them from
 Azure's 0–100 metrics or label them as CEFR speaking levels.
+
+The application never stores raw pilot audio. The admin speech workflow requires an attestation
+that the reviewer actually heard the same sample with separate explicit permission. Without a
+consented live review or separately authorized temporary sample, leave it pending; a transcript
+cannot establish pronunciation. Delete separately held source material on the agreed schedule.
+Saving the app review again replaces its prior rating; independent two-rater studies require
+separate anonymous kit records and must not treat repeated app saves as two observations.
 
 ## Writing fields and anchors
 
