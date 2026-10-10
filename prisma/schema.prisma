@@ -20,6 +20,19 @@ enum Role {
   admin
 }
 
+enum PilotStatus {
+  invited
+  active
+  withdrawn
+  finished
+}
+
+enum PerceivedDifficulty {
+  easy
+  balanced
+  hard
+}
+
 enum LearningGoal {
   move_canada
   move_quebec
@@ -186,24 +199,28 @@ model User {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  sessions          Session[]
-  accounts          Account[]
-  profile           LearnerProfile?
-  skillEstimates    SkillEstimate[]
-  skillEvidence     SkillEvidence[]
-  placementAttempts PlacementAttempt[]
-  memoryTraces      MemoryTrace[]
-  reviewLogs        ReviewLog[]
-  lessonProgress    LessonProgress[]
-  activityAttempts  ActivityAttempt[]
-  dailySessions     DailySession[]
-  dailyActivity     DailyActivity[]
-  personalItems     PersonalItem[]
-  conversations     Conversation[]
-  speechAttempts    SpeechAttempt[]
-  studyEvents       StudyEvent[]
-  achievements      UserAchievement[]
-  usageCounters     UsageCounter[]
+  sessions           Session[]
+  accounts           Account[]
+  profile            LearnerProfile?
+  skillEstimates     SkillEstimate[]
+  skillEvidence      SkillEvidence[]
+  placementAttempts  PlacementAttempt[]
+  memoryTraces       MemoryTrace[]
+  reviewLogs         ReviewLog[]
+  lessonProgress     LessonProgress[]
+  activityAttempts   ActivityAttempt[]
+  dailySessions      DailySession[]
+  dailyActivity      DailyActivity[]
+  personalItems      PersonalItem[]
+  conversations      Conversation[]
+  speechAttempts     SpeechAttempt[]
+  studyEvents        StudyEvent[]
+  achievements       UserAchievement[]
+  usageCounters      UsageCounter[]
+  pilotParticipant   PilotParticipant?
+  pilotFeedback      PilotFeedback[]
+  pilotCalibration   PilotCalibration[] @relation("PilotLearner")
+  calibrationReviews PilotCalibration[] @relation("PilotReviewer")
 
   @@map("users")
 }
@@ -585,6 +602,8 @@ model SpeechAttempt {
   targetText   String
   activityId   String?
   provider     String
+  /// Unknown for historical recordings; never infer an accent retrospectively.
+  locale       String?
   transcript   String?
   scores       Json
   /// Object-storage key, only when the learner opted in to keep recordings.
@@ -594,6 +613,57 @@ model SpeechAttempt {
 
   @@index([userId, createdAt])
   @@map("speech_attempts")
+}
+
+/// Optional invite and the learner's own latest consent; never assigned by signup/email.
+model PilotParticipant {
+  userId         String      @id
+  user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status         PilotStatus @default(invited)
+  invitedAt      DateTime    @default(now())
+  consentVersion String?
+  consentedAt    DateTime?
+  withdrawnAt    DateTime?
+  finishedAt     DateTime?
+
+  @@index([status, invitedAt])
+  @@map("pilot_participants")
+}
+
+/// Subjective perception, kept separate from attempts, mastery and skill evidence.
+model PilotFeedback {
+  id         String              @id @default(cuid())
+  userId     String
+  user       User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  context    String
+  sourceId   String
+  difficulty PerceivedDifficulty
+  text       String?
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+
+  @@unique([userId, context, sourceId])
+  @@index([userId, createdAt])
+  @@map("pilot_feedback")
+}
+
+/// Existing calibration-kit schema; snapshot scores/human ratings, never copied response/audio.
+model PilotCalibration {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation("PilotLearner", fields: [userId], references: [id], onDelete: Cascade)
+  reviewerId String?
+  reviewer   User?     @relation("PilotReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+  sourceKind String
+  sourceId   String
+  record     Json
+  reviewedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@unique([userId, sourceKind, sourceId])
+  @@index([userId, createdAt])
+  @@map("pilot_calibration")
 }
 
 // ─── Analytics, motivation, quotas ──────────────────────────────────────────

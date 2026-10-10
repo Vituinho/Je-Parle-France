@@ -81,6 +81,7 @@ export async function POST(request: Request) {
         targetText: fields.data.referenceText,
         activityId: fields.data.activityId ?? null,
         provider: speech.pronunciation.id,
+        locale: fields.data.locale,
         durationMs,
         transcript: result.transcript,
         scores: {

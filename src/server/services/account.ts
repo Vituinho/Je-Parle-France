@@ -84,6 +84,9 @@ export async function exportUserData(userId: string) {
     studyEvents,
     achievements,
     usageCounters,
+    pilotParticipant,
+    pilotFeedback,
+    pilotCalibration,
   ] = await Promise.all([
     db.user.findUniqueOrThrow({
       where: { id: userId },
@@ -121,6 +124,19 @@ export async function exportUserData(userId: string) {
     db.studyEvent.findMany({ where, orderBy: { createdAt: "asc" } }),
     db.userAchievement.findMany({ where }),
     db.usageCounter.findMany({ where }),
+    db.pilotParticipant.findUnique({ where }),
+    db.pilotFeedback.findMany({ where, orderBy: { createdAt: "asc" } }),
+    db.pilotCalibration.findMany({
+      where,
+      select: {
+        id: true,
+        sourceKind: true,
+        sourceId: true,
+        record: true,
+        createdAt: true,
+        reviewedAt: true,
+      },
+    }),
   ]);
   return {
     format: "je-parle-francais/export",
@@ -145,6 +161,9 @@ export async function exportUserData(userId: string) {
     studyEvents,
     achievements,
     usageCounters,
+    pilotParticipant,
+    pilotFeedback,
+    pilotCalibration,
   };
 }
 
@@ -163,6 +182,7 @@ export async function deletePrivateData(userId: string, selection: PrivateDataSe
   await db.$transaction(async (tx) => {
     await lockLearner(tx, userId);
     if (selection.conversations) {
+      await tx.pilotFeedback.deleteMany({ where: { userId, context: "conversation" } });
       counts.conversations = (await tx.conversation.deleteMany({ where: { userId } })).count;
       // Corrections kept for review no longer point to a conversation.
       await tx.personalItem.updateMany({
@@ -176,6 +196,8 @@ export async function deletePrivateData(userId: string, selection: PrivateDataSe
       await tx.reviewLog.deleteMany({ where: personalTraces });
     }
     if (selection.speech) {
+      await tx.pilotFeedback.deleteMany({ where: { userId, context: "speech" } });
+      await tx.pilotCalibration.deleteMany({ where: { userId, sourceKind: "speech" } });
       await tx.skillEvidence.deleteMany({ where: { userId, source: "speech" } });
       const estimates = await tx.skillEstimate.findMany({
         where: { userId, skill: { in: ["speaking", "pronunciation"] }, source: "practice" },
