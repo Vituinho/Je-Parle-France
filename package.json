@@ -20,6 +20,7 @@
     "smoke:speech": "node --conditions=react-server --import tsx scripts/smoke-speech.ts",
     "smoke:tutor": "node --conditions=react-server --import tsx scripts/smoke-tutor.ts",
     "calibration": "tsx scripts/calibration.ts",
+    "telemetry:prune": "node --conditions=react-server --import tsx scripts/prune-telemetry.ts",
     "db:local": "node scripts/db-local.mjs",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev && prisma generate",
