@@ -141,7 +141,7 @@ describe.skipIf(!hasTestDatabase)("intensive session persistence", () => {
         context: "session",
         response,
       }),
-    ).rejects.toThrow("reagendado");
+    ).resolves.toEqual({ skipped: true });
   });
 
   it("makes concurrent final-block completion idempotent", async () => {

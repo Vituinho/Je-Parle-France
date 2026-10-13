@@ -6,7 +6,7 @@ import { conceptLabel, getContent } from "@/lib/content";
 import { toClientActivity } from "@/lib/learning/activities/client";
 import { getLearnerLevel, supportFor } from "@/server/services/learner";
 import { activitySeed, startLesson } from "@/server/services/practice";
-import { prepareReviewItems } from "@/server/services/review";
+import { prepareReviewItems, reconcileSessionReviews } from "@/server/services/review";
 import {
   blockTitle,
   getSession,
@@ -35,6 +35,7 @@ async function Session({
       typeof id === "string"
         ? await getSession(user.id, id)
         : await getTodaySession(user.id, profile);
+    session = await reconcileSessionReviews(user.id, session.id);
   } catch (error) {
     if (error instanceof SessionError) notFound();
     throw error;
@@ -56,6 +57,7 @@ async function Session({
         ...base,
         kind: block.kind,
         authored: block.kind === "focus" && Boolean(block.activityIds?.length),
+        dueReview: block.kind === "review",
         // Items are only prepared for blocks still ahead.
         items:
           index >= session.cursor
@@ -66,6 +68,8 @@ async function Session({
                   plan.date,
                   block.kind === "review",
                   block.kind === "focus",
+                  undefined,
+                  session.id,
                 )),
                 ...(block.kind === "focus" ? (block.activityIds ?? []) : []).flatMap((id) => {
                   const activity = content.activities.get(id)?.activity;

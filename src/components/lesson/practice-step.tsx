@@ -17,7 +17,9 @@ export type CheckFn = (input: {
   response: ActivityResponse;
   hinted: boolean;
   durationMs: number;
-}) => Promise<{ ok: true; result: SubmitResult } | { ok: false; error: string }>;
+}) => Promise<
+  { ok: true; result: SubmitResult } | { ok: true; skipped: true } | { ok: false; error: string }
+>;
 
 /** Activity types whose renderer already shows the right answer inline. */
 const SHOWS_ANSWER_INLINE = new Set([
@@ -96,11 +98,24 @@ export function PracticeStep({
     active.setEnabled(false);
     startTransition(async () => {
       await active.flush();
-      const response = await onCheck({
-        response: toResponse(activity, draft),
-        hinted,
-        durationMs,
-      });
+      let response;
+      try {
+        response = await onCheck({
+          response: toResponse(activity, draft),
+          hinted,
+          durationMs,
+        });
+      } catch {
+        active.setEnabled(true);
+        setError(
+          "Não foi possível salvar agora. Tente novamente ou recarregue a página para continuar.",
+        );
+        return;
+      }
+      if (response.ok && "skipped" in response) {
+        onContinue(null);
+        return;
+      }
       active.setEnabled(true);
       if (!response.ok) {
         setError(response.error);

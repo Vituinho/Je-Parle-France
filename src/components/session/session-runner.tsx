@@ -22,7 +22,12 @@ import { sendSessionTransition } from "@/components/lesson/use-active-study-time
 import type { StudyAdvice } from "@/lib/learning/telemetry/metrics";
 import { PilotFeedbackForm } from "@/components/pilot/forms";
 
-export type BlockPayload = { title: string; reason: string; seconds: number } & (
+export type BlockPayload = {
+  title: string;
+  reason: string;
+  seconds: number;
+  dueReview?: boolean;
+} & (
   | { kind: "review" | "focus"; items: PreparedReviewItem[]; authored?: boolean }
   | {
       kind: "lesson";
@@ -102,9 +107,18 @@ export function SessionRunner({
 
   function blockDone() {
     startTransition(async () => {
-      const result = await completeBlockAction({ sessionId, blockIndex: cursor });
+      let result: Awaited<ReturnType<typeof completeBlockAction>>;
+      try {
+        result = await completeBlockAction({ sessionId, blockIndex: cursor });
+      } catch {
+        result = { ok: false };
+      }
       if (!result.ok || result.cursor === undefined) {
-        setError("Não foi possível salvar. Tente continuar novamente.");
+        setError(
+          block?.kind === "review"
+            ? "Esta revisão já foi concluída. Tente continuar ou recarregue a página para irmos à próxima."
+            : "Não foi possível salvar. Tente continuar novamente.",
+        );
         setPlaying(false);
         return;
       }
@@ -135,6 +149,8 @@ export function SessionRunner({
     if (block.kind === "review" || block.kind === "focus") {
       return (
         <ReviewPlayer
+          dueReview={block.dueReview}
+          blockIndex={cursor}
           items={block.items}
           date={date}
           support={support}

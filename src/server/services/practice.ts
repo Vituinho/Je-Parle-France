@@ -130,6 +130,10 @@ export async function submitActivity(params: {
   now?: Date;
   /** Server-owned choice for additional skill practice; no FSRS mutation or review log. */
   scheduleMemory?: boolean;
+  /** Server-owned review receipt, stored with the attempt; never accepted from an activity response. */
+  reviewReceipt?: { key: string; phase: "first" | "retry"; version?: string };
+  /** Revalidate a review after taking the learner lock, immediately before any persistence. */
+  reviewGuard?: (tx: Prisma.TransactionClient) => Promise<void>;
 }): Promise<SubmitResult> {
   const { userId, activity, context } = params;
   if (params.sessionId) {
@@ -208,6 +212,7 @@ export async function submitActivity(params: {
   return db.$transaction(
     async (tx) => {
       await lockLearner(tx, userId);
+      await params.reviewGuard?.(tx);
       const conceptIds = [...new Set(targets.map((target) => target.concept))];
       const existing = await loadTraces(tx, userId, conceptIds);
       const byKey = new Map(
@@ -270,9 +275,12 @@ export async function submitActivity(params: {
           hinted: params.hinted ?? false,
           selfRated: grade.selfRated || grade.verdict === "recorded" || false,
           createdAt: now,
-          response: (writing
-            ? { answer: params.response, writingAssessment: writing }
-            : params.response) as unknown as Prisma.InputJsonValue,
+          response: {
+            ...(writing
+              ? { answer: params.response, writingAssessment: writing }
+              : params.response),
+            ...(params.reviewReceipt ? { reviewReceipt: params.reviewReceipt } : {}),
+          } as unknown as Prisma.InputJsonValue,
         },
       });
       await bumpDailyActivity(tx, userId, date, {

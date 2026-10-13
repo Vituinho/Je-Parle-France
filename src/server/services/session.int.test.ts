@@ -76,7 +76,7 @@ describe.skipIf(!hasTestDatabase)("daily session", () => {
       response: { kind: "choice", choice: right },
       context: "review",
     });
-    expect(result.feedback.correct).toBe(true);
+    expect(result).toMatchObject({ feedback: { correct: true } });
     const trace = await db.memoryTrace.findUniqueOrThrow({
       where: {
         userId_conceptId_dimension: {

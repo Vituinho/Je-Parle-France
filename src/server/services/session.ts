@@ -212,7 +212,7 @@ export async function buildPlan(
       },
     ];
   });
-  return planSession({
+  const plan = planSession({
     now,
     date,
     dailyMinutes: profile.dailyMinutes,
@@ -236,6 +236,17 @@ export async function buildPlan(
     scenarioId: pickScenario(index, profile, level.level, date),
     telemetryAdvice: await planningAdvice(userId, profile.timezone, now, client),
   });
+  for (const block of plan.blocks)
+    if (block.kind === "review") {
+      for (const item of block.items) {
+        const trace = traces.find(
+          (t) => t.conceptId === item.conceptId && t.dimension === item.dimension,
+        );
+        if (trace)
+          item.scheduleVersion = `${trace.reps}:${trace.due.toISOString()}:${trace.lastReview?.toISOString() ?? "new"}`;
+      }
+    }
+  return plan;
 }
 
 /** Today's session: reuses an unfinished one, otherwise plans a new one. */
@@ -312,58 +323,61 @@ export async function recordedStudySeconds(userId: string, date: string): Promis
 }
 
 /** Marks block `blockIndex` as done and moves the cursor; completes the session at the end. */
-export async function completeBlock(userId: string, sessionId: string, blockIndex: number) {
-  return db.$transaction(
-    async (tx) => {
-      await lockLearner(tx, userId);
-      const session = await tx.dailySession.findFirst({ where: { id: sessionId, userId } });
-      if (!session) throw new SessionError("Sessão não encontrada.");
-      const plan = sessionPlan(session);
-      if (blockIndex < session.cursor) return session; // already done (double submit)
-      if (blockIndex !== session.cursor) throw new SessionError("Bloco fora de ordem.");
-      if (!Number.isInteger(blockIndex) || blockIndex < 0 || blockIndex >= plan.blocks.length)
-        throw new SessionError("Etapa inválida.");
-      const cursor = blockIndex + 1;
-      const done = cursor >= plan.blocks.length;
-      const now = new Date();
-      const updated = await tx.dailySession.update({
-        where: { id: sessionId },
+export async function completeBlock(
+  userId: string,
+  sessionId: string,
+  blockIndex: number,
+  client?: Prisma.TransactionClient,
+) {
+  const complete = async (tx: Prisma.TransactionClient) => {
+    await lockLearner(tx, userId);
+    const session = await tx.dailySession.findFirst({ where: { id: sessionId, userId } });
+    if (!session) throw new SessionError("Sessão não encontrada.");
+    const plan = sessionPlan(session);
+    if (blockIndex < session.cursor) return session; // already done (double submit)
+    if (blockIndex !== session.cursor) throw new SessionError("Bloco fora de ordem.");
+    if (!Number.isInteger(blockIndex) || blockIndex < 0 || blockIndex >= plan.blocks.length)
+      throw new SessionError("Etapa inválida.");
+    const cursor = blockIndex + 1;
+    const done = cursor >= plan.blocks.length;
+    const now = new Date();
+    const updated = await tx.dailySession.update({
+      where: { id: sessionId },
+      data: {
+        cursor,
+        status: done ? "completed" : "in_progress",
+        startedAt: session.startedAt ?? now,
+        completedAt: done ? now : null,
+      },
+    });
+    await recordLearningEvent(
+      tx,
+      userId,
+      {
+        type: "block_completed",
+        payload: { blockIndex, expectedSeconds: plan.blocks[blockIndex]!.seconds },
+      },
+      { sessionId, dedupeKey: `block:${sessionId}:${blockIndex}:done`, now },
+    );
+    if (done) {
+      await tx.dailyActivity.upsert({
+        where: { userId_localDate: { userId, localDate: session.localDate } },
+        create: { userId, localDate: session.localDate, sessionCompleted: true },
+        update: { sessionCompleted: true },
+      });
+      await tx.studyEvent.create({
         data: {
-          cursor,
-          status: done ? "completed" : "in_progress",
-          startedAt: session.startedAt ?? now,
-          completedAt: done ? now : null,
+          userId,
+          type: "session_completed",
+          sessionId,
+          dedupeKey: `session:${sessionId}:done`,
+          payload: { sessionId, minutes: session.plannedMinutes, blocks: plan.blocks.length },
         },
       });
-      await recordLearningEvent(
-        tx,
-        userId,
-        {
-          type: "block_completed",
-          payload: { blockIndex, expectedSeconds: plan.blocks[blockIndex]!.seconds },
-        },
-        { sessionId, dedupeKey: `block:${sessionId}:${blockIndex}:done`, now },
-      );
-      if (done) {
-        await tx.dailyActivity.upsert({
-          where: { userId_localDate: { userId, localDate: session.localDate } },
-          create: { userId, localDate: session.localDate, sessionCompleted: true },
-          update: { sessionCompleted: true },
-        });
-        await tx.studyEvent.create({
-          data: {
-            userId,
-            type: "session_completed",
-            sessionId,
-            dedupeKey: `session:${sessionId}:done`,
-            payload: { sessionId, minutes: session.plannedMinutes, blocks: plan.blocks.length },
-          },
-        });
-      }
-      return updated;
-    },
-    { timeout: 20_000 },
-  );
+    }
+    return updated;
+  };
+  return client ? complete(client) : db.$transaction(complete, { timeout: 20_000 });
 }
 
 export function blockTitle(block: SessionBlock, index: ContentIndex = getContent()): string {

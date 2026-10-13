@@ -9,6 +9,7 @@ import { getSession, sessionPlan, recordedStudySeconds } from "@/server/services
 import type { ReviewCheckResult } from "@/app/(focus)/revisar/actions";
 import { completeBlock, SessionError, startExtraSession } from "@/server/services/session";
 import { requireLearner } from "@/server/session";
+import { reconcileSessionReviews } from "@/server/services/review";
 
 export async function completeBlockAction(
   input: unknown,
@@ -18,7 +19,8 @@ export async function completeBlockAction(
     .object({ sessionId: z.string().min(1).max(64), blockIndex: z.number().int().min(0).max(50) })
     .parse(input);
   try {
-    const session = await completeBlock(user.id, parsed.sessionId, parsed.blockIndex);
+    await completeBlock(user.id, parsed.sessionId, parsed.blockIndex);
+    const session = await reconcileSessionReviews(user.id, parsed.sessionId);
     return {
       ok: true,
       cursor: session.cursor,

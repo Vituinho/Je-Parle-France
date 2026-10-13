@@ -15,6 +15,8 @@ import type { StudyAdvice } from "../telemetry/metrics";
  */
 
 export interface ReviewItem {
+  /** Optional server snapshot of the FSRS schedule; not used by planning/scoring rules. */
+  scheduleVersion?: string;
   conceptId: string;
   dimension: Dimension;
   /** Distinct exercise for the same item (drills repeat a concept with variety). */

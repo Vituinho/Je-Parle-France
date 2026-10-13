@@ -133,7 +133,7 @@ describe.skipIf(!hasTestDatabase)("tutor service (mock provider)", () => {
     const scheduled = plan.blocks.flatMap((block) =>
       block.kind === "review" || block.kind === "focus" ? block.items : [],
     );
-    expect(scheduled).toContainEqual(item);
+    expect(scheduled).toContainEqual(expect.objectContaining(item));
   });
 
   it("accepts spoken turns: voice mode, corrections kept, marker never shown", async () => {

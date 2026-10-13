@@ -15,7 +15,7 @@ async function Review() {
   const { user, profile } = await requireLearner();
   const date = today(profile);
   const [due, level] = await Promise.all([dueReviewItems(user.id, 20), getLearnerLevel(user.id)]);
-  const items = await prepareReviewItems(user.id, due, date);
+  const items = await prepareReviewItems(user.id, due, date, true);
 
   if (items.length === 0) {
     return (
@@ -42,6 +42,7 @@ async function Review() {
       support={supportFor(level.level, profile)}
       title="Revisão"
       exitHref="/hoje"
+      dueReview
     />
   );
 }
