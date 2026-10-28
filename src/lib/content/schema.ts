@@ -51,6 +51,12 @@ export const audioSchema = z.object({
 
 export const exampleSchema = z.object({ fr: text, pt: text });
 
+/** A context-specific valid wording, with an explanation for the learner. */
+export const acceptableTextAlternativeSchema = z.object({
+  text,
+  explanation: localizedSchema,
+});
+
 export const noteSchema = z.object({
   kind: z.enum(["brazil", "quebec", "france", "culture", "tip", "register"]),
   text: localizedSchema,
@@ -159,7 +165,14 @@ export const fillActivitySchema = z
     type: z.literal("fill"),
     /** French sentence with one `___` per blank. */
     sentence: text,
-    blanks: z.array(z.object({ accept: z.array(text).min(1) })).min(1),
+    blanks: z
+      .array(
+        z.object({
+          accept: z.array(text).min(1),
+          alternatives: z.array(acceptableTextAlternativeSchema).default([]),
+        }),
+      )
+      .min(1),
     wordBank: z.array(text).optional(),
     translation: text.optional(),
   })
@@ -174,6 +187,8 @@ export const typeActivitySchema = z.object({
   prompt: promptSchema,
   /** Accepted French answers. The first one is shown as the model answer. */
   accept: z.array(text).min(1),
+  /** Explicitly authored equivalent wording; omitted for grammar/register tests. */
+  alternatives: z.array(acceptableTextAlternativeSchema).default([]),
 });
 
 export const dictationActivitySchema = z.object({

@@ -154,6 +154,7 @@ function lexicalActivity(
           instruction: { pt: "Escreva o número por extenso.", fr: "Écrivez le nombre en lettres." },
           prompt: { pt: String(value), hideText: false },
           accept: [word],
+          alternatives: [],
         };
       default:
         return {
@@ -223,6 +224,7 @@ function lexicalActivity(
         instruction: { pt: "Como se diz em francês?", fr: "Comment dit-on en français ?" },
         prompt: { pt: concept.meaning, hideText: false },
         accept: recallForms(concept),
+        alternatives: [],
       };
     case "speaking":
     case "pronunciation": {

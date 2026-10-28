@@ -122,7 +122,7 @@ export function introduceTrace(
 export interface Outcome {
   score: number;
   correct: boolean;
-  verdict: "correct" | "almost" | "wrong" | "recorded";
+  verdict: "correct" | "alternative" | "almost" | "wrong" | "recorded";
   selfRated?: boolean;
   /** The learner asked for a hint or revealed the answer before answering. */
   hinted?: boolean;

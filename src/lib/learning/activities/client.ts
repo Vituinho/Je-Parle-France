@@ -267,7 +267,7 @@ export function displayedIndex(
 
 /** Grade result enriched with display-space positions of the right answers. */
 export interface ClientFeedback {
-  verdict: "correct" | "almost" | "wrong" | "recorded";
+  verdict: "correct" | "alternative" | "almost" | "wrong" | "recorded";
   score: number;
   correct: boolean;
   expected?: string;

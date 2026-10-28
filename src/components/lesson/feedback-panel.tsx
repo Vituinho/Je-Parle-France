@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 
 const HEADINGS = {
   correct: { fr: "C'est ça !", pt: "Isso!" },
+  alternative: { fr: "Bonne alternative !", pt: "Boa alternativa!" },
   almost: { fr: "Presque !", pt: "Quase!" },
   wrong: { fr: "Pas tout à fait.", pt: "Ainda não." },
   recorded: { fr: "C'est noté.", pt: "Registrado." },
@@ -31,14 +32,19 @@ export function FeedbackPanel({
 }) {
   const heading = HEADINGS[feedback.verdict];
   const Icon =
-    feedback.verdict === "correct" ? Check : feedback.verdict === "wrong" ? X : CircleDot;
+    feedback.verdict === "correct" || feedback.verdict === "alternative"
+      ? Check
+      : feedback.verdict === "wrong"
+        ? X
+        : CircleDot;
   return (
     <div
       role="status"
       aria-live="polite"
       className={cn(
         "animate-in fade-in slide-in-from-bottom-2 rounded-2xl border-[1.5px] p-4 sm:p-5",
-        feedback.verdict === "correct" && "border-success bg-success-soft",
+        (feedback.verdict === "correct" || feedback.verdict === "alternative") &&
+          "border-success bg-success-soft",
         feedback.verdict === "almost" && "border-highlight bg-highlight/20",
         feedback.verdict === "wrong" && "border-destructive bg-destructive-soft",
         feedback.verdict === "recorded" && "border-border bg-muted",
@@ -49,7 +55,8 @@ export function FeedbackPanel({
           aria-hidden
           className={cn(
             "size-5",
-            feedback.verdict === "correct" && "text-success",
+            (feedback.verdict === "correct" || feedback.verdict === "alternative") &&
+              "text-success",
             feedback.verdict === "wrong" && "text-destructive",
           )}
           strokeWidth={3}

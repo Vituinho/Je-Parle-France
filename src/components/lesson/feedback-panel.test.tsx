@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
-import { activitySchema } from "@/lib/content/schema";
+import { activitySchema, type Activity } from "@/lib/content/schema";
 import { toClientActivity, toClientFeedback } from "@/lib/learning/activities/client";
 import { gradeActivity } from "@/lib/learning/grading/grade";
 import { FeedbackPanel } from "./feedback-panel";
@@ -9,6 +9,31 @@ import { FeedbackPanel } from "./feedback-panel";
 afterEach(cleanup);
 
 describe("live correctness feedback", () => {
+  it("shows encouraging feedback and the authored register explanation for an accepted alternative", () => {
+    const activity: Activity = {
+      id: "a1",
+      type: "type",
+      prompt: { pt: "Com licença informal", hideText: false },
+      accept: ["Excusez-moi."],
+      alternatives: [
+        {
+          text: "Excuse-moi.",
+          explanation: { pt: "Informal singular; formal or plural." },
+        },
+      ],
+      targets: [],
+    };
+    const feedback = toClientFeedback(
+      activity,
+      gradeActivity(activity, { kind: "text", text: "Excuse moi" }),
+      "seed",
+    );
+    render(<FeedbackPanel feedback={feedback} support="pt-fr" showExpected />);
+    expect(screen.getByText("Boa alternativa!")).toBeInTheDocument();
+    expect(screen.getByText("Informal singular; formal or plural.")).toBeInTheDocument();
+    expect(screen.getByText("Excusez-moi.")).toBeInTheDocument();
+  });
+
   it("announces the correct Portuguese option in the live region after a wrong answer", () => {
     const activity = activitySchema.parse({
       id: "bonjour",

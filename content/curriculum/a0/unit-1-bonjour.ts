@@ -303,6 +303,23 @@ export const unitBonjour: UnitInput = {
           translation: "Muito obrigado! — De nada!",
           targets: [t("lex:merci-beaucoup", "speaking"), t("lex:de-rien", "speaking")],
         },
+        {
+          id: "a0-u1-l2-a8",
+          type: "type",
+          instruction: say.write,
+          prompt: { pt: "Como dizer “com licença” em francês?" },
+          accept: ["Excusez-moi."],
+          alternatives: [
+            {
+              text: "Excuse-moi.",
+              explanation: {
+                pt: "Sua resposta, *excuse-moi*, também vale: é informal e singular. *Excusez-moi* é a forma formal ou plural.",
+                fr: "Votre réponse, *excuse-moi*, convient aussi : c'est la forme informelle, au singulier. *Excusez-moi* est la forme de politesse ou le pluriel.",
+              },
+            },
+          ],
+          targets: [t("lex:excusez-moi", "recall")],
+        },
       ],
     },
 

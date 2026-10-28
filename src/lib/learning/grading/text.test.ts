@@ -13,13 +13,16 @@ describe("normalize", () => {
 
   it("keeps elided words as separate tokens", () => {
     expect(tokenize("Je m'appelle Ana.")).toEqual(["je", "m'", "appelle", "ana"]);
-    expect(tokenize("Qu'est-ce que c'est ?")).toEqual(["qu'", "est-ce", "que", "c'", "est"]);
+    expect(tokenize("Qu'est-ce que c'est ?")).toEqual(["qu'", "est", "ce", "que", "c'", "est"]);
   });
 });
 
 describe("compareText", () => {
   it("accepts exact answers regardless of formatting", () => {
     expect(compareText("je m’appelle Victor", ["Je m'appelle Victor."]).verdict).toBe("exact");
+    expect(compareText("  EXCUSEZ moi!!! ", ["Excusez-moi."]).verdict).toBe("exact");
+    expect(compareText("Excuse moi", ["excuse-moi"]).verdict).toBe("exact");
+    expect(compareText("Bonjour, monsieur !", ["Bonjour monsieur."]).verdict).toBe("exact");
   });
 
   it("flags missing accents as almost right", () => {
@@ -29,9 +32,9 @@ describe("compareText", () => {
     expect(compareText("ca va", ["ça va"]).verdict).toBe("accent");
   });
 
-  it("flags missing apostrophes and hyphens as punctuation slips", () => {
+  it("flags a missing apostrophe but normalizes optional hyphens", () => {
     expect(compareText("cest bon", ["c'est bon"]).verdict).toBe("punctuation");
-    expect(compareText("est ce que tu viens", ["est-ce que tu viens"]).verdict).toBe("punctuation");
+    expect(compareText("est ce que tu viens", ["est-ce que tu viens"]).verdict).toBe("exact");
   });
 
   it("tolerates one slip inside a long word, but not near its ending", () => {
@@ -43,6 +46,22 @@ describe("compareText", () => {
     expect(compareText("il es", ["il est"]).verdict).toBe("wrong");
     expect(compareText("une petit maison", ["une petite maison"]).verdict).toBe("wrong");
     expect(compareText("ils parle", ["ils parlent"]).verdict).toBe("wrong");
+  });
+
+  it("keeps accent changes that can change meaning in the almost-correct category", () => {
+    expect(compareText("deja", ["déjà"]).verdict).toBe("accent");
+  });
+
+  it("rejects written accent pairs that change the word's meaning", () => {
+    expect(compareText("ou", ["où"]).verdict).toBe("wrong");
+    expect(compareText("a", ["à"]).verdict).toBe("wrong");
+    expect(compareText("la", ["là"]).verdict).toBe("wrong");
+    expect(compareText("dessert", ["désert"]).verdict).toBe("wrong");
+  });
+
+  it("does not normalize a hyphen when it changes the expression's meaning", () => {
+    expect(compareText("peut être", ["peut-être"]).verdict).toBe("wrong");
+    expect(compareText("peut-être", ["peut être"]).verdict).toBe("wrong");
   });
 
   it("rejects missing elision", () => {

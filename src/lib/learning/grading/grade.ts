@@ -1,6 +1,13 @@
 import { z } from "zod";
 import { BLANK, type Activity, type Localized } from "@/lib/content/schema";
-import { compareText, normalize, wordRecall, type DiffToken, type TextVerdict } from "./text";
+import {
+  compareText,
+  hasMeaningfulSpellingDifference,
+  normalize,
+  wordRecall,
+  type DiffToken,
+  type TextVerdict,
+} from "./text";
 
 /**
  * Deterministic grading for every activity type that can be checked without
@@ -37,7 +44,7 @@ export const activityResponseSchema = z.discriminatedUnion("kind", [
 ]);
 export type ActivityResponse = z.infer<typeof activityResponseSchema>;
 
-export type Verdict = "correct" | "almost" | "wrong" | "recorded";
+export type Verdict = "correct" | "alternative" | "almost" | "wrong" | "recorded";
 
 export interface GradeResult {
   /** 0…1 */
@@ -75,7 +82,35 @@ function fromText(
 ): Pick<GradeResult, "verdict" | "correct" | "score" | "note"> {
   if (verdict === "exact") return { verdict: "correct", correct: true, score };
   if (verdict === "wrong") return { verdict: "wrong", correct: false, score };
-  return { verdict: "almost", correct: true, score, note: NOTES[verdict] };
+  // Almost answers keep partial credit, then use the existing one-time retry.
+  return { verdict: "almost", correct: false, score, note: NOTES[verdict] };
+}
+
+function authoredTextResult(
+  response: string,
+  accepted: readonly string[],
+  alternatives: readonly { text: string; explanation: Localized }[],
+) {
+  const alternative = alternatives.find(
+    (answer) =>
+      normalize(response) === normalize(answer.text) &&
+      !hasMeaningfulSpellingDifference(response, answer.text),
+  );
+  if (alternative)
+    return {
+      score: 1,
+      correct: true,
+      verdict: "alternative" as const,
+      matched: alternative.text,
+      note: alternative.explanation,
+    };
+
+  const result = compareText(response, [...accepted, ...alternatives.map((answer) => answer.text)]);
+  return {
+    ...fromText(result.verdict, result.score),
+    matched: result.matched,
+    diff: result.diff,
+  };
 }
 
 function expectKind<K extends ActivityResponse["kind"]>(
@@ -141,10 +176,12 @@ export function gradeActivity(activity: Activity, response: ActivityResponse): G
     case "order": {
       const { tokens } = expectKind(response, "tokens");
       const given = normalize(tokens.join(" "));
-      const accepted = [activity.tokens, ...activity.alternatives].map((sequence) =>
-        normalize(sequence.join(" ")),
+      const accepted = [activity.tokens, ...activity.alternatives];
+      const correct = accepted.some(
+        (sequence) =>
+          normalize(sequence.join(" ")) === given &&
+          !hasMeaningfulSpellingDifference(tokens.join(" "), sequence.join(" ")),
       );
-      const correct = accepted.includes(given);
       return {
         score: correct ? 1 : 0,
         correct,
@@ -156,34 +193,45 @@ export function gradeActivity(activity: Activity, response: ActivityResponse): G
     case "fill": {
       const { blanks } = expectKind(response, "blanks");
       const results = activity.blanks.map((blank, index) =>
-        compareText(blanks[index] ?? "", blank.accept),
+        authoredTextResult(blanks[index] ?? "", blank.accept, blank.alternatives),
       );
-      const parts = results.map((result) => result.verdict !== "wrong");
+      const parts = results.map((result) => result.correct);
       const score = results.reduce((sum, result) => sum + result.score, 0) / results.length;
       const expected = activity.blanks.reduce(
         (sentence, blank) => sentence.replace(BLANK, blank.accept[0] as string),
         activity.sentence,
       );
-      const worst =
-        results.find((r) => r.verdict === "wrong") ?? results.find((r) => r.verdict !== "exact");
+      const verdict = parts.every(Boolean)
+        ? results.some((result) => result.verdict === "alternative")
+          ? "alternative"
+          : "correct"
+        : verdictForScore(score);
+      const feedback =
+        results.find((result) => !result.correct) ??
+        results.find((result) => result.verdict === "alternative");
       return {
         score,
         correct: parts.every(Boolean),
-        verdict: verdictForScore(score),
+        verdict,
         expected,
         parts,
-        note: worst && worst.verdict !== "wrong" ? NOTES[worst.verdict] : undefined,
+        note: feedback?.note,
       };
     }
 
-    case "type":
+    case "type": {
+      const { text } = expectKind(response, "text");
+      return {
+        ...authoredTextResult(text, activity.accept, activity.alternatives),
+        expected: activity.accept[0],
+      };
+    }
+
     case "error_correction": {
       const { text } = expectKind(response, "text");
-      const result = compareText(text, activity.accept);
       return {
-        ...fromText(result.verdict, result.score),
+        ...authoredTextResult(text, activity.accept, []),
         expected: activity.accept[0],
-        diff: result.diff,
       };
     }
 

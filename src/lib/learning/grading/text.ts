@@ -43,24 +43,66 @@ export const VERDICT_SCORE: Record<TextVerdict, number> = {
 const APOSTROPHES = /[’‘ʼ`´]/g;
 const QUOTES = /[«»“”„"]/g;
 const SPACES = /[\s   ]+/g;
+const HYPHENS = /[‐‑‒–—−]/g;
+const MEANINGFUL_ACCENT_PAIRS = new Set([
+  "a|à",
+  "de|dès",
+  "du|dû",
+  "jeune|jeûne",
+  "la|là",
+  "mur|mûr",
+  "ou|où",
+  "peche|pêche",
+  "sur|sûr",
+]);
+const MEANINGFUL_SPELLING_PAIRS = new Set(["dessert|désert", "peut être|peut-être"]);
 
-/** Canonical form: lowercase, NFC, unified apostrophes, no quotes, single spaces, no final punctuation. */
-export function normalize(text: string): string {
+function normalizeKeepingHyphens(text: string): string {
   return text
     .normalize("NFC")
     .replace(APOSTROPHES, "'")
     .replace(QUOTES, " ")
+    .replace(HYPHENS, "-")
+    .replace(/\s*-\s*/g, "-")
     .replace(/œ/g, "oe")
     .replace(/Œ/g, "OE")
     .replace(/æ/g, "ae")
-    .toLowerCase()
-    .replace(/\s*([?!:;])/g, " $1") // French typographic spaces are optional for learners
+    .replace(/[,.!?;:…¿¡]/gu, " ")
     .replace(SPACES, " ")
-    .replace(/\s*'\s*/g, "'")
-    .replace(/[\s.!?…:;,]+$/u, "")
-    .replace(/^[\s¿¡]+/u, "")
-    .replace(/\s+([,])/g, "$1")
+    .toLowerCase()
     .trim();
+}
+
+/** Known French spelling pairs where dropping a hyphen or changing a word alters meaning. */
+export function hasMeaningfulSpellingDifference(given: string, expected: string): boolean {
+  const pair = [normalizeKeepingHyphens(given), normalizeKeepingHyphens(expected)].sort().join("|");
+  return MEANINGFUL_SPELLING_PAIRS.has(pair);
+}
+
+/** Canonical form: lowercase, NFC, unified apostrophes, no quotes, single spaces, no final punctuation. */
+export function normalize(text: string): string {
+  return (
+    text
+      .normalize("NFC")
+      .replace(APOSTROPHES, "'")
+      .replace(QUOTES, " ")
+      // Hyphenated and open spellings are both common in learner input;
+      // retain word boundaries so this never merges distinct words.
+      .replace(HYPHENS, "-")
+      .replace(/\s*-\s*/g, " ")
+      .replace(/œ/g, "oe")
+      .replace(/Œ/g, "OE")
+      .replace(/æ/g, "ae")
+      .toLowerCase()
+      .replace(/[,.!?;:…¿¡]/gu, " ")
+      .replace(/\s*([?!:;])/g, " $1") // French typographic spaces are optional for learners
+      .replace(SPACES, " ")
+      .replace(/\s*'\s*/g, "'")
+      .replace(/[\s.!?…:;,]+$/u, "")
+      .replace(/^[\s¿¡]+/u, "")
+      .replace(/\s+([,])/g, "$1")
+      .trim()
+  );
 }
 
 export function stripAccents(text: string): string {
@@ -110,7 +152,11 @@ function firstDifference(a: string, b: string): number {
 
 function compareToken(given: string, expected: string): TokenStatus {
   if (given === expected) return "ok";
-  if (stripAccents(given) === stripAccents(expected)) return "accent";
+  if (MEANINGFUL_SPELLING_PAIRS.has([given, expected].sort().join("|"))) return "wrong";
+  if (stripAccents(given) === stripAccents(expected)) {
+    const pair = [given, expected].sort().join("|");
+    return MEANINGFUL_ACCENT_PAIRS.has(pair) ? "wrong" : "accent";
+  }
   const a = stripAccents(given);
   const b = stripAccents(expected);
   const longEnough = Math.min(a.length, b.length) >= 6;
@@ -175,11 +221,17 @@ function compareOne(response: string, accepted: string): TextComparison {
   const given = normalize(response);
   const expected = normalize(accepted);
   const diff = diffTokens(tokenize(response), tokenize(accepted));
+  if (hasMeaningfulSpellingDifference(response, accepted)) {
+    return { verdict: "wrong", score: 0, matched: accepted, diff };
+  }
   if (given === expected) return { verdict: "exact", score: 1, matched: accepted, diff };
   if (stripPunctuation(given) === stripPunctuation(expected)) {
     return { verdict: "punctuation", score: VERDICT_SCORE.punctuation, matched: accepted, diff };
   }
-  if (stripPunctuation(stripAccents(given)) === stripPunctuation(stripAccents(expected))) {
+  if (
+    stripPunctuation(stripAccents(given)) === stripPunctuation(stripAccents(expected)) &&
+    diff.every((token) => token.status === "ok" || token.status === "accent")
+  ) {
     return { verdict: "accent", score: VERDICT_SCORE.accent, matched: accepted, diff };
   }
   const worst = diff.reduce((max, token) => Math.max(max, SEVERITY[token.status]), 0);
