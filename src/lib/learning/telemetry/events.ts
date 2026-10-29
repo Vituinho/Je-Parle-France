@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { DIMENSIONS, SKILLS } from "../skills";
+import { GRID_MAX, GRID_MIN } from "../placement/model";
 
 const id = z
   .string()
@@ -30,8 +31,8 @@ export const learningEventSchema = z.discriminatedUnion("type", [
       skill: z.enum(SKILLS),
       before: z.enum(["A0", "A1", "A2", "B1", "B2", "C1", "C2"]),
       after: z.enum(["A0", "A1", "A2", "B1", "B2", "C1", "C2"]),
-      thetaBefore: z.number().min(0).max(6),
-      thetaAfter: z.number().min(0).max(6),
+      thetaBefore: z.number().finite().min(GRID_MIN).max(GRID_MAX),
+      thetaAfter: z.number().finite().min(GRID_MIN).max(GRID_MAX),
       reason: z.enum(["calibration", "collecting", "strengthening", "promoted", "demoted"]),
       evidenceCount: z.number().int().nonnegative(),
       evidenceDays: z.number().int().nonnegative(),

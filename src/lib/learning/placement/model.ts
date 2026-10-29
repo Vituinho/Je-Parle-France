@@ -33,8 +33,8 @@ export interface NormalBelief {
   sd: number;
 }
 
-const GRID_MIN = SCALE_MIN - 0.75;
-const GRID_MAX = SCALE_MAX + 0.75;
+export const GRID_MIN = SCALE_MIN - 0.75;
+export const GRID_MAX = SCALE_MAX + 0.75;
 const GRID_STEP = 0.05;
 
 export const GRID: readonly number[] = Array.from(

@@ -52,6 +52,43 @@ const fixture = (id: number): SkillEvidence => ({
 describe.skipIf(!hasTestDatabase)("continuous skill persistence", () => {
   beforeEach(resetDatabase);
   afterAll(() => db.$disconnect());
+  it("persists learning and telemetry after a negative placement calibration", async () => {
+    const user = await learner();
+    await db.$transaction((tx) =>
+      calibrateSkill(
+        tx,
+        user.id,
+        "listening",
+        { mean: -0.4, sd: 0.4, at: START, method: "objective" },
+        true,
+      ),
+    );
+    const before = await db.skillEstimate.findUniqueOrThrow({
+      where: { userId_skill: { userId: user.id, skill: "listening" } },
+    });
+    expect(before).toMatchObject({ theta: -0.4, calibrationTheta: -0.4, displayBand: 0 });
+    await db.$transaction((tx) =>
+      recordSkillEvidence(tx, user.id, [fixture(0)], fixture(0).occurredAt),
+    );
+    const updated = await db.skillEstimate.findUniqueOrThrow({
+      where: { userId_skill: { userId: user.id, skill: "listening" } },
+    });
+    expect(updated.theta).toBeGreaterThan(before.theta);
+    expect(updated.calibrationTheta).toBe(-0.4);
+    expect(updated.displayBand).toBe(0);
+    expect(await db.skillEvidence.count({ where: { userId: user.id } })).toBe(1);
+    const event = await db.studyEvent.findFirstOrThrow({
+      where: { userId: user.id, type: "skill_estimate_changed" },
+    });
+    expect(event.payload).toMatchObject({ thetaBefore: -0.4, thetaAfter: updated.theta });
+    await db.$transaction((tx) =>
+      recordSkillEvidence(tx, user.id, [fixture(1)], fixture(1).occurredAt),
+    );
+    expect(await db.skillEvidence.count({ where: { userId: user.id } })).toBe(2);
+    expect(
+      await db.studyEvent.count({ where: { userId: user.id, type: "skill_estimate_changed" } }),
+    ).toBeGreaterThanOrEqual(1);
+  });
   it("real authored activities persist skill evidence atomically with memory and deduplicate repeats", async () => {
     const user = await learner();
     const ref = [...getContent().activities.values()].find(
